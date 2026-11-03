@@ -6,6 +6,7 @@ import {
   formatearMoneda,
   obtenerUltimoDiaMes,
   fechaHoyISO,
+  recurrenteAplicaEnMes,
 } from '../types/wallet';
 import type { ActiveTab } from '../types/wallet';
 import {
@@ -100,11 +101,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [guardandoSueldo, setGuardandoSueldo] = useState<boolean>(false);
   const [mensajeSueldo, setMensajeSueldo] = useState<string | null>(null);
 
-  // Estado para Proyecciones
+  // Estado para Proyecciones (todas las tarjetas inician colapsadas)
   const [mostrarHistorico, setMostrarHistorico] = useState<boolean>(false);
-  const [mesesAbiertos, setMesesAbiertos] = useState<Record<string, boolean>>({
-    [`${anioHoy}-${mesHoy}`]: true,
-  });
+  const [mesesAbiertos, setMesesAbiertos] = useState<Record<string, boolean>>({});
   const [modalDetalleMes, setModalDetalleMes] = useState<ProyeccionMesCalculada | null>(null);
 
   // Sincronizar inputs de sueldo cuando cambia mes/año seleccionado o sueldos en BD
@@ -317,7 +316,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       // 2. Plantillas recurrentes que aún no tienen registro en movimientos_agenda en este mes (solo para mes actual o futuro)
       if (!esPasado) {
         recurrentes.forEach((rec) => {
-          if (!recurrentesYaEnAgenda.has(rec.id)) {
+          if (!recurrentesYaEnAgenda.has(rec.id) && recurrenteAplicaEnMes(rec, aCursor, mCursor)) {
             const diaReal = Math.min(rec.dia_pago, ultimoDia);
             const fechaRec = `${prefijoMes}-${String(diaReal).padStart(2, '0')}`;
             const cat = rec.categoria_id ? mapaCategorias.get(rec.categoria_id) : undefined;

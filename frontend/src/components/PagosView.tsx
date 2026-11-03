@@ -7,6 +7,8 @@ import {
   formatearMoneda,
   obtenerUltimoDiaMes,
   fechaHoyISO,
+  obtenerMesInicioRecurrente,
+  recurrenteAplicaEnMes,
 } from '../types/wallet';
 import type { DeudaCuota, MovimientoRecurrente } from '../types/wallet';
 import { confirmarAccion, toastExito } from '../lib/alerts';
@@ -19,6 +21,7 @@ import {
   CheckCircle2,
   Trash2,
   Edit2,
+  Check,
   X,
   ChevronDown,
   ChevronRight,
@@ -88,6 +91,8 @@ export const PagosView: React.FC = () => {
   const [editMonto, setEditMonto] = useState<string>('');
   const [editDia, setEditDia] = useState<string>('15');
   const [editCatId, setEditCatId] = useState<number | ''>('');
+  const [editMesInicio, setEditMesInicio] = useState<number>(hoy.getMonth());
+  const [editAnioInicio, setEditAnioInicio] = useState<number>(hoy.getFullYear());
   const [guardandoEdicion, setGuardandoEdicion] = useState<boolean>(false);
 
   // Formulario Cuotas
@@ -96,12 +101,25 @@ export const PagosView: React.FC = () => {
   const [montoPorCuota, setMontoPorCuota] = useState<string>('');
   const [fecha1raCuota, setFecha1raCuota] = useState<string>(fechaHoyISO());
   const [deudaCatId, setDeudaCatId] = useState<number | ''>('');
+  const [forzarFinDeMes, setForzarFinDeMes] = useState<boolean>(() => {
+    const hoyIso = fechaHoyISO();
+    const [y, m, d] = hoyIso.split('-').map(Number);
+    return d === obtenerUltimoDiaMes(y, m - 1);
+  });
+
+  // Edición inline de fecha de cuota
+  const [editandoCuotaId, setEditandoCuotaId] = useState<number | null>(null);
+  const [nuevaFechaCuota, setNuevaFechaCuota] = useState<string>('');
+  const [guardandoCuotaFecha, setGuardandoCuotaFecha] = useState<boolean>(false);
 
   // Formulario Recurrente Continuo / Ingreso
   const [recDesc, setRecDesc] = useState<string>('');
   const [recMonto, setRecMonto] = useState<string>('');
   const [recDia, setRecDia] = useState<string>('15');
   const [recCatId, setRecCatId] = useState<number | ''>('');
+  const [recMesInicio, setRecMesInicio] = useState<number>(hoy.getMonth());
+  const [recAnioInicio, setRecAnioInicio] = useState<number>(hoy.getFullYear());
+  const [recInicioManual, setRecInicioManual] = useState<boolean>(false);
 
   // Estado pestaña Cronogramas
   const [filtroCronogramas, setFiltroCronogramas] = useState<'todos' | 'activas' | 'pagadas'>('todos');
@@ -178,7 +196,7 @@ export const PagosView: React.FC = () => {
 
     // 2. Compromisos recurrentes continuos (como Suno, alquiler, luz, internet, etc.)
     recurrentes
-      .filter((r) => r.tipo === 'gasto')
+      .filter((r) => r.tipo === 'gasto' && recurrenteAplicaEnMes(r, agendaAnio, agendaMes))
       .forEach((rec) => {
         const diaReal = Math.min(rec.dia_pago, ultimoDia);
         const fechaEstimada = `${prefijo}-${String(diaReal).padStart(2, '0')}`;
@@ -308,17 +326,25 @@ export const PagosView: React.FC = () => {
     }
   };
 
+  // ABRIR MODAL DE EDICIÓN RECURRENTE
+  const abrirModalEdicionRecurrente = (rec: MovimientoRecurrente) => {
+    const inicio = obtenerMesInicioRecurrente(rec, hoy.getFullYear(), hoy.getMonth());
+    setEditTipo('recurrente');
+    setEditTipoMovimiento(rec.tipo);
+    setEditId(rec.id);
+    setEditNombre(rec.descripcion);
+    setEditMonto(String(rec.monto));
+    setEditDia(String(rec.dia_pago));
+    setEditCatId(rec.categoria_id ?? '');
+    setEditMesInicio(inicio.mes);
+    setEditAnioInicio(inicio.anio);
+    setModalEdicionAbierto(true);
+  };
+
   // ABRIR MODAL DE EDICIÓN
   const handleAbrirEdicion = (fila: FilaAgenda) => {
     if (fila.recurrenteRef) {
-      setEditTipo('recurrente');
-      setEditTipoMovimiento(fila.recurrenteRef.tipo);
-      setEditId(fila.recurrenteRef.id);
-      setEditNombre(fila.recurrenteRef.descripcion);
-      setEditMonto(String(fila.recurrenteRef.monto));
-      setEditDia(String(fila.recurrenteRef.dia_pago));
-      setEditCatId(fila.recurrenteRef.categoria_id ?? '');
-      setModalEdicionAbierto(true);
+      abrirModalEdicionRecurrente(fila.recurrenteRef);
     } else if (fila.deudaId) {
       const deuda = deudas.find((d) => d.id === fila.deudaId);
       if (deuda) {
@@ -345,6 +371,7 @@ export const PagosView: React.FC = () => {
     try {
       if (editTipo === 'recurrente') {
         const diaNum = Math.min(31, Math.max(1, parseInt(editDia, 10) || 1));
+        const periodoInicio = `${editAnioInicio}-${String(editMesInicio + 1).padStart(2, '0')}`;
         await supabase
           .from('movimientos_recurrentes')
           .update({
@@ -353,6 +380,7 @@ export const PagosView: React.FC = () => {
             dia_pago: diaNum,
             categoria_id: editCatId === '' ? null : Number(editCatId),
             tipo: editTipoMovimiento,
+            periodos: periodoInicio,
           })
           .eq('id', editId)
           .eq('user_id', user.id);
@@ -457,6 +485,58 @@ export const PagosView: React.FC = () => {
     }
   };
 
+  // Guardar fecha individual de una cuota
+  const handleGuardarFechaCuota = async (cuotaId: number) => {
+    if (!user || !nuevaFechaCuota) return;
+    setGuardandoCuotaFecha(true);
+    try {
+      const { error } = await supabase
+        .from('deuda_cuotas')
+        .update({ fecha: nuevaFechaCuota })
+        .eq('id', cuotaId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      await recargarTodo();
+      setEditandoCuotaId(null);
+      toastExito('Fecha de vencimiento actualizada');
+    } catch (err) {
+      console.error('Error al actualizar fecha de cuota:', err);
+    } finally {
+      setGuardandoCuotaFecha(false);
+    }
+  };
+
+  // Ajustar en lote todas las cuotas de un cronograma al último día de cada mes
+  const handleAjustarCuotasFinDeMes = async (deudaId: number, nombreDeuda: string) => {
+    if (!user) return;
+    const cuotasD = cuotas.filter((c) => c.deuda_id === deudaId);
+    if (!cuotasD.length) return;
+
+    const confirmado = await confirmarAccion({
+      title: '¿Ajustar cuotas a fin de mes?',
+      text: `Se actualizará el vencimiento de las cuotas de "${nombreDeuda}" al último día de su mes respectivo (30, 31, 28/29).`,
+      confirmButtonText: 'Sí, ajustar a fin de mes',
+      isDanger: false,
+      icon: 'question',
+    });
+    if (!confirmado) return;
+
+    for (const c of cuotasD) {
+      const [y, m] = c.fecha.split('-').map(Number);
+      const ultimoDia = obtenerUltimoDiaMes(y, m - 1);
+      const nuevaFecha = `${y}-${String(m).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
+      if (nuevaFecha !== c.fecha) {
+        await supabase
+          .from('deuda_cuotas')
+          .update({ fecha: nuevaFecha })
+          .eq('id', c.id)
+          .eq('user_id', user.id);
+      }
+    }
+    await recargarTodo();
+    toastExito('Cuotas ajustadas al último día de cada mes');
+  };
+
   // Crear nuevo compromiso (Modal)
   const handleCrearNuevoProgramado = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -481,13 +561,16 @@ export const PagosView: React.FC = () => {
       if (error || !dData) return;
 
       const [yBase, mBase, dBase] = fecha1raCuota.split('-').map(Number);
+      const maxDiaBase = obtenerUltimoDiaMes(yBase, mBase - 1);
+      const esFinDeMes = forzarFinDeMes || dBase === maxDiaBase;
+
       const cuotasInsert = [];
       for (let i = 0; i < nCuotas; i++) {
         const fechaTarget = new Date(yBase, mBase - 1 + i, 1);
         const anioT = fechaTarget.getFullYear();
         const mesT = fechaTarget.getMonth();
         const maxDia = obtenerUltimoDiaMes(anioT, mesT);
-        const diaReal = Math.min(dBase, maxDia);
+        const diaReal = esFinDeMes ? maxDia : Math.min(dBase, maxDia);
         const fechaStr = `${anioT}-${String(mesT + 1).padStart(2, '0')}-${String(diaReal).padStart(2, '0')}`;
         cuotasInsert.push({
           user_id: user.id,
@@ -503,6 +586,7 @@ export const PagosView: React.FC = () => {
       const dNum = Math.min(31, Math.max(1, parseInt(recDia, 10) || 1));
       if (!recDesc.trim() || isNaN(mNum) || mNum <= 0) return;
 
+      const periodoInicio = `${recAnioInicio}-${String(recMesInicio + 1).padStart(2, '0')}`;
       await supabase.from('movimientos_recurrentes').insert({
         user_id: user.id,
         tipo: modalTipoCrear === 'ingreso' ? 'ingreso' : 'gasto',
@@ -510,6 +594,7 @@ export const PagosView: React.FC = () => {
         monto: mNum,
         dia_pago: dNum,
         categoria_id: recCatId === '' ? null : Number(recCatId),
+        periodos: periodoInicio,
         tipo_recurrencia: 'mensual',
       });
     }
@@ -520,6 +605,10 @@ export const PagosView: React.FC = () => {
     setMontoPorCuota('');
     setRecDesc('');
     setRecMonto('');
+    setForzarFinDeMes(false);
+    setRecMesInicio(hoy.getMonth());
+    setRecAnioInicio(hoy.getFullYear());
+    setRecInicioManual(false);
   };
 
   // Guardar sueldo desde la pestaña Ingresos
@@ -557,7 +646,7 @@ export const PagosView: React.FC = () => {
   const otrosIngresosMes = useMemo(() => {
     const prefijo = `${ingresoAnio}-${String(ingresoMes + 1).padStart(2, '0')}`;
     return recurrentes
-      .filter((r) => r.tipo === 'ingreso')
+      .filter((r) => r.tipo === 'ingreso' && recurrenteAplicaEnMes(r, ingresoAnio, ingresoMes))
       .map((r) => {
         const mov = movimientos.find(
           (m) => m.recurrente_id === r.id && m.fecha.startsWith(prefijo)
@@ -565,6 +654,7 @@ export const PagosView: React.FC = () => {
         const recibido = mov ? mov.pago_confirmado : false;
         return {
           id: r.id,
+          rec: r,
           descripcion: r.descripcion,
           monto: r.monto,
           dia: r.dia_pago,
@@ -603,8 +693,14 @@ export const PagosView: React.FC = () => {
         let pagosRealizados = 0;
         let totalAbonado = 0;
 
+        const { anio: anioInicio, mes: mesInicio } = obtenerMesInicioRecurrente(
+          rec,
+          hoy.getFullYear(),
+          hoy.getMonth()
+        );
+
         for (let i = 0; i < 13; i++) {
-          const target = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+          const target = new Date(anioInicio, mesInicio + i, 1);
           const anioT = target.getFullYear();
           const mesT = target.getMonth();
           const ultimoDia = obtenerUltimoDiaMes(anioT, mesT);
@@ -1085,16 +1181,44 @@ export const PagosView: React.FC = () => {
               </button>
             </div>
 
-            <button
-              onClick={() => {
-                setModalTipoCrear('continuo');
-                setModalNuevoProgramado(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo cronograma</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {(deudas.length > 0 || cronogramasContinuos.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const keys = [
+                      ...cronogramasContinuos.map((c) => c.idKey),
+                      ...deudas.map((d) => `deuda-${d.id}`),
+                    ];
+                    const algunoAbierto = keys.some((k) => cronogramasExpandidos[k]);
+                    const nuevo: Record<string, boolean> = {};
+                    keys.forEach((k) => {
+                      nuevo[k] = !algunoAbierto;
+                    });
+                    setCronogramasExpandidos(nuevo);
+                  }}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors shadow-xs"
+                >
+                  {[
+                    ...cronogramasContinuos.map((c) => c.idKey),
+                    ...deudas.map((d) => `deuda-${d.id}`),
+                  ].some((k) => cronogramasExpandidos[k])
+                    ? 'Contraer todos'
+                    : 'Expandir todos'}
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  setModalTipoCrear('continuo');
+                  setModalNuevoProgramado(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nuevo cronograma</span>
+              </button>
+            </div>
           </div>
 
           {deudas.length === 0 && cronogramasContinuos.length === 0 ? (
@@ -1123,7 +1247,7 @@ export const PagosView: React.FC = () => {
                   return true;
                 })
                 .map((card) => {
-                  const expandida = cronogramasExpandidos[card.idKey] !== false; // Abierto por defecto
+                  const expandida = Boolean(cronogramasExpandidos[card.idKey]); // Colapsado por defecto
 
                   return (
                     <article
@@ -1165,16 +1289,7 @@ export const PagosView: React.FC = () => {
                           <div className="flex items-center gap-1.5 pl-4 border-l border-slate-200">
                             <button
                               type="button"
-                              onClick={() => {
-                                setEditTipo('recurrente');
-                                setEditTipoMovimiento(card.rec.tipo);
-                                setEditId(card.rec.id);
-                                setEditNombre(card.rec.descripcion);
-                                setEditMonto(String(card.rec.monto));
-                                setEditDia(String(card.rec.dia_pago));
-                                setEditCatId(card.rec.categoria_id ?? '');
-                                setModalEdicionAbierto(true);
-                              }}
+                              onClick={() => abrirModalEdicionRecurrente(card.rec)}
                               title="Duración e importe"
                               className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
                             >
@@ -1183,16 +1298,7 @@ export const PagosView: React.FC = () => {
 
                             <button
                               type="button"
-                              onClick={() => {
-                                setEditTipo('recurrente');
-                                setEditTipoMovimiento(card.rec.tipo);
-                                setEditId(card.rec.id);
-                                setEditNombre(card.rec.descripcion);
-                                setEditMonto(String(card.rec.monto));
-                                setEditDia(String(card.rec.dia_pago));
-                                setEditCatId(card.rec.categoria_id ?? '');
-                                setModalEdicionAbierto(true);
-                              }}
+                              onClick={() => abrirModalEdicionRecurrente(card.rec)}
                               title="Editar cronograma"
                               className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
                             >
@@ -1425,7 +1531,7 @@ export const PagosView: React.FC = () => {
 
                   const pct =
                     totalPactado > 0 ? Math.min(100, Math.round((totalAbonado / totalPactado) * 100)) : 0;
-                  const expandida = cronogramasExpandidos[`deuda-${d.id}`] !== false;
+                  const expandida = Boolean(cronogramasExpandidos[`deuda-${d.id}`]); // Colapsado por defecto
 
                   return (
                     <article
@@ -1461,6 +1567,15 @@ export const PagosView: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-1.5 pl-4 border-l border-slate-200">
+                            <button
+                              type="button"
+                              onClick={() => handleAjustarCuotasFinDeMes(d.id, d.nombre)}
+                              title="Ajustar todas las cuotas al último día de su mes (Fin de mes)"
+                              className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-teal-50 text-slate-500 hover:text-teal-700 flex items-center justify-center cursor-pointer transition-colors"
+                            >
+                              <CalendarCheck className="w-4 h-4" />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => {
@@ -1569,7 +1684,51 @@ export const PagosView: React.FC = () => {
                                       {c.numero}/{cuotasD.length}
                                     </td>
                                     <td className="py-3 px-4 font-medium text-slate-800">
-                                      {diaC}/{mesC}/{anioC}
+                                      {editandoCuotaId === c.id ? (
+                                        <div className="inline-flex items-center gap-1.5 bg-white p-1 rounded-lg border border-teal-500 shadow-xs">
+                                          <input
+                                            type="date"
+                                            value={nuevaFechaCuota}
+                                            onChange={(e) => setNuevaFechaCuota(e.target.value)}
+                                            className="px-2 py-0.5 rounded text-xs font-semibold focus:outline-none"
+                                            autoFocus
+                                          />
+                                          <button
+                                            type="button"
+                                            disabled={guardandoCuotaFecha}
+                                            onClick={() => handleGuardarFechaCuota(c.id)}
+                                            className="p-1 rounded bg-teal-600 hover:bg-teal-700 text-white cursor-pointer transition-colors"
+                                            title="Guardar fecha"
+                                          >
+                                            <Check className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditandoCuotaId(null)}
+                                            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer transition-colors"
+                                            title="Cancelar"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="inline-flex items-center gap-1.5 group/fecha">
+                                          <span>
+                                            {diaC}/{mesC}/{anioC}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditandoCuotaId(c.id);
+                                              setNuevaFechaCuota(c.fecha);
+                                            }}
+                                            className="opacity-0 group-hover/fecha:opacity-100 transition-opacity p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-teal-700 cursor-pointer"
+                                            title="Cambiar fecha de vencimiento"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      )}
                                     </td>
                                     <td className="py-3 px-4 font-bold text-slate-900">
                                       {formatearMoneda(c.monto)}
@@ -1998,16 +2157,7 @@ export const PagosView: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditTipo('recurrente');
-                            setEditTipoMovimiento('ingreso');
-                            setEditId(item.id);
-                            setEditNombre(item.descripcion);
-                            setEditMonto(String(item.monto));
-                            setEditDia(String(item.dia));
-                            setEditCatId(item.categoriaId ?? '');
-                            setModalEdicionAbierto(true);
-                          }}
+                          onClick={() => abrirModalEdicionRecurrente(item.rec)}
                           title="Editar ingreso programado"
                           className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center cursor-pointer transition-colors"
                         >
@@ -2101,36 +2251,73 @@ export const PagosView: React.FC = () => {
               </div>
 
               {editTipo === 'recurrente' && (
-                <div className="grid grid-cols-2 gap-3">
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Monto mensual (S/.)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        value={editMonto}
+                        onChange={(e) => setEditMonto(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Día de vencimiento (1-31)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        required
+                        value={editDia}
+                        onChange={(e) => setEditDia(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Monto mensual (S/.)
+                      Iniciar desde (Mes y Año)
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
-                      value={editMonto}
-                      onChange={(e) => setEditMonto(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={editMesInicio}
+                        onChange={(e) => setEditMesInicio(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
+                      >
+                        {NOMBRES_MESES.map((m, idx) => (
+                          <option key={m} value={idx}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={editAnioInicio}
+                        onChange={(e) => setEditAnioInicio(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
+                      >
+                        {[
+                          hoy.getFullYear() - 1,
+                          hoy.getFullYear(),
+                          hoy.getFullYear() + 1,
+                          hoy.getFullYear() + 2,
+                        ].map((a) => (
+                          <option key={a} value={a}>
+                            {a}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Día de vencimiento (1-31)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="31"
-                      required
-                      value={editDia}
-                      onChange={(e) => setEditDia(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                    />
-                  </div>
-                </div>
+                </>
               )}
 
               <div>
@@ -2276,7 +2463,17 @@ export const PagosView: React.FC = () => {
                         type="date"
                         required
                         value={fecha1raCuota}
-                        onChange={(e) => setFecha1raCuota(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFecha1raCuota(val);
+                          if (val) {
+                            const [y, m, d] = val.split('-').map(Number);
+                            const maxDia = obtenerUltimoDiaMes(y, m - 1);
+                            if (d === maxDia) {
+                              setForzarFinDeMes(true);
+                            }
+                          }
+                        }}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                       />
                     </div>
@@ -2299,6 +2496,25 @@ export const PagosView: React.FC = () => {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={forzarFinDeMes}
+                        onChange={(e) => setForzarFinDeMes(e.target.checked)}
+                        className="mt-0.5 rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+                      />
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">
+                          Ajustar automáticamente al último día de cada mes (Fin de mes)
+                        </span>
+                        <span className="text-[11px] text-slate-500 block mt-0.5">
+                          Si está marcado, cada cuota vencerá en el último día de su mes respectivo (ej. 30 Nov, 31 Dic, 31 Ene, 28/29 Feb...).
+                        </span>
+                      </div>
+                    </label>
                   </div>
                 </>
               ) : (
@@ -2347,10 +2563,75 @@ export const PagosView: React.FC = () => {
                         max="31"
                         required
                         value={recDia}
-                        onChange={(e) => setRecDia(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRecDia(val);
+                          if (!recInicioManual) {
+                            const diaNum = parseInt(val, 10);
+                            if (!isNaN(diaNum) && diaNum >= 1 && diaNum < hoy.getDate()) {
+                              const sigMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+                              setRecMesInicio(sigMes.getMonth());
+                              setRecAnioInicio(sigMes.getFullYear());
+                            } else if (!isNaN(diaNum) && diaNum >= hoy.getDate()) {
+                              setRecMesInicio(hoy.getMonth());
+                              setRecAnioInicio(hoy.getFullYear());
+                            }
+                          }
+                        }}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Iniciar desde (Mes y Año)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={recMesInicio}
+                        onChange={(e) => {
+                          setRecMesInicio(Number(e.target.value));
+                          setRecInicioManual(true);
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
+                      >
+                        {NOMBRES_MESES.map((m, idx) => (
+                          <option key={m} value={idx}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={recAnioInicio}
+                        onChange={(e) => {
+                          setRecAnioInicio(Number(e.target.value));
+                          setRecInicioManual(true);
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
+                      >
+                        {[
+                          hoy.getFullYear() - 1,
+                          hoy.getFullYear(),
+                          hoy.getFullYear() + 1,
+                          hoy.getFullYear() + 2,
+                        ].map((a) => (
+                          <option key={a} value={a}>
+                            {a}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-[11px] text-teal-700 font-semibold mt-1.5">
+                      Primer vencimiento:{' '}
+                      {String(
+                        Math.min(
+                          Math.max(1, parseInt(recDia, 10) || 1),
+                          obtenerUltimoDiaMes(recAnioInicio, recMesInicio)
+                        )
+                      ).padStart(2, '0')}
+                      /{String(recMesInicio + 1).padStart(2, '0')}/{recAnioInicio}
+                    </p>
                   </div>
 
                   <div>

@@ -100,3 +100,32 @@ export function fechaHoyISO(): string {
   return `${y}-${m}-${d}`;
 }
 
+export function obtenerMesInicioRecurrente(
+  rec: MovimientoRecurrente,
+  anioDefault: number,
+  mesIndex0Default: number
+): { anio: number; mes: number } {
+  if (rec.periodos && /^\d{4}-\d{2}$/.test(rec.periodos.trim())) {
+    const [y, m] = rec.periodos.trim().split('-').map(Number);
+    if (!isNaN(y) && !isNaN(m) && m >= 1 && m <= 12) {
+      return { anio: y, mes: m - 1 };
+    }
+  }
+  return { anio: anioDefault, mes: mesIndex0Default };
+}
+
+export function recurrenteAplicaEnMes(
+  rec: MovimientoRecurrente,
+  anio: number,
+  mesIndex0: number
+): boolean {
+  if (!rec.periodos) return true;
+  const valor = rec.periodos.trim();
+  if (/^\d{4}-\d{2}$/.test(valor)) {
+    const prefijoTarget = `${anio}-${String(mesIndex0 + 1).padStart(2, '0')}`;
+    return prefijoTarget >= valor;
+  }
+  return true;
+}
+
+
