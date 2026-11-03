@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import { formatearMoneda } from '../types/wallet';
 import type { Categoria } from '../types/wallet';
+import { confirmarAccion, alertaInfo, toastExito } from '../lib/alerts';
 import { Plus, Edit2, Trash2, Tags, X, Check } from 'lucide-react';
 
 const PALETA_COLORES = [
@@ -89,12 +90,19 @@ export const CategoriasView: React.FC = () => {
   const handleEliminar = async (c: Categoria) => {
     if (!user) return;
     if (c.nombre.toLowerCase() === 'otros') {
-      window.alert('La categoría predeterminada "Otros" no se puede eliminar.');
+      alertaInfo('Categoría reservada', 'La categoría predeterminada "Otros" no se puede eliminar.');
       return;
     }
-    if (!window.confirm(`¿Deseas eliminar la categoría "${c.nombre}"?`)) return;
+    const confirmado = await confirmarAccion({
+      title: '¿Eliminar categoría?',
+      text: `¿Deseas eliminar la categoría "${c.nombre}"?`,
+      confirmButtonText: 'Sí, eliminar',
+    });
+    if (!confirmado) return;
+
     await supabase.from('categorias').delete().eq('id', c.id).eq('user_id', user.id);
     await recargarTodo();
+    toastExito(`Categoría "${c.nombre}" eliminada`);
   };
 
   return (

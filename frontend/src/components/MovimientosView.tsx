@@ -8,6 +8,7 @@ import {
   fechaHoyISO,
 } from '../types/wallet';
 import type { MovimientoAgenda } from '../types/wallet';
+import { confirmarAccion, toastExito } from '../lib/alerts';
 import {
   Plus,
   Search,
@@ -124,9 +125,16 @@ export const MovimientosView: React.FC = () => {
 
   const handleEliminar = async (id: number) => {
     if (!user) return;
-    if (!window.confirm('¿Deseas eliminar este movimiento permanentemente?')) return;
+    const confirmado = await confirmarAccion({
+      title: '¿Eliminar movimiento?',
+      text: 'Se retirará permanentemente de tu historial.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+    if (!confirmado) return;
+
     await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
     await recargarTodo();
+    toastExito('Movimiento eliminado');
   };
 
   // Filtrado de movimientos

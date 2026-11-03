@@ -9,6 +9,7 @@ import {
   fechaHoyISO,
 } from '../types/wallet';
 import type { DeudaCuota, MovimientoRecurrente } from '../types/wallet';
+import { confirmarAccion, toastExito } from '../lib/alerts';
 import {
   CalendarCheck,
   FileText,
@@ -245,13 +246,12 @@ export const PagosView: React.FC = () => {
   // ELIMINAR COMPROMISO DIRECTAMENTE
   const handleEliminarCompromiso = async (fila: FilaAgenda) => {
     if (!user) return;
-    if (
-      !window.confirm(
-        `¿Eliminar el compromiso "${fila.nombre}"? Se borrará de la agenda y de tus cronogramas.`
-      )
-    ) {
-      return;
-    }
+    const confirmado = await confirmarAccion({
+      title: '¿Eliminar compromiso?',
+      text: `Se borrará "${fila.nombre}" de la agenda y de tus cronogramas.`,
+      confirmButtonText: 'Sí, eliminar',
+    });
+    if (!confirmado) return;
 
     setProcesandoAccion(fila.id);
     try {
@@ -273,6 +273,7 @@ export const PagosView: React.FC = () => {
         await supabase.from('deudas').delete().eq('id', fila.deudaId).eq('user_id', user.id);
       }
       await recargarTodo();
+      toastExito(`"${fila.nombre}" eliminado`);
     } finally {
       setProcesandoAccion(null);
     }
@@ -400,7 +401,15 @@ export const PagosView: React.FC = () => {
 
   const handleAnularPagoAgenda = async (fila: FilaAgenda) => {
     if (!user || !fila.movimientoId) return;
-    if (!window.confirm('¿Anular este pago? Volverá a quedar pendiente.')) return;
+    const confirmado = await confirmarAccion({
+      title: '¿Anular este pago?',
+      text: 'Volverá a quedar pendiente y se retirará del historial pagado.',
+      confirmButtonText: 'Sí, anular',
+      isDanger: false,
+      icon: 'question',
+    });
+    if (!confirmado) return;
+
     setProcesandoAccion(fila.id);
     try {
       await supabase
@@ -409,6 +418,7 @@ export const PagosView: React.FC = () => {
         .eq('id', fila.movimientoId)
         .eq('user_id', user.id);
       await recargarTodo();
+      toastExito('Pago anulado');
     } finally {
       setProcesandoAccion(null);
     }
@@ -1156,23 +1166,25 @@ export const PagosView: React.FC = () => {
                             <button
                               type="button"
                               onClick={async () => {
-                                if (
-                                  window.confirm(
-                                    `¿Eliminar el cronograma de "${card.nombre}" y todos sus vencimientos?`
-                                  )
-                                ) {
-                                  await supabase
-                                    .from('movimientos_recurrentes')
-                                    .delete()
-                                    .eq('id', card.rec.id)
-                                    .eq('user_id', user!.id);
-                                  await supabase
-                                    .from('movimientos_agenda')
-                                    .delete()
-                                    .eq('recurrente_id', card.rec.id)
-                                    .eq('user_id', user!.id);
-                                  await recargarTodo();
-                                }
+                                const confirmado = await confirmarAccion({
+                                  title: '¿Eliminar cronograma?',
+                                  text: `Se borrará "${card.nombre}" y todos sus vencimientos generados.`,
+                                  confirmButtonText: 'Sí, eliminar',
+                                });
+                                if (!confirmado) return;
+
+                                await supabase
+                                  .from('movimientos_recurrentes')
+                                  .delete()
+                                  .eq('id', card.rec.id)
+                                  .eq('user_id', user!.id);
+                                await supabase
+                                  .from('movimientos_agenda')
+                                  .delete()
+                                  .eq('recurrente_id', card.rec.id)
+                                  .eq('user_id', user!.id);
+                                await recargarTodo();
+                                toastExito(`"${card.nombre}" eliminado`);
                               }}
                               title="Eliminar cronograma"
                               className="w-8 h-8 rounded-lg bg-transparent hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
@@ -1433,14 +1445,16 @@ export const PagosView: React.FC = () => {
                             <button
                               type="button"
                               onClick={async () => {
-                                if (
-                                  window.confirm(
-                                    `¿Eliminar el cronograma de "${d.nombre}" y todas sus cuotas?`
-                                  )
-                                ) {
-                                  await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
-                                  await recargarTodo();
-                                }
+                                const confirmado = await confirmarAccion({
+                                  title: '¿Eliminar cronograma?',
+                                  text: `Se borrará "${d.nombre}" y todas sus cuotas asociadas.`,
+                                  confirmButtonText: 'Sí, eliminar',
+                                });
+                                if (!confirmado) return;
+
+                                await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
+                                await recargarTodo();
+                                toastExito(`"${d.nombre}" eliminado`);
                               }}
                               title="Eliminar cronograma"
                               className="w-8 h-8 rounded-lg bg-transparent hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
