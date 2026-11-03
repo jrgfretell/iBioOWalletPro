@@ -82,6 +82,7 @@ export const PagosView: React.FC = () => {
   // Modal de Edición de Compromiso
   const [modalEdicionAbierto, setModalEdicionAbierto] = useState<boolean>(false);
   const [editTipo, setEditTipo] = useState<'recurrente' | 'deuda'>('recurrente');
+  const [editTipoMovimiento, setEditTipoMovimiento] = useState<'gasto' | 'ingreso'>('gasto');
   const [editId, setEditId] = useState<number | null>(null);
   const [editNombre, setEditNombre] = useState<string>('');
   const [editMonto, setEditMonto] = useState<string>('');
@@ -279,10 +280,39 @@ export const PagosView: React.FC = () => {
     }
   };
 
+  // ELIMINAR INGRESO PROGRAMADO
+  const handleEliminarIngresoProgramado = async (item: { id: number; descripcion: string }) => {
+    if (!user) return;
+    const confirmado = await confirmarAccion({
+      title: '¿Eliminar ingreso programado?',
+      text: `Se borrará "${item.descripcion}" y todas sus ocurrencias programadas.`,
+      confirmButtonText: 'Sí, eliminar',
+    });
+    if (!confirmado) return;
+
+    try {
+      await supabase
+        .from('movimientos_recurrentes')
+        .delete()
+        .eq('id', item.id)
+        .eq('user_id', user.id);
+      await supabase
+        .from('movimientos_agenda')
+        .delete()
+        .eq('recurrente_id', item.id)
+        .eq('user_id', user.id);
+      await recargarTodo();
+      toastExito(`"${item.descripcion}" eliminado`);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
   // ABRIR MODAL DE EDICIÓN
   const handleAbrirEdicion = (fila: FilaAgenda) => {
     if (fila.recurrenteRef) {
       setEditTipo('recurrente');
+      setEditTipoMovimiento(fila.recurrenteRef.tipo);
       setEditId(fila.recurrenteRef.id);
       setEditNombre(fila.recurrenteRef.descripcion);
       setEditMonto(String(fila.recurrenteRef.monto));
@@ -293,6 +323,7 @@ export const PagosView: React.FC = () => {
       const deuda = deudas.find((d) => d.id === fila.deudaId);
       if (deuda) {
         setEditTipo('deuda');
+        setEditTipoMovimiento('gasto');
         setEditId(deuda.id);
         setEditNombre(deuda.nombre);
         setEditMonto(String(fila.programado));
@@ -321,6 +352,7 @@ export const PagosView: React.FC = () => {
             monto: montoNum,
             dia_pago: diaNum,
             categoria_id: editCatId === '' ? null : Number(editCatId),
+            tipo: editTipoMovimiento,
           })
           .eq('id', editId)
           .eq('user_id', user.id);
@@ -336,6 +368,7 @@ export const PagosView: React.FC = () => {
       }
       await recargarTodo();
       setModalEdicionAbierto(false);
+      toastExito('Guardado con éxito');
     } finally {
       setGuardandoEdicion(false);
     }
@@ -538,6 +571,7 @@ export const PagosView: React.FC = () => {
           recibido,
           movimientoId: mov?.id,
           fecha: mov ? mov.fecha : `${prefijo}-${String(r.dia_pago).padStart(2, '0')}`,
+          categoriaId: r.categoria_id,
         };
       });
   }, [recurrentes, movimientos, ingresoAnio, ingresoMes]);
@@ -1133,6 +1167,7 @@ export const PagosView: React.FC = () => {
                               type="button"
                               onClick={() => {
                                 setEditTipo('recurrente');
+                                setEditTipoMovimiento(card.rec.tipo);
                                 setEditId(card.rec.id);
                                 setEditNombre(card.rec.descripcion);
                                 setEditMonto(String(card.rec.monto));
@@ -1150,6 +1185,7 @@ export const PagosView: React.FC = () => {
                               type="button"
                               onClick={() => {
                                 setEditTipo('recurrente');
+                                setEditTipoMovimiento(card.rec.tipo);
                                 setEditId(card.rec.id);
                                 setEditNombre(card.rec.descripcion);
                                 setEditMonto(String(card.rec.monto));
@@ -1429,6 +1465,7 @@ export const PagosView: React.FC = () => {
                               type="button"
                               onClick={() => {
                                 setEditTipo('deuda');
+                                setEditTipoMovimiento('gasto');
                                 setEditId(d.id);
                                 setEditNombre(d.nombre);
                                 setEditMonto(String(cuotasD[0]?.monto || 0));
@@ -1914,7 +1951,7 @@ export const PagosView: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <strong className="text-sm font-extrabold text-emerald-600">
+                        <strong className="text-sm font-extrabold text-emerald-600 mr-1">
                           +{formatearMoneda(item.monto)}
                         </strong>
                         {!item.recibido ? (
@@ -1933,8 +1970,9 @@ export const PagosView: React.FC = () => {
                                 fecha_pago: fechaHoyStr,
                               });
                               await recargarTodo();
+                              toastExito('Ingreso confirmado');
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
                           >
                             Confirmar
                           </button>
@@ -1949,13 +1987,41 @@ export const PagosView: React.FC = () => {
                                   .eq('id', item.movimientoId!)
                                   .eq('user_id', user!.id);
                                 await recargarTodo();
+                                toastExito('Ingreso desmarcado');
                               }}
-                              className="px-2.5 py-1 text-slate-400 hover:text-red-600 text-xs font-semibold cursor-pointer"
+                              className="px-2.5 py-1 text-slate-400 hover:text-amber-600 text-xs font-semibold cursor-pointer"
                             >
                               Anular
                             </button>
                           )
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditTipo('recurrente');
+                            setEditTipoMovimiento('ingreso');
+                            setEditId(item.id);
+                            setEditNombre(item.descripcion);
+                            setEditMonto(String(item.monto));
+                            setEditDia(String(item.dia));
+                            setEditCatId(item.categoriaId ?? '');
+                            setModalEdicionAbierto(true);
+                          }}
+                          title="Editar ingreso programado"
+                          className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center cursor-pointer transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarIngresoProgramado(item)}
+                          title="Eliminar ingreso programado"
+                          className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1973,7 +2039,13 @@ export const PagosView: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="text-base font-bold">Editar Compromiso</h3>
+              <h3 className="text-base font-bold">
+                {editTipo === 'recurrente'
+                  ? editTipoMovimiento === 'ingreso'
+                    ? 'Editar Ingreso Programado'
+                    : 'Editar Compromiso Continuo'
+                  : 'Editar Cronograma'}
+              </h3>
               <button
                 onClick={() => setModalEdicionAbierto(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
@@ -1983,9 +2055,41 @@ export const PagosView: React.FC = () => {
             </div>
 
             <form onSubmit={handleGuardarEdicion} className="p-5 space-y-4">
+              {editTipo === 'recurrente' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Tipo de programación
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditTipoMovimiento('ingreso')}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors border ${
+                        editTipoMovimiento === 'ingreso'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      + Ingreso programado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditTipoMovimiento('gasto')}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors border ${
+                        editTipoMovimiento === 'gasto'
+                          ? 'bg-rose-50 text-rose-700 border-rose-300 shadow-xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      - Gasto continuo
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nombre del compromiso
+                  Nombre
                 </label>
                 <input
                   type="text"
