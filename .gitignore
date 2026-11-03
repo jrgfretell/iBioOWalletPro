@@ -5,3 +5,6 @@
 .env.*
 node_modules/
 dist/
+client_secret_*.json
+*.credentials.json
+

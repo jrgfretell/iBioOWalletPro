@@ -89,8 +89,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex items-center gap-2 border-l border-slate-700 pl-2 sm:pl-3">
+              {user?.user_metadata?.avatar_url && (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt={user.user_metadata.full_name || 'Avatar'}
+                  className="w-6 h-6 rounded-full border border-teal-500/50 object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              )}
               <span className="text-xs text-slate-300 hidden sm:inline-block max-w-[150px] truncate">
-                {user?.email}
+                {user?.user_metadata?.full_name || user?.email}
               </span>
               <button
                 onClick={signOut}

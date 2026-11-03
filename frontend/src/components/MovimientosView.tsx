@@ -46,8 +46,8 @@ export const MovimientosView: React.FC = () => {
   const [guardando, setGuardando] = useState<boolean>(false);
 
   const mapaCategorias = useMemo(() => {
-    const map = new Map<number, { nombre: string; color: string }>();
-    categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color }));
+    const map = new Map<number, { nombre: string; color: string; icono: string }>();
+    categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color, icono: c.icono }));
     return map;
   }, [categorias]);
 
@@ -391,11 +391,8 @@ export const MovimientosView: React.FC = () => {
                             borderColor: `${catColor}35`,
                           }}
                         >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: catColor }}
-                          />
-                          {catNombre}
+                          <i className={`fas ${cat?.icono || 'fa-tag'} text-[10px]`}></i>
+                          <span>{catNombre}</span>
                         </span>
                       </div>
 

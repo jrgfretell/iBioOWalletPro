@@ -72,7 +72,23 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       if (resCat.data) {
-        setCategorias(resCat.data.map(c => ({ ...c, id: Number(c.id) })));
+        if (resCat.data.length === 0) {
+          const defaultCats = [
+            { user_id: user.id, nombre: 'Otros', color: '#7f8c8d', icono: 'fa-folder' },
+            { user_id: user.id, nombre: 'Servicios', color: '#3498db', icono: 'fa-bolt' },
+            { user_id: user.id, nombre: 'Alimentación', color: '#e67e22', icono: 'fa-utensils' },
+            { user_id: user.id, nombre: 'Transporte', color: '#2ecc71', icono: 'fa-car' },
+          ];
+          await supabase.from('categorias').insert(defaultCats);
+          const { data: recat } = await supabase
+            .from('categorias')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('id', { ascending: true });
+          setCategorias((recat || []).map(c => ({ ...c, id: Number(c.id) })));
+        } else {
+          setCategorias(resCat.data.map(c => ({ ...c, id: Number(c.id) })));
+        }
       }
 
       if (resSueldos.data) {

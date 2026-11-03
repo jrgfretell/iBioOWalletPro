@@ -1031,7 +1031,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             )}
 
             {/* CUADRÍCULA DE TARJETAS DE PROYECCIÓN POR MES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {proyeccionesVisibles.map((p) => {
                 const abierto = Boolean(mesesAbiertos[p.llave]);
                 const tieneDeficit = p.balanceFin < 0;
@@ -1042,7 +1042,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 return (
                   <div
                     key={p.llave}
-                    className={`rounded-2xl border p-4 transition-all shadow-xs flex flex-col justify-between ${
+                    className={`rounded-2xl border p-4 transition-all shadow-xs flex flex-col ${
                       p.esActual
                         ? 'border-teal-400 bg-teal-50/15 ring-1 ring-teal-400/30'
                         : tieneDeficit
