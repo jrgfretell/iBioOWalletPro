@@ -19,7 +19,6 @@ import {
   ChevronDown,
   ChevronRight,
   History,
-  DollarSign,
   Eye,
   X,
   PlusCircle,
@@ -73,8 +72,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     cuotas,
     pagosDeuda,
     actualizarMontoBase,
-    guardarSueldoMes,
-    guardarSueldoAnual,
   } = useWallet();
 
   const hoy = new Date();
@@ -91,34 +88,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [catMes, setCatMes] = useState<number>(mesHoy);
   const [catAnio, setCatAnio] = useState<number>(anioHoy);
 
-  // Estado para Configurador de Sueldos
-  const [sueldoAnio, setSueldoAnio] = useState<number>(anioHoy);
-  const [sueldoMes, setSueldoMes] = useState<number>(mesHoy);
-  const [modoSueldo, setModoSueldo] = useState<'quincenal' | 'mensual'>('quincenal');
-  const [inputSueldo15, setInputSueldo15] = useState<string>('0');
-  const [inputSueldo30, setInputSueldo30] = useState<string>('0');
-  const [aplicarRestoAnio, setAplicarRestoAnio] = useState<boolean>(false);
-  const [guardandoSueldo, setGuardandoSueldo] = useState<boolean>(false);
-  const [mensajeSueldo, setMensajeSueldo] = useState<string | null>(null);
-
   // Estado para Proyecciones (todas las tarjetas inician colapsadas)
   const [mostrarHistorico, setMostrarHistorico] = useState<boolean>(false);
   const [mesesAbiertos, setMesesAbiertos] = useState<Record<string, boolean>>({});
   const [modalDetalleMes, setModalDetalleMes] = useState<ProyeccionMesCalculada | null>(null);
-
-  // Sincronizar inputs de sueldo cuando cambia mes/año seleccionado o sueldos en BD
-  useEffect(() => {
-    const registro = sueldos.find((s) => s.anio === sueldoAnio && s.mes === sueldoMes);
-    const s15 = registro ? registro.sueldo_15 : 0;
-    const s30 = registro ? registro.sueldo_30 : 0;
-    setInputSueldo15(String(s15));
-    setInputSueldo30(String(s30));
-    if (s15 === 0 && s30 > 0) {
-      setModoSueldo('mensual');
-    } else {
-      setModoSueldo('quincenal');
-    }
-  }, [sueldoAnio, sueldoMes, sueldos]);
 
   useEffect(() => {
     setInputBase(String(montoBase));
@@ -140,29 +113,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     await actualizarMontoBase(val);
     setGuardandoBase(false);
     setEditandoBase(false);
-  };
-
-  // Guardar sueldo del mes
-  const handleGuardarSueldo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const s15 = modoSueldo === 'mensual' ? 0 : Math.max(0, parseFloat(inputSueldo15) || 0);
-    const s30 = Math.max(0, parseFloat(inputSueldo30) || 0);
-    setGuardandoSueldo(true);
-    let ok = false;
-    if (aplicarRestoAnio) {
-      ok = await guardarSueldoAnual(sueldoAnio, sueldoMes, s15, s30);
-    } else {
-      ok = await guardarSueldoMes(sueldoAnio, sueldoMes, s15, s30);
-    }
-    setGuardandoSueldo(false);
-    if (ok) {
-      setMensajeSueldo(
-        aplicarRestoAnio
-          ? `Sueldos guardados de ${NOMBRES_MESES[sueldoMes]} a Diciembre ${sueldoAnio}`
-          : `Sueldo de ${NOMBRES_MESES[sueldoMes]} ${sueldoAnio} actualizado`
-      );
-      setTimeout(() => setMensajeSueldo(null), 3000);
-    }
   };
 
   // Calcular Próximos Pagos Pendientes (Cuotas de deudas + Movimientos pendientes)
@@ -496,11 +446,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     setMesesAbiertos(nuevoEstado);
   };
 
-  const ultimoDiaSueldoSeleccionado = obtenerUltimoDiaMes(sueldoAnio, sueldoMes);
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
-      {/* FILA SUPERIOR: Columna Izquierda (Saldo + Próximos Pagos + Gastos Categoría) y Columna Derecha (Sueldos + Proyecciones) */}
+      {/* FILA SUPERIOR: Columna Izquierda (Saldo + Próximos Pagos + Gastos Categoría) y Columna Derecha (Proyecciones) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* COLUMNA IZQUIERDA (4 cols en desktop) */}
         <div className="lg:col-span-4 space-y-6">
@@ -740,166 +689,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA (8 cols en desktop): SUELDOS + PROYECCIÓN MENSUAL */}
+        {/* COLUMNA DERECHA (8 cols en desktop): PROYECCIÓN MENSUAL */}
         <div className="lg:col-span-8 space-y-6">
-          {/* TARJETA 4: CONFIGURACIÓN DE SUELDOS E INGRESOS FIJOS DEL MES */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Panorama de Sueldos Mensuales
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Configura tu ingreso quincenal (día 15) y/o de fin de mes (día {ultimoDiaSueldoSeleccionado})
-                  </p>
-                </div>
-              </div>
-
-              {/* Píldoras de modalidad */}
-              <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setModoSueldo('quincenal')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    modoSueldo === 'quincenal'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  2 Pagos (15 y Fin de Mes)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModoSueldo('mensual')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    modoSueldo === 'mensual'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  1 Pago Mensual
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleGuardarSueldo} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                {/* Selector Mes */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                    Mes
-                  </label>
-                  <select
-                    value={sueldoMes}
-                    onChange={(e) => setSueldoMes(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-500"
-                  >
-                    {NOMBRES_MESES.map((m, idx) => (
-                      <option key={idx} value={idx}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Selector Año */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                    Año
-                  </label>
-                  <select
-                    value={sueldoAnio}
-                    onChange={(e) => setSueldoAnio(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-500"
-                  >
-                    {[anioHoy - 1, anioHoy, anioHoy + 1, anioHoy + 2].map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sueldo Día 15 */}
-                {modoSueldo === 'quincenal' && (
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                      Sueldo Quincena (Día 15)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                        S/.
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={inputSueldo15}
-                        onChange={(e) => setInputSueldo15(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-teal-500"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Sueldo Fin de Mes */}
-                <div className={modoSueldo === 'mensual' ? 'md:col-span-2' : ''}>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
-                    Sueldo Fin de Mes (Día {ultimoDiaSueldoSeleccionado})
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                      S/.
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={inputSueldo30}
-                      onChange={(e) => setInputSueldo30(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-teal-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                <label className="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={aplicarRestoAnio}
-                    onChange={(e) => setAplicarRestoAnio(e.target.checked)}
-                    className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-                  />
-                  <span>
-                    Aplicar estos montos desde <strong>{NOMBRES_MESES[sueldoMes]}</strong> hasta{' '}
-                    <strong>Diciembre {sueldoAnio}</strong>
-                  </span>
-                </label>
-
-                <div className="flex items-center gap-3">
-                  {mensajeSueldo && (
-                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {mensajeSueldo}
-                    </span>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={guardandoSueldo}
-                    className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-                  >
-                    {guardandoSueldo ? 'Guardando...' : 'Guardar Sueldo'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-
           {/* TARJETA 5: PROYECCIÓN MENSUAL ESTIMADA */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { WalletProvider, useWallet } from '../context/WalletContext';
+import { WalletProvider } from '../context/WalletContext';
 import { Navbar } from './Navbar';
 import { DashboardView } from './DashboardView';
 import { MovimientosView } from './MovimientosView';
@@ -9,18 +9,15 @@ import type { ActiveTab } from '../types/wallet';
 
 const WalletShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const { recargarTodo, loading } = useWallet();
 
   return (
-    <div className="min-h-screen bg-slate-100/80 text-slate-800">
+    <div className="min-h-screen bg-slate-100/80 text-slate-800 overflow-x-hidden w-full">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onRefresh={recargarTodo}
-        loading={loading}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
         {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
         {activeTab === 'movimientos' && <MovimientosView />}
         {activeTab === 'pagos' && <PagosView />}

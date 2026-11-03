@@ -8,21 +8,16 @@ import {
   CalendarClock,
   Tags,
   LogOut,
-  RefreshCw,
 } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
-  onRefresh: () => void;
-  loading: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
-  onRefresh,
-  loading,
 }) => {
   const { user, signOut } = useAuth();
 
@@ -74,21 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right User Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={onRefresh}
-              disabled={loading}
-              title="Sincronizar datos con Supabase"
-              className="p-2 rounded-xl text-slate-400 hover:text-teal-400 hover:bg-slate-800 transition-colors cursor-pointer"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-teal-400' : ''}`} />
-            </button>
-
-            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Cloud Sync</span>
-            </div>
-
-            <div className="flex items-center gap-2 border-l border-slate-700 pl-2 sm:pl-3">
+            <div className="flex items-center gap-2">
               {user?.user_metadata?.avatar_url && (
                 <img
                   src={user.user_metadata.avatar_url}

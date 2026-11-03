@@ -762,9 +762,9 @@ export const PagosView: React.FC = () => {
   }, [recurrentes, categorias, movimientos, hoy, fechaHoyStr]);
 
   return (
-    <div className="space-y-6 pb-20 md:pb-8">
+    <div className="space-y-6 pb-20 md:pb-8 w-full min-w-0">
       {/* Cabecera Principal */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-black uppercase tracking-wider text-teal-600 mb-0.5">
             TU AGENDA FINANCIERA
@@ -780,7 +780,7 @@ export const PagosView: React.FC = () => {
             setModalTipoCrear('continuo');
             setModalNuevoProgramado(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start sm:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo pago programado</span>
@@ -788,42 +788,44 @@ export const PagosView: React.FC = () => {
       </div>
 
       {/* Píldoras de Navegación Exactas del PHP: Agenda mensual | Cronogramas | Ingresos programados */}
-      <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-2xl w-fit border border-slate-300/60 shadow-xs">
-        <button
-          onClick={() => setSubTab('agenda')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            subTab === 'agenda'
-              ? 'bg-teal-600 text-white shadow-xs'
-              : 'text-slate-700 hover:text-slate-900'
-          }`}
-        >
-          <CalendarCheck className="w-4 h-4" />
-          <span>Agenda mensual</span>
-        </button>
+      <div className="w-full overflow-x-auto pb-1 scrollbar-none">
+        <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-200/80 rounded-2xl border border-slate-300/60 shadow-xs min-w-max">
+          <button
+            onClick={() => setSubTab('agenda')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              subTab === 'agenda'
+                ? 'bg-teal-600 text-white shadow-xs'
+                : 'text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            <CalendarCheck className="w-4 h-4 shrink-0" />
+            <span>Agenda mensual</span>
+          </button>
 
-        <button
-          onClick={() => setSubTab('cronogramas')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            subTab === 'cronogramas'
-              ? 'bg-teal-600 text-white shadow-xs'
-              : 'text-slate-700 hover:text-slate-900'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>Cronogramas</span>
-        </button>
+          <button
+            onClick={() => setSubTab('cronogramas')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              subTab === 'cronogramas'
+                ? 'bg-teal-600 text-white shadow-xs'
+                : 'text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            <FileText className="w-4 h-4 shrink-0" />
+            <span>Cronogramas</span>
+          </button>
 
-        <button
-          onClick={() => setSubTab('ingresos')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            subTab === 'ingresos'
-              ? 'bg-teal-600 text-white shadow-xs'
-              : 'text-slate-700 hover:text-slate-900'
-          }`}
-        >
-          <Wallet className="w-4 h-4" />
-          <span>Ingresos programados</span>
-        </button>
+          <button
+            onClick={() => setSubTab('ingresos')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              subTab === 'ingresos'
+                ? 'bg-teal-600 text-white shadow-xs'
+                : 'text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            <Wallet className="w-4 h-4 shrink-0" />
+            <span>Ingresos programados</span>
+          </button>
+        </div>
       </div>
 
       {/* ────────────────────────────────────────────────────────────────────────── */}
@@ -918,40 +920,40 @@ export const PagosView: React.FC = () => {
           </div>
 
           {/* 4 Tarjetas KPI: Programado del mes, Pagado de este mes, Pendiente, Vencido */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
                 Programado del mes
               </span>
-              <strong className="text-xl font-black text-slate-900 block mt-0.5">
+              <strong className="text-lg sm:text-xl font-black text-slate-900 block mt-0.5 truncate">
                 {formatearMoneda(resumenAgenda.programado)}
               </strong>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
                 Pagado de este mes
               </span>
-              <strong className="text-xl font-black text-emerald-600 block mt-0.5">
+              <strong className="text-lg sm:text-xl font-black text-emerald-600 block mt-0.5 truncate">
                 {formatearMoneda(resumenAgenda.pagado)}
               </strong>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
                 Pendiente
               </span>
-              <strong className="text-xl font-black text-amber-600 block mt-0.5">
+              <strong className="text-lg sm:text-xl font-black text-amber-600 block mt-0.5 truncate">
                 {formatearMoneda(resumenAgenda.pendiente)}
               </strong>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
                 Vencido
               </span>
               <strong
-                className={`text-xl font-black block mt-0.5 ${
+                className={`text-lg sm:text-xl font-black block mt-0.5 truncate ${
                   resumenAgenda.vencido > 0 ? 'text-red-600' : 'text-slate-900'
                 }`}
               >
@@ -965,9 +967,9 @@ export const PagosView: React.FC = () => {
           </p>
 
           {/* Tabla de la Agenda con Botones Directos de Registrar Pago, Editar y Eliminar */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left text-xs min-w-[700px]">
                 <thead className="bg-slate-50/80 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4">Vencimiento</th>
@@ -1256,15 +1258,15 @@ export const PagosView: React.FC = () => {
                       className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden"
                     >
                       {/* Cabecera de la Tarjeta estilo PHP Schedule-Card */}
-                      <div className="p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="p-4 sm:p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <span className="text-[10px] font-black uppercase tracking-wider text-teal-700">
                             HASTA CANCELAR
                           </span>
-                          <h2 className="text-xl font-bold text-slate-900 mt-0.5 mb-1.5">
+                          <h2 className="text-xl font-bold text-slate-900 mt-0.5 mb-1.5 break-words">
                             {card.nombre}
                           </h2>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500">
                             <span>{card.categoriaNombre}</span>
                             <span>·</span>
                             <span>Recibido: S/ 0.00</span>
@@ -1276,17 +1278,17 @@ export const PagosView: React.FC = () => {
                         </div>
 
                         {/* Lateral con Pendiente y Herramientas (Sliders, Editar, Eliminar) */}
-                        <div className="flex items-start gap-4 shrink-0">
-                          <div className="text-right">
+                        <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 w-full md:w-auto">
+                          <div className="text-left md:text-right">
                             <span className="block text-[11px] text-slate-400 font-semibold mb-0.5">
                               Pendiente del período
                             </span>
-                            <strong className="block text-2xl font-black text-slate-900">
+                            <strong className="block text-xl sm:text-2xl font-black text-slate-900">
                               {formatearMoneda(card.pendientePeriodo)}
                             </strong>
                           </div>
 
-                          <div className="flex items-center gap-1.5 pl-4 border-l border-slate-200">
+                          <div className="flex items-center gap-1.5 pl-3 sm:pl-4 border-l border-slate-200">
                             <button
                               type="button"
                               onClick={() => abrirModalEdicionRecurrente(card.rec)}
@@ -1338,7 +1340,7 @@ export const PagosView: React.FC = () => {
                       </div>
 
                       {/* Resumen de Progreso y Despliegue */}
-                      <div className="px-6 pb-4">
+                      <div className="px-4 sm:px-6 pb-4">
                         <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
                           <span>
                             <strong>{card.pagosRealizados} pagos realizados</strong> ·{' '}
@@ -1390,8 +1392,8 @@ export const PagosView: React.FC = () => {
 
                       {/* Tabla de los 13 Vencimientos (Idéntica a la Foto 2) */}
                       {expandida && (
-                        <div className="border-t border-slate-200 overflow-x-auto">
-                          <table className="w-full text-left text-xs">
+                        <div className="border-t border-slate-200 overflow-x-auto w-full">
+                          <table className="w-full text-left text-xs min-w-[550px]">
                             <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
                               <tr>
                                 <th className="py-2.5 px-4">N.°</th>
@@ -1539,13 +1541,13 @@ export const PagosView: React.FC = () => {
                       id={`deuda-${d.id}`}
                       className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden"
                     >
-                      <div className="p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="p-4 sm:p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <span className="text-[10px] font-black uppercase tracking-wider text-teal-700">
                             CANTIDAD DEFINIDA ({cuotasD.length} CUOTAS)
                           </span>
-                          <h2 className="text-xl font-bold text-slate-900 mt-0.5 mb-1.5">{d.nombre}</h2>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          <h2 className="text-xl font-bold text-slate-900 mt-0.5 mb-1.5 break-words">{d.nombre}</h2>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500">
                             <span>{categorias.find((c) => c.id === d.categoria_id)?.nombre || 'General'}</span>
                             <span>·</span>
                             <span>Recibido: {formatearMoneda(d.monto_recibido)}</span>
@@ -1556,17 +1558,17 @@ export const PagosView: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-start gap-4 shrink-0">
-                          <div className="text-right">
+                        <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 w-full md:w-auto">
+                          <div className="text-left md:text-right">
                             <span className="block text-[11px] text-slate-400 font-semibold mb-0.5">
                               Pendiente total
                             </span>
-                            <strong className="block text-2xl font-black text-slate-900">
+                            <strong className="block text-xl sm:text-2xl font-black text-slate-900">
                               {formatearMoneda(totalPactado - totalAbonado)}
                             </strong>
                           </div>
 
-                          <div className="flex items-center gap-1.5 pl-4 border-l border-slate-200">
+                          <div className="flex items-center gap-1.5 pl-3 sm:pl-4 border-l border-slate-200">
                             <button
                               type="button"
                               onClick={() => handleAjustarCuotasFinDeMes(d.id, d.nombre)}
@@ -1617,7 +1619,7 @@ export const PagosView: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="px-6 pb-4">
+                      <div className="px-4 sm:px-6 pb-4">
                         <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
                           <span>
                             <strong>
@@ -1656,8 +1658,8 @@ export const PagosView: React.FC = () => {
                       </div>
 
                       {expandida && (
-                        <div className="border-t border-slate-200 overflow-x-auto">
-                          <table className="w-full text-left text-xs">
+                        <div className="border-t border-slate-200 overflow-x-auto w-full">
+                          <table className="w-full text-left text-xs min-w-[550px]">
                             <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
                               <tr>
                                 <th className="py-2.5 px-4">Cuota</th>
@@ -1816,13 +1818,13 @@ export const PagosView: React.FC = () => {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {subTab === 'ingresos' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between min-w-0">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                   Saldo Inicial Base
                 </span>
-                <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                <strong className="text-lg sm:text-xl font-black text-slate-900 block mt-0.5 truncate">
                   {formatearMoneda(montoBase)}
                 </strong>
               </div>
@@ -1855,49 +1857,49 @@ export const PagosView: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between min-w-0">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                   Sueldo de {NOMBRES_MESES[ingresoMes]}
                 </span>
-                <strong className="text-xl font-black text-emerald-600 block mt-0.5">
+                <strong className="text-lg sm:text-xl font-black text-emerald-600 block mt-0.5 truncate">
                   {formatearMoneda(totalSueldoMesIngresos)}
                 </strong>
               </div>
               <div className="mt-2">
-                <span className="text-[11px] font-semibold text-slate-500">
+                <span className="text-[11px] font-semibold text-slate-500 truncate block">
                   {totalSueldoMesIngresos > 0 ? ingresoModo : 'Sin sueldo'}
                 </span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between min-w-0">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                   Otros Ingresos ({NOMBRES_MESES[ingresoMes]})
                 </span>
-                <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                <strong className="text-lg sm:text-xl font-black text-slate-900 block mt-0.5 truncate">
                   {formatearMoneda(otrosIngresosMes.reduce((acc, i) => acc + i.monto, 0))}
                 </strong>
               </div>
               <div className="mt-2">
-                <span className="text-[11px] font-semibold text-slate-500">
+                <span className="text-[11px] font-semibold text-slate-500 truncate block">
                   {otrosIngresosMes.length} programado(s)
                 </span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between min-w-0">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                   Sueldos en el Año {ingresoAnio}
                 </span>
-                <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                <strong className="text-lg sm:text-xl font-black text-slate-900 block mt-0.5 truncate">
                   {formatearMoneda(totalSueldoAnioIngresos)}
                 </strong>
               </div>
               <div className="mt-2">
-                <span className="text-[11px] font-semibold text-slate-500">
+                <span className="text-[11px] font-semibold text-slate-500 truncate block">
                   {mesesConfiguradosAnio} de 12 meses configurados
                 </span>
               </div>
