@@ -194,3 +194,4 @@ export const Auth: React.FC = () => {
     </div>
   );
 };
+
