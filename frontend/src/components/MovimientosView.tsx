@@ -1,0 +1,602 @@
+import React, { useState, useMemo } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { useWallet } from '../context/WalletContext';
+import {
+  NOMBRES_MESES,
+  formatearMoneda,
+  fechaHoyISO,
+} from '../types/wallet';
+import type { MovimientoAgenda } from '../types/wallet';
+import {
+  Plus,
+  Search,
+  Filter,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  X,
+  FileText,
+} from 'lucide-react';
+
+export const MovimientosView: React.FC = () => {
+  const { user } = useAuth();
+  const { movimientos, categorias, recargarTodo } = useWallet();
+
+  const hoy = new Date();
+  const [filtroMes, setFiltroMes] = useState<number>(hoy.getMonth()); // -1 = Todos
+  const [filtroAnio, setFiltroAnio] = useState<number>(hoy.getFullYear()); // -1 = Todos
+  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'ingreso' | 'gasto'>('todos');
+  const [filtroCategoria, setFiltroCategoria] = useState<number>(-1);
+  const [busqueda, setBusqueda] = useState<string>('');
+
+  // Estado del formulario / modal de creación o edición
+  const [modalAbierto, setModalAbierto] = useState<boolean>(false);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [tipo, setTipo] = useState<'gasto' | 'ingreso'>('gasto');
+  const [descripcion, setDescripcion] = useState<string>('');
+  const [monto, setMonto] = useState<string>('');
+  const [fecha, setFecha] = useState<string>(fechaHoyISO());
+  const [categoriaId, setCategoriaId] = useState<number | ''>('');
+  const [pagoConfirmado, setPagoConfirmado] = useState<boolean>(true);
+  const [guardando, setGuardando] = useState<boolean>(false);
+
+  const mapaCategorias = useMemo(() => {
+    const map = new Map<number, { nombre: string; color: string }>();
+    categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color }));
+    return map;
+  }, [categorias]);
+
+  const abrirNuevo = (tipoInicial: 'gasto' | 'ingreso' = 'gasto') => {
+    setEditandoId(null);
+    setTipo(tipoInicial);
+    setDescripcion('');
+    setMonto('');
+    setFecha(fechaHoyISO());
+    setCategoriaId(categorias[0]?.id ?? '');
+    setPagoConfirmado(true);
+    setModalAbierto(true);
+  };
+
+  const abrirEdicion = (m: MovimientoAgenda) => {
+    setEditandoId(m.id);
+    setTipo(m.tipo);
+    setDescripcion(m.descripcion);
+    setMonto(String(m.monto));
+    setFecha(m.fecha);
+    setCategoriaId(m.categoria_id ?? (categorias[0]?.id ?? ''));
+    setPagoConfirmado(m.pago_confirmado);
+    setModalAbierto(true);
+  };
+
+  const handleGuardar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const montoNum = parseFloat(monto);
+    if (!descripcion.trim() || isNaN(montoNum) || montoNum <= 0 || !fecha) return;
+
+    setGuardando(true);
+    try {
+      const payload = {
+        user_id: user.id,
+        tipo,
+        descripcion: descripcion.trim(),
+        monto: montoNum,
+        fecha,
+        categoria_id: categoriaId === '' ? null : Number(categoriaId),
+        pago_confirmado: pagoConfirmado,
+        fecha_pago: pagoConfirmado ? fecha : null,
+      };
+
+      if (editandoId) {
+        await supabase
+          .from('movimientos_agenda')
+          .update(payload)
+          .eq('id', editandoId)
+          .eq('user_id', user.id);
+      } else {
+        await supabase.from('movimientos_agenda').insert(payload);
+      }
+
+      await recargarTodo();
+      setModalAbierto(false);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const handleToggleConfirmado = async (m: MovimientoAgenda) => {
+    if (!user) return;
+    const nuevoEstado = !m.pago_confirmado;
+    await supabase
+      .from('movimientos_agenda')
+      .update({
+        pago_confirmado: nuevoEstado,
+        fecha_pago: nuevoEstado ? fechaHoyISO() : null,
+      })
+      .eq('id', m.id)
+      .eq('user_id', user.id);
+    await recargarTodo();
+  };
+
+  const handleEliminar = async (id: number) => {
+    if (!user) return;
+    if (!window.confirm('¿Deseas eliminar este movimiento permanentemente?')) return;
+    await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
+    await recargarTodo();
+  };
+
+  // Filtrado de movimientos
+  const movimientosFiltrados = useMemo(() => {
+    return movimientos.filter((m) => {
+      if (!m.fecha) return false;
+      const [y, month] = m.fecha.split('-').map(Number);
+      const mIdx = month - 1;
+
+      if (filtroAnio !== -1 && y !== filtroAnio) return false;
+      if (filtroMes !== -1 && mIdx !== filtroMes) return false;
+      if (filtroTipo !== 'todos' && m.tipo !== filtroTipo) return false;
+      if (filtroCategoria !== -1 && m.categoria_id !== filtroCategoria) return false;
+      if (
+        busqueda.trim() &&
+        !m.descripcion.toLowerCase().includes(busqueda.trim().toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [movimientos, filtroAnio, filtroMes, filtroTipo, filtroCategoria, busqueda]);
+
+  // Resumen del periodo filtrado
+  const resumenPeriodo = useMemo(() => {
+    let ingresos = 0;
+    let gastos = 0;
+    movimientosFiltrados.forEach((m) => {
+      if (m.tipo === 'ingreso') ingresos += m.monto;
+      else gastos += m.monto;
+    });
+    return {
+      ingresos,
+      gastos,
+      balance: ingresos - gastos,
+    };
+  }, [movimientosFiltrados]);
+
+  const aniosDisponibles = useMemo(() => {
+    const set = new Set<number>([
+      hoy.getFullYear() - 1,
+      hoy.getFullYear(),
+      hoy.getFullYear() + 1,
+    ]);
+    movimientos.forEach((m) => {
+      if (m.fecha) {
+        const y = Number(m.fecha.split('-')[0]);
+        if (!isNaN(y)) set.add(y);
+      }
+    });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [movimientos, hoy]);
+
+  return (
+    <div className="space-y-6 pb-20 md:pb-8">
+      {/* Cabecera y botones de acción rápida */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900">Historial de Movimientos</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Registra y administra todos tus ingresos y gastos sincronizados en Supabase
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => abrirNuevo('ingreso')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+          >
+            <ArrowUpCircle className="w-4 h-4" />
+            <span>+ Ingreso</span>
+          </button>
+          <button
+            onClick={() => abrirNuevo('gasto')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Gasto</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tarjetas de resumen del filtro actual */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Ingresos del Periodo
+            </span>
+            <div className="text-xl font-black text-emerald-600 mt-0.5">
+              +{formatearMoneda(resumenPeriodo.ingresos)}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <ArrowUpCircle className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Gastos del Periodo
+            </span>
+            <div className="text-xl font-black text-red-600 mt-0.5">
+              -{formatearMoneda(resumenPeriodo.gastos)}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+            <ArrowDownCircle className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Flujo Neto Filtrado
+            </span>
+            <div
+              className={`text-xl font-black mt-0.5 ${
+                resumenPeriodo.balance < 0 ? 'text-red-600' : 'text-slate-900'
+              }`}
+            >
+              {formatearMoneda(resumenPeriodo.balance)}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+            <FileText className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de filtros */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+          <Filter className="w-3.5 h-3.5 text-teal-600" />
+          <span>Filtrar Movimientos</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Búsqueda */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar descripción..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          {/* Mes */}
+          <select
+            value={filtroMes}
+            onChange={(e) => setFiltroMes(Number(e.target.value))}
+            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-500"
+          >
+            <option value={-1}>Todos los meses</option>
+            {NOMBRES_MESES.map((m, idx) => (
+              <option key={idx} value={idx}>
+                {m}
+              </option>
+            ))}
+          </select>
+
+          {/* Año */}
+          <select
+            value={filtroAnio}
+            onChange={(e) => setFiltroAnio(Number(e.target.value))}
+            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-500"
+          >
+            <option value={-1}>Todos los años</option>
+            {aniosDisponibles.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+
+          {/* Tipo */}
+          <select
+            value={filtroTipo}
+            onChange={(e) => setFiltroTipo(e.target.value as 'todos' | 'ingreso' | 'gasto')}
+            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-500"
+          >
+            <option value="todos">Todos los tipos</option>
+            <option value="gasto">Solo Gastos</option>
+            <option value="ingreso">Solo Ingresos</option>
+          </select>
+
+          {/* Categoría */}
+          <select
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(Number(e.target.value))}
+            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-500"
+          >
+            <option value={-1}>Todas las categorías</option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Lista de Movimientos */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        {movimientosFiltrados.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <p className="text-sm font-semibold text-slate-500">
+              No se encontraron movimientos para los filtros seleccionados.
+            </p>
+            <button
+              onClick={() => abrirNuevo('gasto')}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:underline cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Registrar tu primer movimiento</span>
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {movimientosFiltrados.map((m) => {
+              const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
+              const catNombre = cat ? cat.nombre : 'Otros';
+              const catColor = cat ? cat.color : '#7f8c8d';
+              const [y, month, d] = m.fecha.split('-');
+
+              return (
+                <div
+                  key={m.id}
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    {/* Indicador de fecha */}
+                    <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200/70 flex flex-col items-center justify-center shrink-0">
+                      <span className="text-xs font-black text-slate-800 leading-none">{d}</span>
+                      <span className="text-[10px] font-semibold uppercase text-slate-500 mt-0.5">
+                        {NOMBRES_MESES[Number(month) - 1]?.slice(0, 3)}
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-slate-900 truncate">
+                          {m.descripcion}
+                        </span>
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border"
+                          style={{
+                            backgroundColor: `${catColor}15`,
+                            color: catColor,
+                            borderColor: `${catColor}35`,
+                          }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: catColor }}
+                          />
+                          {catNombre}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400">
+                        <span>
+                          {d}/{month}/{y}
+                        </span>
+                        <span>·</span>
+                        <button
+                          onClick={() => handleToggleConfirmado(m)}
+                          className={`inline-flex items-center gap-1 font-semibold cursor-pointer ${
+                            m.pago_confirmado ? 'text-emerald-600' : 'text-amber-600'
+                          }`}
+                          title="Clic para cambiar entre Confirmado y Pendiente"
+                        >
+                          {m.pago_confirmado ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Confirmado</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3" />
+                              <span>Pendiente</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Monto y Acciones */}
+                  <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <span
+                      className={`text-sm font-black ${
+                        m.tipo === 'ingreso' ? 'text-emerald-600' : 'text-red-600'
+                      }`}
+                    >
+                      {m.tipo === 'ingreso' ? '+' : '-'}
+                      {formatearMoneda(m.monto)}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => abrirEdicion(m)}
+                        className="p-2 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEliminar(m.id)}
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* MODAL PARA CREAR / EDITAR MOVIMIENTO */}
+      {modalAbierto && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+              <h3 className="text-base font-bold">
+                {editandoId ? 'Editar Movimiento' : 'Nuevo Movimiento'}
+              </h3>
+              <button
+                onClick={() => setModalAbierto(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardar} className="p-5 space-y-4">
+              {/* Selector de Tipo */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setTipo('gasto')}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    tipo === 'gasto'
+                      ? 'bg-red-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Gasto (-)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipo('ingreso')}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    tipo === 'ingreso'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Ingreso (+)
+                </button>
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Descripción
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder="Ej. Supermercado, Cena, Bono..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              {/* Monto y Fecha */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Monto (S/.)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              {/* Categoría */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Categoría
+                </label>
+                <select
+                  value={categoriaId}
+                  onChange={(e) =>
+                    setCategoriaId(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-teal-500"
+                >
+                  <option value="">Sin categoría</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Estado confirmado */}
+              <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={pagoConfirmado}
+                  onChange={(e) => setPagoConfirmado(e.target.checked)}
+                  className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="text-xs font-semibold text-slate-700">
+                  Movimiento ya realizado / pagado
+                </span>
+              </label>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalAbierto(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={guardando}
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm cursor-pointer"
+                >
+                  {guardando ? 'Guardando...' : editandoId ? 'Guardar Cambios' : 'Registrar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
