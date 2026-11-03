@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Billetera Virtual</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome para Iconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Chart.js para Reportes Visuales -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="styles/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container my-4">
+        
+        <section id="proximas-cuotas" class="card card-custom upcoming-card mb-4" aria-label="Próximos pagos programados"></section>
+        <div class="row dashboard-layout">
+            <!-- COLUMNA IZQUIERDA: Balance y Reportes Visuales (Gráficos) -->
+            <div class="col-lg-4">
+                
+                <!-- Balance Actual -->
+                <div class="card card-balance dashboard-balance-card p-4 mb-4 text-center">
+                    <p id="txt-titulo-saldo" class="text-uppercase mb-1 small tracking-wider" style="opacity: 0.8;">Saldo de referencia</p>
+                    <h1 class="display-5 fw-bold mb-3">S/. <span id="txt-balance-actual">0.00</span></h1>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-sm btn-light btn-outline-secondary" onclick="cambiarMontoBase()">
+                            <i class="fas fa-edit me-1"></i>Actualizar saldo real
+                        </button>
+                    </div>
+                    <p id="txt-ayuda-saldo" class="small mt-3 mb-0"></p>
+                </div>
+
+                <!-- Gráfico de Gastos por Categoría -->
+                <div class="card card-custom dashboard-category-card">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><i class="fas fa-chart-pie me-2"></i>Gastos por Categoría</span>
+                        <div class="d-flex align-items-center gap-1">
+                            <select id="grafico-mes" class="form-select form-select-sm" style="width: 100px; font-size: 0.75rem;" onchange="actualizarReporteGastos()">
+                                <option value="0">Ene</option>
+                                <option value="1">Feb</option>
+                                <option value="2">Mar</option>
+                                <option value="3">Abr</option>
+                                <option value="4">May</option>
+                                <option value="5">Jun</option>
+                                <option value="6">Jul</option>
+                                <option value="7">Ago</option>
+                                <option value="8">Sep</option>
+                                <option value="9">Oct</option>
+                                <option value="10">Nov</option>
+                                <option value="11">Dic</option>
+                            </select>
+                            <select id="grafico-anio" class="form-select form-select-sm" style="width: 80px; font-size: 0.75rem;" onchange="actualizarReporteGastos()">
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body text-center">
+                        <div style="position: relative; max-width: 220px; height: 220px; margin: 0 auto 15px auto;">
+                            <canvas id="chartGastos"></canvas>
+                            <!-- Texto central dinámico en la dona -->
+                            <div id="chart-total-gastos-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                <div style="font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #888; letter-spacing: 0.5px; line-height: 1.1;">Gastado</div>
+                                <div id="chart-total-gastos-valor" style="font-size: 1.1rem; font-weight: 800; color: #2c3e50; margin-top: 1px;">S/. 0.00</div>
+                            </div>
+                        </div>
+                        <div id="chart-leyenda" class="d-flex flex-wrap gap-2 justify-content-center mt-3">
+                            <!-- Dinámico -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-custom dashboard-flow-card">
+                    <div class="card-header-custom">
+                        <i class="fas fa-scale-balanced me-2"></i>Disponible vs. gastos
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">El disponible incluye el saldo que queda del mes anterior más los ingresos del mes.</p>
+                        <div class="income-expense-chart-wrap">
+                            <canvas id="chartFlujoMensual"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLUMNA DERECHA: Proyecciones Financieras -->
+            <div class="col-lg-8">
+
+                <!-- Panorama financiero -->
+                <div class="card card-custom dashboard-overview">
+                    <div class="card-header-custom">
+                        <i class="fas fa-chart-line me-2"></i>Panorama financiero
+                    </div>
+                    <div class="card-body">
+                        <div id="resumen-proyecciones" class="row row-cols-1 row-cols-md-3 g-2 mb-3">
+                            <!-- Dinámico por JS -->
+                        </div>
+                        <div id="alertas-proyecciones" class="mb-3" aria-live="polite">
+                            <!-- Dinámico por JS -->
+                        </div>
+                        <div class="projection-chart-wrap">
+                            <canvas id="chartProyeccion"></canvas>
+                        </div>
+                        <p class="text-muted small text-center mb-0 mt-2">Saldo estimado al cierre de cada mes.</p>
+                    </div>
+                </div>
+                
+                <!-- Proyecciones Financieras -->
+                <div class="card card-custom dashboard-projections-card">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><i class="fas fa-chart-line me-2"></i>Proyección Mensual Estimada</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <button id="alternar-tarjetas" type="button" class="btn btn-sm btn-outline-secondary">Contraer todos</button>
+                            <button id="btn-toggle-historico" class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleMostrarHistorico()" style="font-size: 0.75rem;">
+                                <i class="fas fa-history me-1"></i>Ver meses pasados
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">Esta proyección calcula de forma acumulada tu balance inicial aplicando los sueldos, los movimientos realizados y los pagos programados pendientes, sin duplicar los pagos confirmados.</p>
+                        <div class="row row-cols-1 row-cols-md-2 g-3 align-items-start" id="contenedor-proyecciones">
+                            <!-- Dinámico por JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <aside class="offcanvas offcanvas-end projection-drawer" tabindex="-1" id="panel-detalle-mes" aria-labelledby="detalle-titulo">
+      <div class="offcanvas-header border-bottom"><div><p class="small text-uppercase text-muted mb-1">Desglose mensual</p><h2 class="offcanvas-title h4 fw-bold" id="detalle-titulo"></h2></div><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar desglose"></button></div>
+      <div class="offcanvas-body"><p id="detalle-origen" class="small text-muted"></p>
+        <div class="row g-2 mb-3"><div class="col-12"><label for="detalle-buscar" class="form-label small">Buscar movimiento</label><input id="detalle-buscar" type="search" class="form-control" placeholder="Nombre del pago o ingreso"></div>
+        <div class="col-7"><label for="detalle-tramo" class="form-label small">Momento del mes</label><select id="detalle-tramo" class="form-select"><option value="todos">Todo el mes</option><option value="0">Antes del 15</option><option value="1">Día 15</option><option value="2">Después del 15</option><option value="3">Fin de mes (30/31)</option></select></div>
+        <div class="col-5"><label for="detalle-estado" class="form-label small">Estado</label><select id="detalle-estado" class="form-select"><option value="todos">Todos</option><option value="realizado">Realizados</option><option value="pendiente">Pendientes</option></select></div></div>
+        <div class="form-check mb-3" id="detalle-incluidos-wrap" hidden><input class="form-check-input" type="checkbox" id="detalle-incluidos"><label for="detalle-incluidos" class="form-check-label small">Ver también los ya incluidos en el saldo real (<span id="detalle-incluidos-cantidad">0</span>)</label></div>
+        <div id="detalle-totales" class="projection-detail-totals"></div><p id="detalle-conteo" class="small text-muted my-3" role="status" aria-live="polite"></p>
+        <ul id="detalle-lista" class="list-unstyled mb-0"></ul>
+      </div><div class="border-top p-3 small text-muted bg-light">Los realizados conservan su fecha real. Los pendientes usan la fecha prevista en la proyección; los vencidos se prevén para hoy. Los ya incluidos en el saldo real se muestran solo para consulta.</div>
+    </aside>
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Navbar Compartida -->
+    <script src="scripts/navbar.js"></script>
+    <!-- Lógica del Dashboard -->
+    <script src="scripts/proyeccion.js"></script>
+    <script src="scripts/detalle-proyeccion.js"></script>
+    <script src="scripts/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorías - Billetera Virtual</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome para Iconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Custom CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="styles/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container my-4">
+        <div class="row">
+            <!-- Listado de Categorías (Ancho Completo) -->
+            <div class="col-lg-12">
+                <div class="card card-custom">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><i class="fas fa-tags me-2"></i>Listado de Categorías (<span id="txt-total-categorias">0</span>)</span>
+                        <button class="btn btn-accent btn-sm" onclick="abrirModalCrear()">
+                            <i class="fas fa-plus-circle me-1"></i>Nueva Categoría
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">Estas categorías estarán disponibles al registrar o filtrar tus movimientos para clasificarlos de manera precisa.</p>
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3" id="contenedor-categorias">
+                            <!-- Dinámico por JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Navbar Compartida -->
+    <script src="scripts/navbar.js"></script>
+    <!-- Lógica de Categorías -->
+    <script src="scripts/categorias.js"></script>
+
+    <!-- Modal de Categoría (Crear/Editar) -->
+    <div class="modal fade" id="modal-categoria" tabindex="-1" aria-labelledby="modalCategoriaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold text-dark" id="modalCategoriaLabel">
+                        <i class="fas fa-plus-circle me-2 text-primary"></i>Nueva Categoría
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="form-categoria" onsubmit="guardarCategoria(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="cat-id" value="">
+                        
+                        <!-- Vista Previa de Etiqueta Dinámica -->
+                        <div class="mb-3 text-center py-2 bg-light border rounded">
+                            <span class="small text-muted d-block mb-1" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Vista Previa de Etiqueta</span>
+                            <span id="preview-category-tag" class="category-tag text-white" style="background-color: #3498db; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+                                <i id="preview-category-icon" class="fas fa-folder"></i> <span id="preview-category-name">Nueva Categoría</span>
+                            </span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Nombre de la Categoría</label>
+                            <input type="text" id="cat-nombre" class="form-control" placeholder="Ej: Comida, Servicios, Ocio" required oninput="actualizarPreviewEnVivo()">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Color</label>
+                            <div>
+                                <div class="d-flex flex-wrap mb-2" id="preset-colors-container">
+                                    <!-- Generado dinámicamente -->
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" id="cat-color" class="form-control form-control-color" style="width: 50px;" value="#3498db" onchange="seleccionarColorPersonalizado(this.value)">
+                                    <span class="small text-muted">O elige un color personalizado</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-bold text-muted mb-0">Icono</label>
+                                <div class="input-group input-group-sm w-auto" style="max-width: 140px;">
+                                    <span class="input-group-text bg-white py-0 px-2" style="font-size:0.7rem;"><i class="fas fa-search text-muted"></i></span>
+                                    <input type="text" id="buscar-icono" class="form-control form-control-sm py-0 px-2" style="font-size: 0.7rem; height: 24px;" placeholder="Buscar icono...">
+                                </div>
+                            </div>
+                            <input type="hidden" id="cat-icono" value="fa-folder">
+                            <div class="d-flex flex-wrap border rounded p-2" id="preset-icons-container" style="max-height: 150px; overflow-y: auto;">
+                                <!-- Generado dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light py-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btn-submit-form" class="btn btn-accent btn-sm">
+                            <i class="fas fa-save me-1"></i>Guardar Categoría
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

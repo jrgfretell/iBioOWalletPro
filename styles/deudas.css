@@ -1,0 +1,97 @@
+.debt-eyebrow{color:#0e9882;font-size:.7rem;font-weight:800;letter-spacing:.16em}.debt-page h1{color:#24384a}.debt-stat,.debt-card{background:#fff;border:1px solid #e4eaf0;border-radius:14px;box-shadow:0 3px 14px #23384a06}.debt-stat{padding:20px;height:100%}.debt-stat small{display:block;color:#64748b;margin-bottom:8px}.debt-stat strong{font-size:1.45rem;color:#24384a}.debt-card{overflow:hidden;margin-bottom:20px}.debt-card-header{padding:22px}.debt-card h2{font-size:1.12rem;color:#24384a}.debt-card .progress{height:7px;background:#edf2f6;border-radius:10px}.debt-card .progress-bar{background:#13b79e}.debt-card .table{margin:0;font-size:.85rem;white-space:nowrap}.debt-card thead th{background:#f7f9fb;color:#66768a;font-size:.73rem;font-weight:600;padding:13px 16px}.debt-card td{padding:13px 16px;border-color:#edf1f5}.debt-paid td{background:#eef9f2;color:#52745e}.debt-paid .debt-number,.debt-paid .debt-date{text-decoration:line-through}.debt-overdue td{background:#fff8f7}.debt-near td{background:#fffbee}.debt-status{border-radius:20px;padding:5px 9px;font-size:.7rem;font-weight:700}.debt-status.pagada{background:#d9f0e0;color:#237947}.debt-status.pendiente{background:#edf2f6;color:#5e7185}.debt-status.vencida{background:#ffe4df;color:#bb4939}.debt-status.parcial{background:#fff0c6;color:#947000}.debt-preview-summary{padding:16px;background:#eef8f5;border:1px solid #d5ede6;border-radius:10px;color:#245b50}.debt-form{display:flex;flex-direction:column;min-height:0;overflow:hidden}.debt-form .form-label{font-size:.8rem;font-weight:600;color:#425569}.debt-draft-table input[type=date]{min-width:135px}.debt-draft-table input[type=number]{min-width:95px}.debt-payment-history{padding:10px 16px;background:#f8fafc;font-size:.8rem}.debt-empty{padding:65px 24px;text-align:center;background:#fff;border:1px dashed #cad8df;border-radius:14px}.debt-empty i{font-size:2.5rem;color:#18b49d;margin-bottom:20px}.debt-card details>summary{cursor:pointer;list-style:none}.debt-card details>summary::-webkit-details-marker{display:none}.debt-card details[open] .debt-chevron{transform:rotate(180deg)}.debt-chevron{transition:transform .2s}.debt-card-footer{background:#f8fafc;padding:12px 22px;color:#718096;font-size:.75rem}.debt-pay-form{text-align:left;display:grid;gap:8px}.debt-pay-form label{font-size:.85rem;color:#526578}.debt-pay-form input{margin:0!important;width:100%!important;box-sizing:border-box}.debt-pay-form .swal2-input{height:42px}@media(max-width:600px){.debt-card-header{padding:16px}.debt-card td{padding:12px}.debt-stat{padding:15px}.debt-stat strong{font-size:1.1rem}.debt-page{padding-bottom:70px}.debt-form .table{font-size:.75rem}}
+.debt-card .debt-payment-history{display:inline-block;padding:0;background:transparent;vertical-align:middle;margin-left:4px;font-size:.72rem}.debt-payment-history summary{color:#486b62;text-decoration:underline}.debt-payment-history[open]{display:block!important;margin-top:8px}.debt-card .table td{padding-top:11px;padding-bottom:11px}
+
+/* Agenda mensual: estado discreto, importes legibles y acciones consistentes. */
+.agenda-grid-shell{border:1px solid #e4e9ee;border-radius:14px;background:#fff;box-shadow:0 4px 18px #24384a04}
+.agenda-grid{font-size:.8rem;color:#334155;--bs-table-color:#334155;--bs-table-bg:#fff}
+.agenda-grid thead th{background:#f8fafb;border-bottom:1px solid #e4e9ee;color:#657386;font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.055em;padding:16px 14px;white-space:nowrap}
+.agenda-grid td{padding:16px 14px;border-color:#edf0f3;box-shadow:none;vertical-align:middle}
+.agenda-grid tbody tr:last-child td{border-bottom:0}
+.agenda-grid tbody tr:hover>td{background:#fafcfc}
+.agenda-grid .agenda-date{color:#64748b;font-size:.75rem;white-space:nowrap}
+.agenda-commitment{min-width:165px}.agenda-commitment strong{display:block;font-weight:600;color:#26384b;line-height:1.4}.agenda-commitment>span{display:block;font-size:.7rem;color:#7a8797;margin-top:4px}
+.agenda-kind{font-size:.7rem;color:#64748b;white-space:nowrap}
+.agenda-grid th:nth-child(n+4):nth-child(-n+6),.agenda-money{text-align:right}
+.agenda-money{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500;letter-spacing:-.01em}
+.agenda-grid .agenda-zero{color:#94a3b8;font-weight:400}.agenda-outstanding{font-weight:600;color:#24384a}
+.agenda-status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:20px;font-size:.65rem;font-weight:500;white-space:nowrap;background:#f1f4f7;color:#5b6878}
+.agenda-status-dot{height:5px;width:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.agenda-status.paid{background:#edf7f1;color:#347b5b}.agenda-status.overdue{background:#fcf0ef;color:#ae514b}.agenda-status.partial{background:#fcf5e8;color:#93702e}
+.agenda-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;white-space:nowrap}
+.agenda-action{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid transparent;border-radius:7px;padding:7px 10px;min-height:34px;font:500 .7rem var(--bs-body-font-family);text-decoration:none;cursor:pointer;transition:background-color .15s,border-color .15s;color:#546579;background:#f5f7f9}
+.agenda-action-pay{background:#167d70;color:#fff;border-color:#167d70}.agenda-action-pay:hover{background:#11675c;border-color:#11675c;color:#fff}
+.agenda-action-detail{background:#fff;color:#526579;border-color:#dfe6eb}.agenda-action-detail:hover{background:#f3f7f8;border-color:#b8ccc8;color:#176f64}
+.agenda-action-undo{color:#a34e48;background:#fdf5f4}.agenda-action-undo:hover{background:#f9eae8}
+.agenda-action:focus-visible{outline:3px solid #8cc9be;outline-offset:3px}.agenda-action:disabled{opacity:.6;cursor:wait}
+.agenda-action i{font-size:.65rem}.agenda-grid th:last-child{text-align:right}
+.agenda-grid .agenda-empty{text-align:center;padding:48px 20px;color:#788698}.agenda-empty i{display:block;font-size:1.5rem;color:#94b8b0;margin-bottom:12px}.agenda-empty strong,.agenda-empty span{display:block}.agenda-empty span{font-size:.75rem;margin-top:6px}
+@media(max-width:767.98px){
+ .agenda-grid-shell{border:0;background:transparent;box-shadow:none;overflow:visible}
+ .agenda-grid{display:block;background:transparent}
+ .agenda-grid thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+ .agenda-grid tbody{display:grid;gap:14px;background:transparent}
+ .agenda-grid .agenda-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 16px;padding:18px;background:#fff;border:1px solid #e4e9ee;border-radius:12px}
+ .agenda-grid .agenda-row>td{display:block;border:0;padding:0;text-align:left;min-width:0;background:transparent!important}
+ .agenda-grid .agenda-row>td::before{content:attr(data-label);display:block;font-size:.62rem;font-weight:500;color:#8490a0;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+ .agenda-grid .agenda-row>.agenda-commitment{grid-column:1/-1;order:-1;border-bottom:1px solid #edf1f4;padding-bottom:13px}
+ .agenda-grid .agenda-commitment::before{display:none!important}
+ .agenda-grid .agenda-actions-cell{grid-column:1/-1;border-top:1px solid #edf1f4;padding-top:13px!important}
+ .agenda-grid .agenda-actions-cell::before{display:none!important}
+ .agenda-actions{justify-content:space-between;flex-wrap:wrap}.agenda-action{min-height:40px;padding:9px 13px;font-size:.75rem}
+}
+
+/* Cronogramas: cabecera integrada y acciones compactas. */
+.schedule-card{box-shadow:0 3px 16px #24384a04;border-color:#e3e9ee;margin-bottom:18px}
+.schedule-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:22px 24px 0}
+.schedule-identity{min-width:0;flex:1}.schedule-mode{font-size:.64rem;font-weight:600;letter-spacing:.055em;text-transform:uppercase;color:#498277}
+.schedule-card .schedule-identity h2{font-size:1.05rem;font-weight:650;line-height:1.45;margin:5px 0 7px;overflow-wrap:anywhere}
+.schedule-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.72rem;color:#7b8796;line-height:1.7}.schedule-meta strong{font-weight:500;color:#516173}
+.schedule-heading-side{display:flex;gap:20px;align-items:flex-start;flex-shrink:0}
+.schedule-balance{text-align:right}.schedule-balance>span{display:block;font-size:.68rem;color:#7a8795;margin-bottom:4px}.schedule-balance>strong{display:block;font-size:1.22rem;color:#26394c;font-weight:650;line-height:1.3;font-variant-numeric:tabular-nums;white-space:nowrap}
+.schedule-tools{display:flex;gap:5px;border-left:1px solid #e9eef2;padding-left:16px}
+.schedule-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;border:1px solid transparent;border-radius:8px;background:#f4f7f9;color:#64768a;font-size:.75rem;cursor:pointer;transition:background-color .15s,color .15s}
+.schedule-icon:hover{background:#e9f3f0;color:#156f62}.schedule-icon-danger{background:transparent;color:#9b7774}.schedule-icon-danger:hover{background:#fbefed;color:#b3544a}
+.schedule-icon:focus-visible{outline:3px solid #8cc9be;outline-offset:2px}.schedule-icon:disabled{opacity:.5;cursor:wait}
+.schedule-card details>summary.schedule-summary{padding:16px 24px 18px;list-style:none;cursor:pointer}
+.schedule-summary:focus-visible{outline:2px solid #318a7c;outline-offset:-3px;border-radius:8px}
+.schedule-progress-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:.7rem;color:#7c8998;margin-bottom:9px}.schedule-progress-label strong{font-weight:600;color:#4b6072}
+.schedule-card .progress{height:5px;background:#edf2f5}.schedule-card .progress-bar{background:#47978a}
+.schedule-summary-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:11px;font-size:.7rem;color:#788797}
+.schedule-next{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.schedule-next strong{font-weight:500;color:#506575}
+.schedule-expand{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;color:#387c71;font-weight:500;font-size:.67rem}.schedule-expand i{font-size:.65rem}
+.schedule-card details:not([open]) .schedule-when-open,.schedule-card details[open] .schedule-when-closed{display:none}
+.schedule-grid-shell{border-top:1px solid #e6edf1}
+.schedule-card .schedule-grid{white-space:normal;font-size:.78rem}
+.schedule-card .schedule-grid th{padding:14px 18px;font-size:.63rem;background:#f8fafb;border-color:#e6edf1}
+.schedule-card .schedule-grid td{padding:13px 18px;border-color:#edf1f4;background:#fff;color:#526579;box-shadow:none}
+.schedule-card .schedule-grid tr:hover>td{background:#fafcfc}
+.schedule-card .schedule-grid th:nth-child(2){text-align:left}
+.schedule-card .schedule-grid th:nth-child(n+3):nth-child(-n+5){text-align:right}
+.schedule-card .schedule-grid th:nth-child(6){text-align:left}
+.schedule-card .schedule-grid .agenda-zero{color:#9aa7b5;font-weight:400}
+.schedule-card .schedule-grid .agenda-outstanding{color:#2e4356;font-weight:600}
+.schedule-number{font-size:.7rem;color:#8a98a6!important;white-space:nowrap;font-variant-numeric:tabular-nums}
+.schedule-row-actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:6px}
+.schedule-row-actions .schedule-icon{background:transparent;border-color:#e7edf1}.schedule-row-actions .schedule-icon:hover{background:#eff5f3;border-color:#c5dbd5}
+.schedule-payment-history{display:inline-block;max-width:100%;margin:0}
+.schedule-payment-history>summary{list-style:none;cursor:pointer}.schedule-payment-history>summary::-webkit-details-marker{display:none}
+.schedule-payment-history[open]{width:100%}
+.schedule-payments-list{border:1px solid #e4ecea;border-radius:8px;background:#f8fbfa;padding:5px 10px;margin-top:8px;min-width:220px}
+.schedule-payment{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;font-size:.72rem;border-bottom:1px solid #e6eeeb}.schedule-payment:last-child{border-bottom:0}
+.schedule-payment>span{display:flex;flex-wrap:wrap;gap:4px 12px}.schedule-payment strong{font-weight:500;font-variant-numeric:tabular-nums}
+.agenda-status.omitted{background:#f2f3f5;color:#8a929e}
+.schedule-card .debt-card-footer{font-size:.68rem;background:#fbfcfd;color:#8995a3;border-top:1px solid #eef2f5;line-height:1.8;padding:13px 24px}
+@media(max-width:767.98px){
+ .schedule-heading{padding:18px 18px 0;flex-wrap:wrap;gap:12px}
+ .schedule-identity{flex-basis:100%}.schedule-heading-side{width:100%;justify-content:space-between;align-items:center}.schedule-balance{text-align:left}.schedule-tools{border-left:0;padding-left:0}
+ .schedule-icon{width:40px;height:40px;min-width:40px}
+ .schedule-card details>summary.schedule-summary{padding:14px 18px 16px}
+ .schedule-progress-label{flex-wrap:wrap;gap:5px}.schedule-summary-bottom{align-items:flex-start;flex-wrap:wrap;gap:10px}.schedule-expand{margin-left:auto;min-height:28px}
+ .schedule-grid-shell{padding:12px;background:#f7f9fb;overflow:visible}
+ .schedule-card .schedule-grid .agenda-row{padding:15px;gap:12px}
+ .schedule-card .schedule-grid .agenda-row>td{padding:0;border:0;background:transparent}
+ .schedule-card .schedule-grid .agenda-row>.schedule-number{grid-column:1/-1;order:-1;border-bottom:1px solid #edf1f4;padding-bottom:9px}
+ .schedule-card .schedule-grid .schedule-number::before{display:inline;margin-right:6px}
+ .schedule-row-actions{gap:7px}.schedule-payment-history[open]{min-width:0}.schedule-payments-list{min-width:0}
+ .schedule-card .debt-card-footer{padding:12px 18px}
+}
