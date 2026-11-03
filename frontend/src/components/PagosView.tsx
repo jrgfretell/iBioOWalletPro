@@ -8,1078 +8,1606 @@ import {
   obtenerUltimoDiaMes,
   fechaHoyISO,
 } from '../types/wallet';
-import type { MovimientoRecurrente, DeudaCuota } from '../types/wallet';
+import type { DeudaCuota } from '../types/wallet';
 import {
   CalendarCheck,
-  Repeat,
-  CreditCard,
+  FileText,
+  Wallet,
   Plus,
+  Calendar,
   CheckCircle2,
-  Clock,
   Trash2,
-  Edit2,
   X,
+  ChevronRight,
   ChevronDown,
 } from 'lucide-react';
 
-type SubTabPagos = 'agenda' | 'recurrentes' | 'deudas';
+type SubTabPagos = 'agenda' | 'cronogramas' | 'ingresos';
+
+interface FilaAgenda {
+  id: string;
+  nombre: string;
+  detalle: string;
+  tipo: 'Cuotas' | 'Continuo' | 'Ingreso';
+  fecha: string;
+  programado: number;
+  pagado: number;
+  pendiente: number;
+  estado: 'pagado' | 'pendiente' | 'vencido';
+  deudaId?: number;
+  cuotaRef?: DeudaCuota;
+  recurrenteId?: number;
+  movimientoId?: number;
+  tipoMovimiento: 'gasto' | 'ingreso';
+}
 
 export const PagosView: React.FC = () => {
   const { user } = useAuth();
   const {
+    montoBase,
     categorias,
     recurrentes,
     movimientos,
     deudas,
     cuotas,
     pagosDeuda,
+    sueldos,
     recargarTodo,
+    actualizarMontoBase,
+    guardarSueldoMes,
+    guardarSueldoAnual,
   } = useWallet();
 
   const hoy = new Date();
+  const fechaHoyStr = fechaHoyISO();
+
+  // Navegación entre las 3 pestañas originales
   const [subTab, setSubTab] = useState<SubTabPagos>('agenda');
 
-  // Filtros de Agenda Mensual
+  // Filtros de la Agenda Mensual
   const [agendaMes, setAgendaMes] = useState<number>(hoy.getMonth());
   const [agendaAnio, setAgendaAnio] = useState<number>(hoy.getFullYear());
-  const [agendaEstado, setAgendaEstado] = useState<'todos' | 'pendientes' | 'confirmados'>('todos');
-  const [procesandoPagoId, setProcesandoPagoId] = useState<string | null>(null);
+  const [agendaTipo, setAgendaTipo] = useState<'todos' | 'continuo' | 'cuotas'>('todos');
+  const [agendaEstado, setAgendaEstado] = useState<'todos' | 'pendiente' | 'pagado' | 'vencido'>('todos');
+  const [procesandoAccion, setProcesandoAccion] = useState<string | null>(null);
 
-  // Estado Modal Plantilla Recurrente
-  const [modalRecAbierto, setModalRecAbierto] = useState<boolean>(false);
-  const [recEditId, setRecEditId] = useState<number | null>(null);
-  const [recTipo, setRecTipo] = useState<'gasto' | 'ingreso'>('gasto');
+  // Modales
+  const [modalNuevoProgramado, setModalNuevoProgramado] = useState<boolean>(false);
+  const [modalTipoCrear, setModalTipoCrear] = useState<'cuotas' | 'continuo' | 'ingreso'>('cuotas');
+
+  // Formulario Cuotas
+  const [nombreDeuda, setNombreDeuda] = useState<string>('');
+  const [numCuotas, setNumCuotas] = useState<string>('6');
+  const [montoPorCuota, setMontoPorCuota] = useState<string>('');
+  const [fecha1raCuota, setFecha1raCuota] = useState<string>(fechaHoyISO());
+  const [deudaCatId, setDeudaCatId] = useState<number | ''>('');
+
+  // Formulario Recurrente Continuo / Ingreso
   const [recDesc, setRecDesc] = useState<string>('');
   const [recMonto, setRecMonto] = useState<string>('');
   const [recDia, setRecDia] = useState<string>('15');
   const [recCatId, setRecCatId] = useState<number | ''>('');
-  const [guardandoRec, setGuardandoRec] = useState<boolean>(false);
 
-  // Estado Modal Nueva Deuda / Cronograma en Cuotas
-  const [modalDeudaAbierto, setModalDeudaAbierto] = useState<boolean>(false);
-  const [deudaNombre, setDeudaNombre] = useState<string>('');
-  const [deudaMontoRecibido, setDeudaMontoRecibido] = useState<string>('');
-  const [deudaCatId, setDeudaCatId] = useState<number | ''>('');
-  const [numCuotas, setNumCuotas] = useState<string>('6');
-  const [montoCuota, setMontoCuota] = useState<string>('');
-  const [fechaPrimeraCuota, setFechaPrimeraCuota] = useState<string>(fechaHoyISO());
-  const [guardandoDeuda, setGuardandoDeuda] = useState<boolean>(false);
-  const [deudasExpandidas, setDeudasExpandidas] = useState<Record<number, boolean>>({});
+  // Estado pestaña Cronogramas
+  const [filtroCronogramas, setFiltroCronogramas] = useState<'todos' | 'activas' | 'pagadas'>('todos');
+  const [cronogramasExpandidos, setCronogramasExpandidos] = useState<Record<number, boolean>>({});
 
-  const mapaCategorias = useMemo(() => {
-    const map = new Map<number, { nombre: string; color: string }>();
-    categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color }));
-    return map;
-  }, [categorias]);
+  // Estado pestaña Ingresos Programados (Perfil de Sueldo)
+  const [ingresoMes, setIngresoMes] = useState<number>(hoy.getMonth());
+  const [ingresoAnio, setIngresoAnio] = useState<number>(hoy.getFullYear());
+  const [ingresoModo, setIngresoModo] = useState<'quincenal' | 'mensual'>('quincenal');
+  const [ingresoS15, setIngresoS15] = useState<string>('0');
+  const [ingresoS30, setIngresoS30] = useState<string>('0');
+  const [ingresoAplicarAnio, setIngresoAplicarAnio] = useState<boolean>(false);
+  const [guardandoSueldo, setGuardandoSueldo] = useState<boolean>(false);
+  const [mensajeSueldo, setMensajeSueldo] = useState<string | null>(null);
 
-  // Construir los ítems de la Agenda del Mes seleccionado
-  const itemsAgendaMes = useMemo(() => {
-    const ultimoDia = obtenerUltimoDiaMes(agendaAnio, agendaMes);
+  const [editandoBase, setEditandoBase] = useState<boolean>(false);
+  const [inputBase, setInputBase] = useState<string>(String(montoBase));
+
+  // Cargar sueldo del mes seleccionado en la pestaña de Ingresos
+  React.useEffect(() => {
+    const reg = sueldos.find((s) => s.anio === ingresoAnio && s.mes === ingresoMes);
+    const s15 = reg ? reg.sueldo_15 : 0;
+    const s30 = reg ? reg.sueldo_30 : 0;
+    setIngresoS15(String(s15));
+    setIngresoS30(String(s30));
+    setIngresoModo(s15 === 0 && s30 > 0 ? 'mensual' : 'quincenal');
+  }, [ingresoAnio, ingresoMes, sueldos]);
+
+  React.useEffect(() => {
+    setInputBase(String(montoBase));
+  }, [montoBase]);
+
+  // FILAS DE LA AGENDA MENSUAL
+  const filasAgenda = useMemo(() => {
     const prefijo = `${agendaAnio}-${String(agendaMes + 1).padStart(2, '0')}`;
+    const ultimoDia = obtenerUltimoDiaMes(agendaAnio, agendaMes);
+    const resultado: FilaAgenda[] = [];
 
-    const lista: {
-      uid: string;
-      origen: 'recurrente' | 'cuota';
-      titulo: string;
-      subtitulo: string;
-      fecha: string;
-      dia: number;
-      monto: number;
-      tipo: 'gasto' | 'ingreso';
-      confirmado: boolean;
-      categoriaNombre: string;
-      categoriaColor: string;
-      recurrenteRef?: MovimientoRecurrente;
-      movimientoExistenteId?: number;
-      cuotaRef?: DeudaCuota;
-    }[] = [];
-
-    // 1. Evaluar cada plantilla recurrente para este mes
-    recurrentes.forEach((rec) => {
-      const diaReal = Math.min(rec.dia_pago, ultimoDia);
-      const fechaEsperada = `${prefijo}-${String(diaReal).padStart(2, '0')}`;
-      const movAsociado = movimientos.find(
-        (m) => m.recurrente_id === rec.id && m.fecha.startsWith(prefijo)
-      );
-      const confirmado = movAsociado ? movAsociado.pago_confirmado : false;
-      const cat = rec.categoria_id ? mapaCategorias.get(rec.categoria_id) : undefined;
-
-      lista.push({
-        uid: `rec-${rec.id}`,
-        origen: 'recurrente',
-        titulo: rec.descripcion,
-        subtitulo: `Fijo mensual · Día ${diaReal}`,
-        fecha: movAsociado ? movAsociado.fecha : fechaEsperada,
-        dia: diaReal,
-        monto: movAsociado ? movAsociado.monto : rec.monto,
-        tipo: rec.tipo,
-        confirmado,
-        categoriaNombre: cat ? cat.nombre : 'Servicios',
-        categoriaColor: cat ? cat.color : '#3498db',
-        recurrenteRef: rec,
-        movimientoExistenteId: movAsociado?.id,
-      });
-    });
-
-    // 2. Evaluar cuotas de deuda que caen en este mes
+    // 1. Cuotas de deudas en este mes
     cuotas
       .filter((c) => c.fecha && c.fecha.startsWith(prefijo))
       .forEach((c) => {
         const deuda = deudas.find((d) => d.id === c.deuda_id);
-        const totalCuotas = cuotas.filter((q) => q.deuda_id === c.deuda_id).length;
-        const pagado = pagosDeuda
+        const totalCuotasDeuda = cuotas.filter((q) => q.deuda_id === c.deuda_id).length;
+        const totalAbonado = pagosDeuda
           .filter((p) => p.cuota_id === c.id)
           .reduce((acc, p) => acc + p.monto, 0);
-        const pendiente = Math.round((c.monto - pagado) * 100) / 100;
-        const confirmado = pendiente <= 0.009;
-        const cat = deuda?.categoria_id ? mapaCategorias.get(deuda.categoria_id) : undefined;
-        const dia = Number(c.fecha.split('-')[2]) || 1;
 
-        lista.push({
-          uid: `cuota-${c.id}`,
-          origen: 'cuota',
-          titulo: deuda ? deuda.nombre : `Deuda #${c.deuda_id}`,
-          subtitulo: `Cuota ${c.numero}/${totalCuotas}`,
+        const pendiente = Math.max(0, Math.round((c.monto - totalAbonado) * 100) / 100);
+        const pagado = totalAbonado;
+        const esPagado = pendiente <= 0.009;
+        const esVencido = !esPagado && c.fecha < fechaHoyStr;
+        const estado: 'pagado' | 'pendiente' | 'vencido' = esPagado
+          ? 'pagado'
+          : esVencido
+          ? 'vencido'
+          : 'pendiente';
+
+        resultado.push({
+          id: `cuota-${c.id}`,
+          nombre: deuda ? deuda.nombre : `Deuda #${c.deuda_id}`,
+          detalle: `Cuota ${c.numero}/${totalCuotasDeuda}`,
+          tipo: 'Cuotas',
           fecha: c.fecha,
-          dia,
-          monto: confirmado ? c.monto : pendiente,
-          tipo: 'gasto',
-          confirmado,
-          categoriaNombre: cat ? cat.nombre : 'Deudas',
-          categoriaColor: cat ? cat.color : '#e74c3c',
+          programado: c.monto,
+          pagado,
+          pendiente,
+          estado,
+          deudaId: c.deuda_id,
           cuotaRef: c,
+          tipoMovimiento: 'gasto',
         });
       });
 
-    return lista
-      .filter((item) => {
-        if (agendaEstado === 'pendientes') return !item.confirmado;
-        if (agendaEstado === 'confirmados') return item.confirmado;
-        return true;
-      })
-      .sort((a, b) => a.dia - b.dia);
-  }, [
-    agendaAnio,
-    agendaMes,
-    agendaEstado,
-    recurrentes,
-    movimientos,
-    cuotas,
-    deudas,
-    pagosDeuda,
-    mapaCategorias,
-  ]);
+    // 2. Compromisos recurrentes continuos (luz, agua, internet, etc.)
+    recurrentes
+      .filter((r) => r.tipo === 'gasto')
+      .forEach((rec) => {
+        const diaReal = Math.min(rec.dia_pago, ultimoDia);
+        const fechaEstimada = `${prefijo}-${String(diaReal).padStart(2, '0')}`;
+        const mov = movimientos.find(
+          (m) => m.recurrente_id === rec.id && m.fecha.startsWith(prefijo)
+        );
 
-  // Confirmar o desconfirmar ítem desde la Agenda
-  const handleAccionAgenda = async (item: (typeof itemsAgendaMes)[number]) => {
+        const estaConfirmado = mov ? mov.pago_confirmado : false;
+        const fechaReal = mov ? mov.fecha : fechaEstimada;
+        const esVencido = !estaConfirmado && fechaReal < fechaHoyStr;
+        const estado: 'pagado' | 'pendiente' | 'vencido' = estaConfirmado
+          ? 'pagado'
+          : esVencido
+          ? 'vencido'
+          : 'pendiente';
+
+        resultado.push({
+          id: `rec-${rec.id}`,
+          nombre: rec.descripcion,
+          detalle: 'Pago continuo mensual',
+          tipo: 'Continuo',
+          fecha: fechaReal,
+          programado: mov ? mov.monto : rec.monto,
+          pagado: estaConfirmado ? (mov ? mov.monto : rec.monto) : 0,
+          pendiente: estaConfirmado ? 0 : mov ? mov.monto : rec.monto,
+          estado,
+          recurrenteId: rec.id,
+          movimientoId: mov?.id,
+          tipoMovimiento: 'gasto',
+        });
+      });
+
+    return resultado.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }, [agendaAnio, agendaMes, cuotas, deudas, pagosDeuda, recurrentes, movimientos, fechaHoyStr]);
+
+  // Aplicar filtros de la barra sobre las filas
+  const filasFiltradas = useMemo(() => {
+    return filasAgenda.filter((r) => {
+      if (agendaTipo === 'continuo' && r.tipo !== 'Continuo') return false;
+      if (agendaTipo === 'cuotas' && r.tipo !== 'Cuotas') return false;
+      if (agendaEstado !== 'todos' && r.estado !== agendaEstado) return false;
+      return true;
+    });
+  }, [filasAgenda, agendaTipo, agendaEstado]);
+
+  // Resumen de las 4 tarjetas KPI de la Agenda
+  const resumenAgenda = useMemo(() => {
+    let programado = 0;
+    let pagado = 0;
+    let pendiente = 0;
+    let vencido = 0;
+
+    filasAgenda.forEach((r) => {
+      programado += r.programado;
+      pagado += r.pagado;
+      pendiente += r.pendiente;
+      if (r.estado === 'vencido') {
+        vencido += r.pendiente;
+      }
+    });
+
+    return { programado, pagado, pendiente, vencido };
+  }, [filasAgenda]);
+
+  // Acciones de pago en la Agenda
+  const handleRegistrarPagoAgenda = async (fila: FilaAgenda) => {
     if (!user) return;
-    setProcesandoPagoId(item.uid);
+    setProcesandoAccion(fila.id);
     try {
-      if (item.origen === 'recurrente' && item.recurrenteRef) {
-        if (item.movimientoExistenteId) {
-          const nuevoEstado = !item.confirmado;
+      if (fila.tipo === 'Cuotas' && fila.cuotaRef) {
+        // Registrar movimiento de gasto en agenda
+        const { data: movData } = await supabase
+          .from('movimientos_agenda')
+          .insert({
+            user_id: user.id,
+            tipo: 'gasto',
+            descripcion: `${fila.nombre} - ${fila.detalle}`,
+            monto: fila.pendiente,
+            fecha: fechaHoyStr,
+            categoria_id: deudas.find((d) => d.id === fila.deudaId)?.categoria_id ?? null,
+            es_recurrente: false,
+            pago_confirmado: true,
+            fecha_pago: fechaHoyStr,
+          })
+          .select('id')
+          .single();
+
+        // Registrar abono en deuda_pagos
+        await supabase.from('deuda_pagos').insert({
+          user_id: user.id,
+          cuota_id: fila.cuotaRef.id,
+          monto: fila.pendiente,
+          fecha: fechaHoyStr,
+          movimiento_id: movData ? movData.id : null,
+          solicitud: `pago-cuota-${fila.cuotaRef.id}-${Date.now()}`,
+        });
+      } else if (fila.tipo === 'Continuo' && fila.recurrenteId) {
+        if (fila.movimientoId) {
           await supabase
             .from('movimientos_agenda')
-            .update({
-              pago_confirmado: nuevoEstado,
-              fecha_pago: nuevoEstado ? fechaHoyISO() : null,
-            })
-            .eq('id', item.movimientoExistenteId)
+            .update({ pago_confirmado: true, fecha_pago: fechaHoyStr })
+            .eq('id', fila.movimientoId)
             .eq('user_id', user.id);
         } else {
           await supabase.from('movimientos_agenda').insert({
             user_id: user.id,
-            tipo: item.recurrenteRef.tipo,
-            descripcion: item.recurrenteRef.descripcion,
-            monto: item.recurrenteRef.monto,
-            fecha: item.fecha,
-            categoria_id: item.recurrenteRef.categoria_id,
+            tipo: 'gasto',
+            descripcion: fila.nombre,
+            monto: fila.programado,
+            fecha: fila.fecha,
+            categoria_id: recurrentes.find((r) => r.id === fila.recurrenteId)?.categoria_id ?? null,
             es_recurrente: true,
-            recurrente_id: item.recurrenteRef.id,
+            recurrente_id: fila.recurrenteId,
             pago_confirmado: true,
-            fecha_pago: fechaHoyISO(),
-          });
-        }
-      } else if (item.origen === 'cuota' && item.cuotaRef) {
-        if (!item.confirmado) {
-          const deuda = deudas.find((d) => d.id === item.cuotaRef!.deuda_id);
-          // 1. Insertar movimiento en agenda
-          const { data: movData } = await supabase
-            .from('movimientos_agenda')
-            .insert({
-              user_id: user.id,
-              tipo: 'gasto',
-              descripcion: `${deuda ? deuda.nombre : 'Deuda'} - Cuota #${item.cuotaRef.numero}`,
-              monto: item.monto,
-              fecha: fechaHoyISO(),
-              categoria_id: deuda?.categoria_id ?? null,
-              es_recurrente: false,
-              pago_confirmado: true,
-              fecha_pago: fechaHoyISO(),
-            })
-            .select('id')
-            .single();
-
-          // 2. Registrar abono en deuda_pagos
-          await supabase.from('deuda_pagos').insert({
-            user_id: user.id,
-            cuota_id: item.cuotaRef.id,
-            monto: item.monto,
-            fecha: fechaHoyISO(),
-            movimiento_id: movData ? movData.id : null,
-            solicitud: `pago-cuota-${item.cuotaRef.id}-${Date.now()}`,
+            fecha_pago: fechaHoyStr,
           });
         }
       }
       await recargarTodo();
     } finally {
-      setProcesandoPagoId(null);
+      setProcesandoAccion(null);
     }
   };
 
-  // CRUD Plantillas Recurrentes
-  const abrirNuevaPlantilla = () => {
-    setRecEditId(null);
-    setRecTipo('gasto');
-    setRecDesc('');
-    setRecMonto('');
-    setRecDia('15');
-    setRecCatId(categorias[0]?.id ?? '');
-    setModalRecAbierto(true);
-  };
-
-  const abrirEdicionPlantilla = (r: MovimientoRecurrente) => {
-    setRecEditId(r.id);
-    setRecTipo(r.tipo);
-    setRecDesc(r.descripcion);
-    setRecMonto(String(r.monto));
-    setRecDia(String(r.dia_pago));
-    setRecCatId(r.categoria_id ?? '');
-    setModalRecAbierto(true);
-  };
-
-  const handleGuardarPlantilla = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    const montoNum = parseFloat(recMonto);
-    const diaNum = Math.min(31, Math.max(1, parseInt(recDia, 10) || 1));
-    if (!recDesc.trim() || isNaN(montoNum) || montoNum <= 0) return;
-
-    setGuardandoRec(true);
+  const handleAnularPagoAgenda = async (fila: FilaAgenda) => {
+    if (!user || !fila.movimientoId) return;
+    if (!window.confirm('¿Anular este pago? Volverá a quedar pendiente.')) return;
+    setProcesandoAccion(fila.id);
     try {
-      const payload = {
-        user_id: user.id,
-        tipo: recTipo,
-        descripcion: recDesc.trim(),
-        monto: montoNum,
-        dia_pago: diaNum,
-        categoria_id: recCatId === '' ? null : Number(recCatId),
-        tipo_recurrencia: 'mensual' as const,
-      };
-
-      if (recEditId) {
-        await supabase
-          .from('movimientos_recurrentes')
-          .update(payload)
-          .eq('id', recEditId)
-          .eq('user_id', user.id);
-      } else {
-        await supabase.from('movimientos_recurrentes').insert(payload);
-      }
+      await supabase
+        .from('movimientos_agenda')
+        .update({ pago_confirmado: false, fecha_pago: null })
+        .eq('id', fila.movimientoId)
+        .eq('user_id', user.id);
       await recargarTodo();
-      setModalRecAbierto(false);
     } finally {
-      setGuardandoRec(false);
+      setProcesandoAccion(null);
     }
   };
 
-  const handleEliminarPlantilla = async (id: number) => {
-    if (!user) return;
-    if (!window.confirm('¿Deseas eliminar esta plantilla recurrente?')) return;
-    await supabase.from('movimientos_recurrentes').delete().eq('id', id).eq('user_id', user.id);
-    await recargarTodo();
-  };
-
-  // CRUD Deudas y Cuotas
-  const handleCrearDeudaConCuotas = async (e: React.FormEvent) => {
+  // Crear nuevo compromiso (Modal)
+  const handleCrearNuevoProgramado = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    const nCuotas = Math.max(1, Math.min(120, parseInt(numCuotas, 10) || 1));
-    const mCuota = parseFloat(montoCuota);
-    const mRecibido = parseFloat(deudaMontoRecibido) || mCuota * nCuotas;
 
-    if (!deudaNombre.trim() || isNaN(mCuota) || mCuota <= 0 || !fechaPrimeraCuota) return;
+    if (modalTipoCrear === 'cuotas') {
+      const nCuotas = Math.max(1, parseInt(numCuotas, 10) || 1);
+      const mCuota = parseFloat(montoPorCuota);
+      if (!nombreDeuda.trim() || isNaN(mCuota) || mCuota <= 0 || !fecha1raCuota) return;
 
-    setGuardandoDeuda(true);
-    try {
-      const { data: nuevaDeuda, error: errDeuda } = await supabase
+      const { data: dData, error } = await supabase
         .from('deudas')
         .insert({
           user_id: user.id,
-          nombre: deudaNombre.trim(),
-          monto_recibido: mRecibido,
+          nombre: nombreDeuda.trim(),
+          monto_recibido: mCuota * nCuotas,
           categoria_id: deudaCatId === '' ? null : Number(deudaCatId),
         })
         .select('id')
         .single();
 
-      if (errDeuda || !nuevaDeuda) return;
+      if (error || !dData) return;
 
-      // Generar las N cuotas mensuales a partir de fechaPrimeraCuota
-      const [yBase, mBase, dBase] = fechaPrimeraCuota.split('-').map(Number);
+      const [yBase, mBase, dBase] = fecha1raCuota.split('-').map(Number);
       const cuotasInsert = [];
-
       for (let i = 0; i < nCuotas; i++) {
         const fechaTarget = new Date(yBase, mBase - 1 + i, 1);
         const anioT = fechaTarget.getFullYear();
         const mesT = fechaTarget.getMonth();
         const maxDia = obtenerUltimoDiaMes(anioT, mesT);
         const diaReal = Math.min(dBase, maxDia);
-        const fechaStr = `${anioT}-${String(mesT + 1).padStart(2, '0')}-${String(diaReal).padStart(
-          2,
-          '0'
-        )}`;
-
+        const fechaStr = `${anioT}-${String(mesT + 1).padStart(2, '0')}-${String(diaReal).padStart(2, '0')}`;
         cuotasInsert.push({
           user_id: user.id,
-          deuda_id: nuevaDeuda.id,
+          deuda_id: dData.id,
           numero: i + 1,
           monto: mCuota,
           fecha: fechaStr,
         });
       }
-
       await supabase.from('deuda_cuotas').insert(cuotasInsert);
-      await recargarTodo();
-      setModalDeudaAbierto(false);
-      setDeudaNombre('');
-      setDeudaMontoRecibido('');
-      setMontoCuota('');
-    } finally {
-      setGuardandoDeuda(false);
-    }
-  };
+    } else {
+      const mNum = parseFloat(recMonto);
+      const dNum = Math.min(31, Math.max(1, parseInt(recDia, 10) || 1));
+      if (!recDesc.trim() || isNaN(mNum) || mNum <= 0) return;
 
-  const handlePagarCuotaDirecto = async (cuota: DeudaCuota, pendiente: number) => {
-    if (!user || pendiente <= 0) return;
-    setProcesandoPagoId(`cuota-direct-${cuota.id}`);
-    try {
-      const deuda = deudas.find((d) => d.id === cuota.deuda_id);
-      const { data: movData } = await supabase
-        .from('movimientos_agenda')
-        .insert({
-          user_id: user.id,
-          tipo: 'gasto',
-          descripcion: `${deuda ? deuda.nombre : 'Deuda'} - Cuota #${cuota.numero}`,
-          monto: pendiente,
-          fecha: fechaHoyISO(),
-          categoria_id: deuda?.categoria_id ?? null,
-          es_recurrente: false,
-          pago_confirmado: true,
-          fecha_pago: fechaHoyISO(),
-        })
-        .select('id')
-        .single();
-
-      await supabase.from('deuda_pagos').insert({
+      await supabase.from('movimientos_recurrentes').insert({
         user_id: user.id,
-        cuota_id: cuota.id,
-        monto: pendiente,
-        fecha: fechaHoyISO(),
-        movimiento_id: movData ? movData.id : null,
-        solicitud: `pago-cuota-${cuota.id}-${Date.now()}`,
+        tipo: modalTipoCrear === 'ingreso' ? 'ingreso' : 'gasto',
+        descripcion: recDesc.trim(),
+        monto: mNum,
+        dia_pago: dNum,
+        categoria_id: recCatId === '' ? null : Number(recCatId),
+        tipo_recurrencia: 'mensual',
       });
+    }
 
-      await recargarTodo();
-    } finally {
-      setProcesandoPagoId(null);
+    await recargarTodo();
+    setModalNuevoProgramado(false);
+    setNombreDeuda('');
+    setMontoPorCuota('');
+    setRecDesc('');
+    setRecMonto('');
+  };
+
+  // Guardar sueldo desde la pestaña Ingresos
+  const handleGuardarSueldoIngresos = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const s15 = ingresoModo === 'mensual' ? 0 : Math.max(0, parseFloat(ingresoS15) || 0);
+    const s30 = Math.max(0, parseFloat(ingresoS30) || 0);
+    setGuardandoSueldo(true);
+    let ok = false;
+    if (ingresoAplicarAnio) {
+      ok = await guardarSueldoAnual(ingresoAnio, ingresoMes, s15, s30);
+    } else {
+      ok = await guardarSueldoMes(ingresoAnio, ingresoMes, s15, s30);
+    }
+    setGuardandoSueldo(false);
+    if (ok) {
+      setMensajeSueldo(
+        ingresoAplicarAnio
+          ? `Sueldo guardado de ${NOMBRES_MESES[ingresoMes]} a Diciembre ${ingresoAnio}`
+          : `Sueldo de ${NOMBRES_MESES[ingresoMes]} actualizado`
+      );
+      setTimeout(() => setMensajeSueldo(null), 3000);
     }
   };
 
-  const handleEliminarDeuda = async (id: number) => {
-    if (!user) return;
-    if (!window.confirm('¿Eliminar esta deuda y todas sus cuotas asociadas?')) return;
-    await supabase.from('deudas').delete().eq('id', id).eq('user_id', user.id);
-    await recargarTodo();
+  const handleGuardarBasePerfil = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(inputBase);
+    if (isNaN(val) || val < 0) return;
+    await actualizarMontoBase(val);
+    setEditandoBase(false);
   };
+
+  // Otros ingresos programados en el mes
+  const otrosIngresosMes = useMemo(() => {
+    const prefijo = `${ingresoAnio}-${String(ingresoMes + 1).padStart(2, '0')}`;
+    return recurrentes
+      .filter((r) => r.tipo === 'ingreso')
+      .map((r) => {
+        const mov = movimientos.find(
+          (m) => m.recurrente_id === r.id && m.fecha.startsWith(prefijo)
+        );
+        const recibido = mov ? mov.pago_confirmado : false;
+        return {
+          id: r.id,
+          descripcion: r.descripcion,
+          monto: r.monto,
+          dia: r.dia_pago,
+          recibido,
+          movimientoId: mov?.id,
+          fecha: mov ? mov.fecha : `${prefijo}-${String(r.dia_pago).padStart(2, '0')}`,
+        };
+      });
+  }, [recurrentes, movimientos, ingresoAnio, ingresoMes]);
+
+  const totalSueldoMesIngresos = useMemo(() => {
+    const reg = sueldos.find((s) => s.anio === ingresoAnio && s.mes === ingresoMes);
+    return reg ? reg.sueldo_15 + reg.sueldo_30 : 0;
+  }, [sueldos, ingresoAnio, ingresoMes]);
+
+  const totalSueldoAnioIngresos = useMemo(() => {
+    return sueldos
+      .filter((s) => s.anio === ingresoAnio)
+      .reduce((acc, s) => acc + s.sueldo_15 + s.sueldo_30, 0);
+  }, [sueldos, ingresoAnio]);
+
+  const mesesConfiguradosAnio = useMemo(() => {
+    return sueldos.filter((s) => s.anio === ingresoAnio && s.sueldo_15 + s.sueldo_30 > 0).length;
+  }, [sueldos, ingresoAnio]);
+
+  const ultimoDiaSueldo = obtenerUltimoDiaMes(ingresoAnio, ingresoMes);
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
-      {/* Cabecera y Navegación de Píldoras (.payments-nav-pills en React) */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Cabecera Principal */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900">
-            Pagos Programados y Compromisos
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Controla tu agenda mensual, pagos fijos recurrentes y cronogramas en cuotas
+          <p className="text-[11px] font-black uppercase tracking-wider text-teal-600 mb-0.5">
+            TU AGENDA FINANCIERA
+          </p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Pagos programados</h1>
+          <p className="text-xs text-slate-500">
+            Todos tus compromisos con su propio cronograma. Anticipa tu saldo y sigue cada pago.
           </p>
         </div>
 
-        {/* Píldoras de sub-navegación */}
-        <div className="inline-flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 gap-1 self-start">
-          <button
-            onClick={() => setSubTab('agenda')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              subTab === 'agenda'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <CalendarCheck className="w-4 h-4" />
-            <span>Agenda del Mes</span>
-          </button>
-
-          <button
-            onClick={() => setSubTab('recurrentes')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              subTab === 'recurrentes'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Repeat className="w-4 h-4" />
-            <span>Plantillas Fijas ({recurrentes.length})</span>
-          </button>
-
-          <button
-            onClick={() => setSubTab('deudas')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              subTab === 'deudas'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <CreditCard className="w-4 h-4" />
-            <span>Deudas y Cuotas ({deudas.length})</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setModalNuevoProgramado(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Nuevo pago programado</span>
+        </button>
       </div>
 
-      {/* SUB-VISTA 1: AGENDA MENSUAL */}
+      {/* Píldoras de Navegación Exactas del PHP: Agenda mensual | Cronogramas | Ingresos programados */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-2xl w-fit border border-slate-300/60 shadow-xs">
+        <button
+          onClick={() => setSubTab('agenda')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            subTab === 'agenda'
+              ? 'bg-teal-600 text-white shadow-xs'
+              : 'text-slate-700 hover:text-slate-900'
+          }`}
+        >
+          <CalendarCheck className="w-4 h-4" />
+          <span>Agenda mensual</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('cronogramas')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            subTab === 'cronogramas'
+              ? 'bg-teal-600 text-white shadow-xs'
+              : 'text-slate-700 hover:text-slate-900'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Cronogramas</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('ingresos')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            subTab === 'ingresos'
+              ? 'bg-teal-600 text-white shadow-xs'
+              : 'text-slate-700 hover:text-slate-900'
+          }`}
+        >
+          <Wallet className="w-4 h-4" />
+          <span>Ingresos programados</span>
+        </button>
+      </div>
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* PESTAÑA 1: AGENDA MENSUAL                                                */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
       {subTab === 'agenda' && (
         <div className="space-y-4">
-          {/* Tarjeta de filtros de la agenda */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+          {/* Barra de Filtros: Mes, Tipo, Estado, Mes actual */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+              <div className="lg:col-span-4">
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
                   Mes
                 </label>
-                <select
-                  value={agendaMes}
-                  onChange={(e) => setAgendaMes(Number(e.target.value))}
-                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
-                >
-                  {NOMBRES_MESES.map((m, idx) => (
-                    <option key={idx} value={idx}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  Año
-                </label>
-                <select
-                  value={agendaAnio}
-                  onChange={(e) => setAgendaAnio(Number(e.target.value))}
-                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
-                >
-                  {[hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1, hoy.getFullYear() + 2].map(
-                    (a) => (
+                <div className="flex gap-2">
+                  <select
+                    value={agendaMes}
+                    onChange={(e) => setAgendaMes(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                  >
+                    {NOMBRES_MESES.map((m, idx) => (
+                      <option key={idx} value={idx}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={agendaAnio}
+                    onChange={(e) => setAgendaAnio(Number(e.target.value))}
+                    className="w-24 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                  >
+                    {[hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1].map((a) => (
                       <option key={a} value={a}>
                         {a}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  Estado
-                </label>
-                <select
-                  value={agendaEstado}
-                  onChange={(e) =>
-                    setAgendaEstado(e.target.value as 'todos' | 'pendientes' | 'confirmados')
-                  }
-                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
-                >
-                  <option value="todos">Todos los compromisos</option>
-                  <option value="pendientes">Solo Pendientes</option>
-                  <option value="confirmados">Solo Confirmados</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={abrirNuevaPlantilla}
-                className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
-              >
-                + Nuevo Fijo
-              </button>
-              <button
-                onClick={() => setModalDeudaAbierto(true)}
-                className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
-              >
-                + Nueva Deuda en Cuotas
-              </button>
-            </div>
-          </div>
-
-          {/* Lista de compromisos del mes */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            {itemsAgendaMes.length === 0 ? (
-              <div className="text-center py-12 px-4">
-                <p className="text-sm font-semibold text-slate-500">
-                  No hay pagos programados ni cuotas para {NOMBRES_MESES[agendaMes]} {agendaAnio}.
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Agrega una plantilla fija (como luz, internet o alquiler) o un cronograma de cuotas.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {itemsAgendaMes.map((item) => (
-                  <div
-                    key={item.uid}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div
-                        className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center font-bold shrink-0 ${
-                          item.confirmado
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-slate-100 text-slate-800 border border-slate-200'
-                        }`}
-                      >
-                        <span className="text-sm font-black leading-none">{item.dia}</span>
-                        <span className="text-[10px] uppercase">
-                          {NOMBRES_MESES[agendaMes].slice(0, 3)}
-                        </span>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-slate-900">{item.titulo}</span>
-                          <span
-                            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                            style={{
-                              backgroundColor: `${item.categoriaColor}18`,
-                              color: item.categoriaColor,
-                            }}
-                          >
-                            {item.categoriaNombre}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">{item.subtitulo}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-4">
-                      <span
-                        className={`text-sm font-black ${
-                          item.tipo === 'ingreso' ? 'text-emerald-600' : 'text-slate-900'
-                        }`}
-                      >
-                        {formatearMoneda(item.monto)}
-                      </span>
-
-                      {item.confirmado ? (
-                        <button
-                          disabled={item.origen === 'cuota' || procesandoPagoId === item.uid}
-                          onClick={() => handleAccionAgenda(item)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold cursor-pointer disabled:cursor-default"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Pagado</span>
-                        </button>
-                      ) : (
-                        <button
-                          disabled={procesandoPagoId === item.uid}
-                          onClick={() => handleAccionAgenda(item)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-                        >
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>
-                            {procesandoPagoId === item.uid ? 'Confirmando...' : 'Confirmar Pago'}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* SUB-VISTA 2: PLANTILLAS RECURRENTES FIJAS */}
-      {subTab === 'recurrentes' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-              Tus Plantillas Mensuales Fijas
-            </h2>
-            <button
-              onClick={abrirNuevaPlantilla}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nueva Plantilla Fija</span>
-            </button>
-          </div>
-
-          {recurrentes.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
-              <p className="text-sm font-semibold text-slate-600">
-                No tienes pagos ni ingresos fijos registrados.
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Úsalos para recibos de luz, internet, alquiler, suscripciones o ingresos fijos.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recurrentes.map((r) => {
-                const cat = r.categoria_id ? mapaCategorias.get(r.categoria_id) : undefined;
-                return (
-                  <div
-                    key={r.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span
-                            className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold mb-2"
-                            style={{
-                              backgroundColor: `${cat?.color || '#3498db'}18`,
-                              color: cat?.color || '#3498db',
-                            }}
-                          >
-                            {cat?.nombre || 'General'}
-                          </span>
-                          <h3 className="text-base font-bold text-slate-900">{r.descripcion}</h3>
-                        </div>
-                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">
-                          Día {r.dia_pago}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`text-xl font-black mt-3 ${
-                          r.tipo === 'ingreso' ? 'text-emerald-600' : 'text-slate-900'
-                        }`}
-                      >
-                        {r.tipo === 'ingreso' ? '+' : '-'}
-                        {formatearMoneda(r.monto)}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
-                      <button
-                        onClick={() => abrirEdicionPlantilla(r)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 cursor-pointer"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEliminarPlantilla(r.id)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* SUB-VISTA 3: DEUDAS Y CRONOGRAMAS EN CUOTAS */}
-      {subTab === 'deudas' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-              Préstamos y Compras en Cuotas
-            </h2>
-            <button
-              onClick={() => setModalDeudaAbierto(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo Cronograma de Cuotas</span>
-            </button>
-          </div>
-
-          {deudas.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
-              <p className="text-sm font-semibold text-slate-600">
-                No tienes cronogramas de deudas o cuotas registrados.
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Crea uno para llevar el control exacto de cuántas cuotas llevas pagadas y cuántas faltan.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {deudas.map((d) => {
-                const cuotasDeEstaDeuda = cuotas.filter((c) => c.deuda_id === d.id);
-                const totalPactado = cuotasDeEstaDeuda.reduce((acc, c) => acc + c.monto, 0);
-                let totalPagado = 0;
-                let cuotasCompletadas = 0;
-
-                cuotasDeEstaDeuda.forEach((c) => {
-                  const abonos = pagosDeuda
-                    .filter((p) => p.cuota_id === c.id)
-                    .reduce((acc, p) => acc + p.monto, 0);
-                  totalPagado += abonos;
-                  if (c.monto - abonos <= 0.009) cuotasCompletadas++;
-                });
-
-                const pct =
-                  totalPactado > 0 ? Math.min(100, Math.round((totalPagado / totalPactado) * 100)) : 0;
-                const expandida = Boolean(deudasExpandidas[d.id]);
-
-                return (
-                  <div
-                    key={d.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-base font-extrabold text-slate-900">{d.nombre}</h3>
-                          <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
-                            {cuotasCompletadas}/{cuotasDeEstaDeuda.length} cuotas pagadas
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Pagado: <strong>{formatearMoneda(totalPagado)}</strong> de{' '}
-                          <strong>{formatearMoneda(totalPactado)}</strong> ({pct}%)
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            setDeudasExpandidas((prev) => ({ ...prev, [d.id]: !prev[d.id] }))
-                          }
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
-                        >
-                          <span>{expandida ? 'Ocultar cuotas' : 'Ver cuotas'}</span>
-                          <ChevronDown
-                            className={`w-4 h-4 transition-transform ${
-                              expandida ? 'rotate-180' : ''
-                            }`}
-                          />
-                        </button>
-                        <button
-                          onClick={() => handleEliminarDeuda(d.id)}
-                          className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                          title="Eliminar deuda"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Barra de progreso */}
-                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mt-3">
-                      <div
-                        className="h-full bg-teal-500 rounded-full transition-all duration-300"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-
-                    {/* Desglose de cuotas */}
-                    {expandida && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                        {cuotasDeEstaDeuda.map((c) => {
-                          const abonado = pagosDeuda
-                            .filter((p) => p.cuota_id === c.id)
-                            .reduce((acc, p) => acc + p.monto, 0);
-                          const pendiente = Math.max(0, Math.round((c.monto - abonado) * 100) / 100);
-                          const pagada = pendiente <= 0.009;
-
-                          return (
-                            <div
-                              key={c.id}
-                              className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
-                                pagada
-                                  ? 'bg-emerald-50/40 border-emerald-200'
-                                  : 'bg-slate-50 border-slate-200'
-                              }`}
-                            >
-                              <div>
-                                <strong className="text-slate-900 block">
-                                  Cuota #{c.numero} · {formatearMoneda(c.monto)}
-                                </strong>
-                                <span className="text-slate-500 text-[11px]">Vence: {c.fecha}</span>
-                              </div>
-
-                              {pagada ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                                  <CheckCircle2 className="w-4 h-4" />
-                                  Pagada
-                                </span>
-                              ) : (
-                                <button
-                                  disabled={procesandoPagoId === `cuota-direct-${c.id}`}
-                                  onClick={() => handlePagarCuotaDirecto(c, pendiente)}
-                                  className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold cursor-pointer"
-                                >
-                                  {procesandoPagoId === `cuota-direct-${c.id}` ? '...' : 'Pagar'}
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* MODAL PLANTILLA RECURRENTE */}
-      {modalRecAbierto && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="text-base font-bold">
-                {recEditId ? 'Editar Plantilla Fija' : 'Nueva Plantilla Fija Mensual'}
-              </h3>
-              <button
-                onClick={() => setModalRecAbierto(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleGuardarPlantilla} className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setRecTipo('gasto')}
-                  className={`py-2 rounded-lg text-xs font-bold cursor-pointer ${
-                    recTipo === 'gasto' ? 'bg-red-600 text-white' : 'text-slate-600'
-                  }`}
-                >
-                  Gasto Fijo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRecTipo('ingreso')}
-                  className={`py-2 rounded-lg text-xs font-bold cursor-pointer ${
-                    recTipo === 'ingreso' ? 'bg-emerald-600 text-white' : 'text-slate-600'
-                  }`}
-                >
-                  Ingreso Fijo
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
-                <input
-                  type="text"
-                  required
-                  value={recDesc}
-                  onChange={(e) => setRecDesc(e.target.value)}
-                  placeholder="Ej. Internet Fibra, Alquiler, Luz..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Monto (S/.)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={recMonto}
-                    onChange={(e) => setRecMonto(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Día de pago (1-31)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="31"
-                    required
-                    value={recDia}
-                    onChange={(e) => setRecDia(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
-                <select
-                  value={recCatId}
-                  onChange={(e) =>
-                    setRecCatId(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-                >
-                  <option value="">Sin categoría</option>
-                  {categorias.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalRecAbierto(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={guardandoRec}
-                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
-                >
-                  {guardandoRec ? 'Guardando...' : 'Guardar Plantilla'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL NUEVA DEUDA EN CUOTAS */}
-      {modalDeudaAbierto && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="text-base font-bold">Nuevo Cronograma de Cuotas</h3>
-              <button
-                onClick={() => setModalDeudaAbierto(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCrearDeudaConCuotas} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nombre de la Deuda / Compra
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={deudaNombre}
-                  onChange={(e) => setDeudaNombre(e.target.value)}
-                  placeholder="Ej. Préstamo BCP, Laptop en cuotas, Tarjeta..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    N° de Cuotas
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="120"
-                    required
-                    value={numCuotas}
-                    onChange={(e) => setNumCuotas(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Monto por Cuota (S/.)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={montoCuota}
-                    onChange={(e) => setMontoCuota(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Fecha 1ra Cuota
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={fechaPrimeraCuota}
-                    onChange={(e) => setFechaPrimeraCuota(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
-                  <select
-                    value={deudaCatId}
-                    onChange={(e) =>
-                      setDeudaCatId(e.target.value === '' ? '' : Number(e.target.value))
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-                  >
-                    <option value="">General</option>
-                    {categorias.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
+              <div className="lg:col-span-3">
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  Tipo
+                </label>
+                <select
+                  value={agendaTipo}
+                  onChange={(e) =>
+                    setAgendaTipo(e.target.value as 'todos' | 'continuo' | 'cuotas')
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                >
+                  <option value="todos">Todos los pagos</option>
+                  <option value="continuo">Continuos o fijos</option>
+                  <option value="cuotas">Cantidad definida (Cuotas)</option>
+                </select>
+              </div>
+
+              <div className="lg:col-span-3">
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  Estado
+                </label>
+                <select
+                  value={agendaEstado}
+                  onChange={(e) =>
+                    setAgendaEstado(
+                      e.target.value as 'todos' | 'pendiente' | 'pagado' | 'vencido'
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="pendiente">Pendientes</option>
+                  <option value="pagado">Pagados</option>
+                  <option value="vencido">Vencidos</option>
+                </select>
+              </div>
+
+              <div className="lg:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAgendaMes(hoy.getMonth());
+                    setAgendaAnio(hoy.getFullYear());
+                  }}
+                  className="w-full py-2 px-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Mes actual</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Tarjetas KPI: Programado del mes, Pagado de este mes, Pendiente, Vencido */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                Programado del mes
+              </span>
+              <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                {formatearMoneda(resumenAgenda.programado)}
+              </strong>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                Pagado de este mes
+              </span>
+              <strong className="text-xl font-black text-emerald-600 block mt-0.5">
+                {formatearMoneda(resumenAgenda.pagado)}
+              </strong>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                Pendiente
+              </span>
+              <strong className="text-xl font-black text-amber-600 block mt-0.5">
+                {formatearMoneda(resumenAgenda.pendiente)}
+              </strong>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+              <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                Vencido
+              </span>
+              <strong
+                className={`text-xl font-black block mt-0.5 ${
+                  resumenAgenda.vencido > 0 ? 'text-red-600' : 'text-slate-900'
+                }`}
+              >
+                {formatearMoneda(resumenAgenda.vencido)}
+              </strong>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-400">
+            Totales según el mes de vencimiento. Los pagos se registran en Movimientos con su fecha real. Un vencimiento no confirma un pago automáticamente.
+          </p>
+
+          {/* Tabla de la Agenda con Columnas Originales */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/80 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Vencimiento</th>
+                    <th className="py-3 px-4">Compromiso</th>
+                    <th className="py-3 px-4">Tipo</th>
+                    <th className="py-3 px-4">Programado</th>
+                    <th className="py-3 px-4">Pagado</th>
+                    <th className="py-3 px-4">Pendiente</th>
+                    <th className="py-3 px-4">Estado</th>
+                    <th className="py-3 px-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filasFiltradas.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-slate-400">
+                        <CalendarCheck className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                        <strong className="block text-slate-700 text-sm">
+                          No hay pagos para esta selección
+                        </strong>
+                        <span className="text-xs">Prueba otro mes o cambia los filtros.</span>
+                      </td>
+                    </tr>
+                  ) : (
+                    filasFiltradas.map((r) => {
+                      const [y, m, d] = r.fecha.split('-');
+                      const isOverdue = r.estado === 'vencido';
+                      const isPaid = r.estado === 'pagado';
+
+                      return (
+                        <tr
+                          key={r.id}
+                          className={`hover:bg-slate-50/70 transition-colors ${
+                            isOverdue ? 'bg-red-50/30' : ''
+                          }`}
+                        >
+                          {/* Vencimiento */}
+                          <td className="py-3.5 px-4 whitespace-nowrap font-semibold text-slate-800">
+                            {d}/{m}/{y}
+                          </td>
+
+                          {/* Compromiso */}
+                          <td className="py-3.5 px-4 min-w-[160px]">
+                            <strong className="block text-slate-900 font-extrabold">{r.nombre}</strong>
+                            <span className="text-[11px] text-slate-500">{r.detalle}</span>
+                          </td>
+
+                          {/* Tipo */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                              {r.tipo}
+                            </span>
+                          </td>
+
+                          {/* Programado */}
+                          <td className="py-3.5 px-4 whitespace-nowrap font-bold text-slate-900">
+                            {formatearMoneda(r.programado)}
+                          </td>
+
+                          {/* Pagado */}
+                          <td
+                            className={`py-3.5 px-4 whitespace-nowrap font-bold ${
+                              r.pagado > 0 ? 'text-emerald-600' : 'text-slate-400'
+                            }`}
+                          >
+                            {formatearMoneda(r.pagado)}
+                          </td>
+
+                          {/* Pendiente */}
+                          <td
+                            className={`py-3.5 px-4 whitespace-nowrap font-extrabold ${
+                              r.pendiente > 0 ? 'text-slate-900' : 'text-slate-400'
+                            }`}
+                          >
+                            {formatearMoneda(r.pendiente)}
+                          </td>
+
+                          {/* Estado */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            {isPaid ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Pagado
+                              </span>
+                            ) : isOverdue ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                Vencido
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                Pendiente
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Acciones */}
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              {!isPaid ? (
+                                <button
+                                  type="button"
+                                  disabled={procesandoAccion === r.id}
+                                  onClick={() => handleRegistrarPagoAgenda(r)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs cursor-pointer"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>
+                                    {procesandoAccion === r.id ? 'Registrando...' : 'Registrar pago'}
+                                  </span>
+                                </button>
+                              ) : (
+                                r.tipo === 'Continuo' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAnularPagoAgenda(r)}
+                                    className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold text-[11px] cursor-pointer"
+                                  >
+                                    Anular
+                                  </button>
+                                )
+                              )}
+                              {r.deudaId && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSubTab('cronogramas');
+                                    setCronogramasExpandidos((prev) => ({
+                                      ...prev,
+                                      [r.deudaId!]: true,
+                                    }));
+                                  }}
+                                  className="text-slate-500 hover:text-teal-600 font-semibold inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                                >
+                                  <span>Ver detalle</span>
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* PESTAÑA 2: CRONOGRAMAS (Compras y Préstamos en Cuotas)                    */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {subTab === 'cronogramas' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            {/* Filtros de cronogramas */}
+            <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setFiltroCronogramas('todos')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  filtroCronogramas === 'todos' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                }`}
+              >
+                Todos ({deudas.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroCronogramas('activas')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  filtroCronogramas === 'activas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                }`}
+              >
+                En curso
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroCronogramas('pagadas')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  filtroCronogramas === 'pagadas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                }`}
+              >
+                Pagados
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setModalTipoCrear('cuotas');
+                setModalNuevoProgramado(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo cronograma</span>
+            </button>
+          </div>
+
+          {deudas.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+              <p className="text-sm font-semibold text-slate-600">
+                No tienes cronogramas registrados.
+              </p>
+              <button
+                onClick={() => {
+                  setModalTipoCrear('cuotas');
+                  setModalNuevoProgramado(true);
+                }}
+                className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:underline cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Crear tu primer cronograma en cuotas</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {deudas
+                .filter((d) => {
+                  const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
+                  let pagadasCount = 0;
+                  cuotasD.forEach((c) => {
+                    const pagado = pagosDeuda
+                      .filter((p) => p.cuota_id === c.id)
+                      .reduce((acc, p) => acc + p.monto, 0);
+                    if (c.monto - pagado <= 0.009) pagadasCount++;
+                  });
+                  const estaPagada = pagadasCount === cuotasD.length && cuotasD.length > 0;
+                  if (filtroCronogramas === 'activas') return !estaPagada;
+                  if (filtroCronogramas === 'pagadas') return estaPagada;
+                  return true;
+                })
+                .map((d) => {
+                  const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
+                  const totalPactado = cuotasD.reduce((acc, c) => acc + c.monto, 0);
+                  let totalAbonado = 0;
+                  let pagadas = 0;
+
+                  cuotasD.forEach((c) => {
+                    const abono = pagosDeuda
+                      .filter((p) => p.cuota_id === c.id)
+                      .reduce((acc, p) => acc + p.monto, 0);
+                    totalAbonado += abono;
+                    if (c.monto - abono <= 0.009) pagadas++;
+                  });
+
+                  const pct =
+                    totalPactado > 0 ? Math.min(100, Math.round((totalAbonado / totalPactado) * 100)) : 0;
+                  const expandida = Boolean(cronogramasExpandidos[d.id]);
+
+                  return (
+                    <div
+                      key={d.id}
+                      id={`deuda-${d.id}`}
+                      className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-extrabold text-slate-900">{d.nombre}</h3>
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                              {pagadas}/{cuotasD.length} cuotas pagadas
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Pagado: <strong>{formatearMoneda(totalAbonado)}</strong> de{' '}
+                            <strong>{formatearMoneda(totalPactado)}</strong> ({pct}%)
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCronogramasExpandidos((prev) => ({ ...prev, [d.id]: !prev[d.id] }))
+                            }
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
+                          >
+                            <span>{expandida ? 'Ocultar cuotas' : 'Ver cuotas'}</span>
+                            <ChevronDown
+                              className={`w-4 h-4 transition-transform ${
+                                expandida ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (window.confirm('¿Eliminar este cronograma y todas sus cuotas?')) {
+                                await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
+                                await recargarTodo();
+                              }
+                            }}
+                            className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Barra de progreso */}
+                      <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mt-3">
+                        <div
+                          className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+
+                      {/* Cuotas individuales desplegadas */}
+                      {expandida && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                          {cuotasD.map((c) => {
+                            const abonado = pagosDeuda
+                              .filter((p) => p.cuota_id === c.id)
+                              .reduce((acc, p) => acc + p.monto, 0);
+                            const pendiente = Math.max(0, Math.round((c.monto - abonado) * 100) / 100);
+                            const pagada = pendiente <= 0.009;
+
+                            return (
+                              <div
+                                key={c.id}
+                                className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
+                                  pagada
+                                    ? 'bg-emerald-50/40 border-emerald-200'
+                                    : 'bg-slate-50 border-slate-200'
+                                }`}
+                              >
+                                <div>
+                                  <strong className="text-slate-900 block font-bold">
+                                    Cuota #{c.numero} · {formatearMoneda(c.monto)}
+                                  </strong>
+                                  <span className="text-slate-500 text-[11px]">Vence: {c.fecha}</span>
+                                </div>
+
+                                {pagada ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Pagada
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      // Pagar cuota directo
+                                      const { data: movData } = await supabase
+                                        .from('movimientos_agenda')
+                                        .insert({
+                                          user_id: user!.id,
+                                          tipo: 'gasto',
+                                          descripcion: `${d.nombre} - Cuota #${c.numero}`,
+                                          monto: pendiente,
+                                          fecha: fechaHoyStr,
+                                          categoria_id: d.categoria_id,
+                                          es_recurrente: false,
+                                          pago_confirmado: true,
+                                          fecha_pago: fechaHoyStr,
+                                        })
+                                        .select('id')
+                                        .single();
+
+                                      await supabase.from('deuda_pagos').insert({
+                                        user_id: user!.id,
+                                        cuota_id: c.id,
+                                        monto: pendiente,
+                                        fecha: fechaHoyStr,
+                                        movimiento_id: movData ? movData.id : null,
+                                        solicitud: `pago-cuota-${c.id}-${Date.now()}`,
+                                      });
+                                      await recargarTodo();
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold cursor-pointer"
+                                  >
+                                    Pagar
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* PESTAÑA 3: INGRESOS PROGRAMADOS (Sueldo del Mes y Otros Ingresos)         */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {subTab === 'ingresos' && (
+        <div className="space-y-6">
+          {/* Resumen Ejecutivo de 4 Tarjetas */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Saldo Inicial Base
+                </span>
+                <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                  {formatearMoneda(montoBase)}
+                </strong>
+              </div>
+              <div className="mt-2">
+                {!editandoBase ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditandoBase(true)}
+                    className="text-xs font-semibold text-teal-600 hover:underline cursor-pointer"
+                  >
+                    Ajustar base
+                  </button>
+                ) : (
+                  <form onSubmit={handleGuardarBasePerfil} className="flex gap-1 mt-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={inputBase}
+                      onChange={(e) => setInputBase(e.target.value)}
+                      className="w-20 px-2 py-1 text-xs border rounded-lg"
+                    />
+                    <button
+                      type="submit"
+                      className="px-2 py-1 bg-teal-600 text-white text-[11px] rounded-lg font-bold"
+                    >
+                      OK
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Sueldo de {NOMBRES_MESES[ingresoMes]}
+                </span>
+                <strong className="text-xl font-black text-emerald-600 block mt-0.5">
+                  {formatearMoneda(totalSueldoMesIngresos)}
+                </strong>
+              </div>
+              <div className="mt-2">
+                <span className="text-[11px] font-semibold text-slate-500">
+                  {totalSueldoMesIngresos > 0 ? ingresoModo : 'Sin sueldo'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Otros Ingresos ({NOMBRES_MESES[ingresoMes]})
+                </span>
+                <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                  {formatearMoneda(otrosIngresosMes.reduce((acc, i) => acc + i.monto, 0))}
+                </strong>
+              </div>
+              <div className="mt-2">
+                <span className="text-[11px] font-semibold text-slate-500">
+                  {otrosIngresosMes.length} programado(s)
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Sueldos en el Año {ingresoAnio}
+                </span>
+                <strong className="text-xl font-black text-slate-900 block mt-0.5">
+                  {formatearMoneda(totalSueldoAnioIngresos)}
+                </strong>
+              </div>
+              <div className="mt-2">
+                <span className="text-[11px] font-semibold text-slate-500">
+                  {mesesConfiguradosAnio} de 12 meses configurados
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dos Columnas: Configuración de Sueldo + Otros Ingresos Programados */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Columna 1: Mi Perfil de Sueldo */}
+            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-emerald-600" />
+                  <h2 className="text-base font-bold text-slate-900">Mi Perfil de Sueldo</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIngresoMes(hoy.getMonth());
+                    setIngresoAnio(hoy.getFullYear());
+                  }}
+                  className="text-xs font-bold text-slate-600 hover:text-teal-600 flex items-center gap-1 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Mes actual</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleGuardarSueldoIngresos} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">
+                      Mes a configurar
+                    </label>
+                    <select
+                      value={ingresoMes}
+                      onChange={(e) => setIngresoMes(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold"
+                    >
+                      {NOMBRES_MESES.map((m, idx) => (
+                        <option key={idx} value={idx}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Año</label>
+                    <select
+                      value={ingresoAnio}
+                      onChange={(e) => setIngresoAnio(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold"
+                    >
+                      {[hoy.getFullYear(), hoy.getFullYear() + 1].map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Switch de modalidad */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                    Modalidad de cobro
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setIngresoModo('quincenal')}
+                      className={`py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                        ingresoModo === 'quincenal'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      2 Pagos (15 y Fin de Mes)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIngresoModo('mensual')}
+                      className={`py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                        ingresoModo === 'mensual'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      1 Pago Mensual
+                    </button>
+                  </div>
+                </div>
+
+                {ingresoModo === 'quincenal' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Sueldo de Quincena (Día 15)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={ingresoS15}
+                      onChange={(e) => setIngresoS15(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Sueldo Fin de Mes (Día {ultimoDiaSueldo})
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={ingresoS30}
+                    onChange={(e) => setIngresoS30(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                  />
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={ingresoAplicarAnio}
+                    onChange={(e) => setIngresoAplicarAnio(e.target.checked)}
+                    className="rounded border-slate-300 text-teal-600"
+                  />
+                  <span>
+                    Aplicar estos montos a todos los meses restantes del año {ingresoAnio}
+                  </span>
+                </label>
+
+                <div className="flex items-center justify-between pt-2">
+                  {mensajeSueldo && (
+                    <span className="text-xs font-bold text-emerald-600">{mensajeSueldo}</span>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={guardandoSueldo}
+                    className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer ml-auto"
+                  >
+                    {guardandoSueldo ? 'Guardando...' : 'Guardar Sueldo'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Columna 2: Otros Ingresos Programados */}
+            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Otros Ingresos Programados</h2>
+                  <p className="text-xs text-slate-500">
+                    Ingresos fijos adicionales en {NOMBRES_MESES[ingresoMes]}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalTipoCrear('ingreso');
+                    setModalNuevoProgramado(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Programar ingreso</span>
+                </button>
+              </div>
+
+              {otrosIngresosMes.length === 0 ? (
+                <div className="text-center py-10 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                  <p className="text-xs text-slate-500 mb-2">
+                    No tienes otros ingresos programados para <strong>{NOMBRES_MESES[ingresoMes]} {ingresoAnio}</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalTipoCrear('ingreso');
+                      setModalNuevoProgramado(true);
+                    }}
+                    className="text-xs font-bold text-teal-600 hover:underline cursor-pointer"
+                  >
+                    + Programar un ingreso fijo
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {otrosIngresosMes.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-sm font-bold text-slate-900">
+                            {item.descripcion}
+                          </strong>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              item.recibido
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}
+                          >
+                            {item.recibido ? 'Recibido' : 'Por recibir'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500 block mt-0.5">
+                          Día {item.dia} de cada mes · Fecha: {item.fecha}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <strong className="text-sm font-extrabold text-emerald-600">
+                          +{formatearMoneda(item.monto)}
+                        </strong>
+                        {!item.recibido ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await supabase.from('movimientos_agenda').insert({
+                                user_id: user!.id,
+                                tipo: 'ingreso',
+                                descripcion: item.descripcion,
+                                monto: item.monto,
+                                fecha: item.fecha,
+                                es_recurrente: true,
+                                recurrente_id: item.id,
+                                pago_confirmado: true,
+                                fecha_pago: fechaHoyStr,
+                              });
+                              await recargarTodo();
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
+                          >
+                            Confirmar
+                          </button>
+                        ) : (
+                          item.movimientoId && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await supabase
+                                  .from('movimientos_agenda')
+                                  .delete()
+                                  .eq('id', item.movimientoId!)
+                                  .eq('user_id', user!.id);
+                                await recargarTodo();
+                              }}
+                              className="px-2.5 py-1 text-slate-400 hover:text-red-600 text-xs font-semibold cursor-pointer"
+                            >
+                              Anular
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* MODAL: NUEVO PAGO PROGRAMADO (Con selector de Cuotas vs Continuo vs Ingreso)*/}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {modalNuevoProgramado && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+              <h3 className="text-base font-bold">Nuevo Pago Programado</h3>
+              <button
+                onClick={() => setModalNuevoProgramado(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearNuevoProgramado} className="p-5 space-y-4">
+              {/* Selector de Tipo */}
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setModalTipoCrear('cuotas')}
+                  className={`py-2 rounded-lg cursor-pointer transition-all ${
+                    modalTipoCrear === 'cuotas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                  }`}
+                >
+                  En Cuotas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTipoCrear('continuo')}
+                  className={`py-2 rounded-lg cursor-pointer transition-all ${
+                    modalTipoCrear === 'continuo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                  }`}
+                >
+                  Fijo Continuo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTipoCrear('ingreso')}
+                  className={`py-2 rounded-lg cursor-pointer transition-all ${
+                    modalTipoCrear === 'ingreso' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                  }`}
+                >
+                  Ingreso Fijo
+                </button>
+              </div>
+
+              {/* Formulario si es Cuotas */}
+              {modalTipoCrear === 'cuotas' ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Nombre del compromiso / compra
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={nombreDeuda}
+                      onChange={(e) => setNombreDeuda(e.target.value)}
+                      placeholder="Ej. Cibertec Deee, Laptop en cuotas, BCP..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        N° de cuotas
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        required
+                        value={numCuotas}
+                        onChange={(e) => setNumCuotas(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Monto por cuota (S/.)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        value={montoPorCuota}
+                        onChange={(e) => setMontoPorCuota(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Fecha 1ra cuota
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={fecha1raCuota}
+                        onChange={(e) => setFecha1raCuota(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Categoría
+                      </label>
+                      <select
+                        value={deudaCatId}
+                        onChange={(e) =>
+                          setDeudaCatId(e.target.value === '' ? '' : Number(e.target.value))
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                      >
+                        <option value="">General</option>
+                        {categorias.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Formulario si es Continuo o Ingreso Fijo */
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Descripción
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={recDesc}
+                      onChange={(e) => setRecDesc(e.target.value)}
+                      placeholder={
+                        modalTipoCrear === 'ingreso'
+                          ? 'Ej. Renta departamento, Pensión...'
+                          : 'Ej. Internet Fibra, Luz, Alquiler...'
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Monto mensual (S/.)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        value={recMonto}
+                        onChange={(e) => setRecMonto(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Día de vencimiento (1-31)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        required
+                        value={recDia}
+                        onChange={(e) => setRecDia(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Categoría
+                    </label>
+                    <select
+                      value={recCatId}
+                      onChange={(e) =>
+                        setRecCatId(e.target.value === '' ? '' : Number(e.target.value))
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                    >
+                      <option value="">General</option>
+                      {categorias.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setModalDeudaAbierto(false)}
+                  onClick={() => setModalNuevoProgramado(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={guardandoDeuda}
                   className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
                 >
-                  {guardandoDeuda ? 'Generando...' : 'Crear Cronograma'}
+                  Guardar Compromiso
                 </button>
               </div>
             </form>

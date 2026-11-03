@@ -99,3 +99,4 @@ export function fechaHoyISO(): string {
   const d = String(hoy.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+

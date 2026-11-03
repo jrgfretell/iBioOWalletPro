@@ -260,3 +260,4 @@ export const useWallet = (): WalletContextType => {
   }
   return ctx;
 };
+

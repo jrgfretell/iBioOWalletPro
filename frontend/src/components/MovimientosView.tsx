@@ -600,3 +600,4 @@ export const MovimientosView: React.FC = () => {
     </div>
   );
 };
+

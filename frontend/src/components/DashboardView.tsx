@@ -1290,3 +1290,4 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     </div>
   );
 };
+

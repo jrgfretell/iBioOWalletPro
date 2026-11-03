@@ -243,3 +243,4 @@ export const CategoriasView: React.FC = () => {
     </div>
   );
 };
+
