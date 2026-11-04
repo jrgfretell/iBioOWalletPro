@@ -6,6 +6,8 @@ export interface Billetera {
   moneda: Moneda;
   archivada: boolean;
   es_principal: boolean;
+  monto_base?: number;
+  fecha_referencia?: string | null;
   creado_el?: string;
   actualizado_el?: string;
 }

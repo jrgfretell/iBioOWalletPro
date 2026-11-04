@@ -1,10 +1,9 @@
-import { SaldoReferenciaEditor } from './SaldoReferenciaEditor';
 import { calcularProyeccionBilletera } from '../lib/projection';
 import type { ProyeccionMesCalculada } from '../lib/projection';
 import { AnimatedModal } from './AnimatedModal';
 import React, { useState, useMemo } from 'react';
 import { AnimatedDisclosure } from './AnimatedDisclosure';
-import { useWallet, useWalletFormGuard } from '../context/WalletContext';
+import { useWallet } from '../context/WalletContext';
 import {
   NOMBRES_MESES,
   MESES_CORTOS,
@@ -13,7 +12,6 @@ import {
 } from '../types/wallet';
 import type { ActiveTab } from '../types/wallet';
 import {
-  Edit3,
   PieChart,
   TrendingUp,
   CalendarCheck,
@@ -32,7 +30,7 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
-  const { billeteraActual, modoLegacy, fechaReferencia, soloLectura, formatearMoneda } = useWallet();
+  const { billeteraActual, modoLegacy, fechaReferencia, formatearMoneda } = useWallet();
   const {
     montoBase,
     categorias,
@@ -49,9 +47,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const mesHoy = hoy.getMonth();
   const fechaHoyStr = fechaHoyISO();
 
-  // Estado para editar saldo base
-  const [editandoBase, setEditandoBase] = useState(false);
-
 
   // Estado para Gastos por Categoría
   const [catMes, setCatMes] = useState<number>(mesHoy);
@@ -64,7 +59,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
 
 
-  useWalletFormGuard(editandoBase, 'Saldo de referencia');
 
   // Mapa rápido de categorías
   const mapaCategorias = useMemo(() => {
@@ -206,39 +200,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* COLUMNA IZQUIERDA (4 cols en desktop) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* TARJETA 1: SALDO DE REFERENCIA */}
-          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 text-white p-6 shadow-xl relative overflow-hidden">
-            <div className="relative z-10">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-teal-300/90">
-                  Saldo Inicial de Referencia
-                </span>
-                <span className="text-[11px] bg-white/10 px-2.5 py-0.5 rounded-full text-slate-200">
-                  Base de Proyección
-                </span>
-              </div>
-
-              <div className="text-3xl sm:text-4xl font-black mt-2 tracking-tight">
-                {formatearMoneda(montoBase)}
-              </div>
-
-              <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                {fechaReferencia ? `Saldo al cierre del ${fechaReferencia.split('-').reverse().join('/')}. Los movimientos anteriores ya están incluidos.` : 'Saldo sin fecha de referencia. Confirma la fecha para cargar históricos sin volver a descontarlos.'}
-              </p>
-
-              {!editandoBase ? (
-                <button disabled={soloLectura}
-                  onClick={() => setEditandoBase(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all cursor-pointer border border-white/20"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Actualizar saldo base</span>
-                </button>
-              ) : (
-                <SaldoReferenciaEditor onClose={() => setEditandoBase(false)} />
-              )}
-            </div>
-          </div>
 
           {/* TARJETA 2: PRÓXIMOS PAGOS PENDIENTES */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">

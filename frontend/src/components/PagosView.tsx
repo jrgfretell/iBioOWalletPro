@@ -1,4 +1,3 @@
-import { SaldoReferenciaEditor } from './SaldoReferenciaEditor';
 import { RegistrarPagoModal } from './RegistrarPagoModal';
 import type { ObjetivoPago } from './RegistrarPagoModal';
 import { generarCuotas } from '../lib/schedule';
@@ -57,7 +56,6 @@ export const PagosView: React.FC = () => {
   const { soporteEtapa5, fechaReferencia, ejecutarOperacion, escribiendo, error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
   const {
-    montoBase,
     categorias,
     recurrentes,
     movimientos,
@@ -142,7 +140,6 @@ export const PagosView: React.FC = () => {
   const [guardandoSueldo, setGuardandoSueldo] = useState<boolean>(false);
   const [mensajeSueldo, setMensajeSueldo] = useState<string | null>(null);
 
-  const [editandoBase, setEditandoBase] = useState<boolean>(false);
   const [pagoObjetivo,setPagoObjetivo]=useState<ObjetivoPago|null>(null);
   const [creando,setCreando]=useState(false);
   const [historicos,setHistoricos]=useState<Record<number,{pagada:boolean;fecha:string}>>({});
@@ -155,7 +152,7 @@ export const PagosView: React.FC = () => {
   const abrirPago=(objetivo:Omit<ObjetivoPago,'solicitud'>)=>setPagoObjetivo({...objetivo,solicitud:crypto.randomUUID()});
   const cuotasPrevias=generarCuotas(fecha1raCuota,Number(numCuotas),Number(montoPorCuota),forzarFinDeMes);
 
-  useWalletFormGuard(!!pagoObjetivo || modalNuevoProgramado || modalEdicionAbierto || editandoBase || editandoCuotaId !== null, 'Pagos programados');
+  useWalletFormGuard(!!pagoObjetivo || modalNuevoProgramado || modalEdicionAbierto || editandoCuotaId !== null, 'Pagos programados');
 
   // Cargar sueldo del mes seleccionado en la pestaña de Ingresos
   React.useEffect(() => {
@@ -1900,31 +1897,7 @@ export const PagosView: React.FC = () => {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {subTab === 'ingresos' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between min-w-0">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
-                  Saldo Inicial Base
-                </span>
-                <strong className="text-lg sm:text-xl font-black text-slate-900 block mt-0.5 truncate">
-                  {formatearMoneda(montoBase)}
-                </strong>
-              </div>
-              <div className="mt-2">
-                {!editandoBase ? (
-                  <button disabled={soloLectura}
-                    type="button"
-                    onClick={() => setEditandoBase(true)}
-                    className="text-xs font-semibold text-teal-600 hover:underline cursor-pointer"
-                  >
-                    Ajustar base
-                  </button>
-                ) : (
-                  <SaldoReferenciaEditor onClose={() => setEditandoBase(false)} />
-                )}
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between min-w-0">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
