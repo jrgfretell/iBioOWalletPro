@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS wallet_internal.migraciones (
   version text PRIMARY KEY,
   aplicada_el timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE wallet_internal.migraciones ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON wallet_internal.migraciones FROM PUBLIC, anon, authenticated;
 INSERT INTO wallet_internal.migraciones(version) VALUES ('202611030001_billeteras');
 
