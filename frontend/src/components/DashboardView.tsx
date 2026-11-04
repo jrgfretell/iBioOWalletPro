@@ -572,31 +572,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       {/* Cuerpo desplegable con los hitos del mes */}
                       <AnimatedDisclosure open={abierto} id={`proyeccion-${p.llave}`}>
                         <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
-                          {/* Bloque 1: Resumen de Flujo Mensual (Grid 3 columnas) */}
-                          <div className="grid grid-cols-3 gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200/60 text-center">
-                            <div className="flex flex-col items-center min-w-0">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate w-full">
-                                Saldo Base
+                          {/* Bloque 1: Resumen de Flujo Mensual (Saldo Base superior + 2 Columnas amplias) */}
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2">
+                            <div className="flex items-center justify-between px-1 text-xs pb-1.5 border-b border-slate-200/60">
+                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight truncate min-w-0">
+                                {fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`) ? 'Saldo de referencia' : 'Saldo inicial mes'}
                               </span>
-                              <span className="text-xs font-black text-slate-700 whitespace-nowrap mt-0.5">
+                              <strong className="text-xs font-black text-slate-800 whitespace-nowrap shrink-0 text-right ml-2">
                                 {formatearMoneda(p.balanceInicio)}
-                              </span>
+                              </strong>
                             </div>
-                            <div className="flex flex-col items-center border-x border-slate-200/60 px-1 min-w-0">
-                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight truncate w-full">
-                                + Ingresos
-                              </span>
-                              <span className="text-xs font-black text-emerald-600 whitespace-nowrap mt-0.5">
-                                +{formatearMoneda(p.ingresosTotales)}
-                              </span>
-                            </div>
-                            <div className="flex flex-col items-center min-w-0">
-                              <span className="text-[10px] font-bold text-red-500 uppercase tracking-tight truncate w-full">
-                                - Gastos
-                              </span>
-                              <span className="text-xs font-black text-red-600 whitespace-nowrap mt-0.5">
-                                -{formatearMoneda(p.gastosTotales)}
-                              </span>
+                            <div className="grid grid-cols-2 gap-2 text-center">
+                              <div className="p-1.5 rounded-lg bg-emerald-50/70 border border-emerald-100/80 flex flex-col items-center min-w-0">
+                                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-tight truncate w-full">
+                                  + Ingresos
+                                </span>
+                                <span className="text-xs font-black text-emerald-600 whitespace-nowrap mt-0.5">
+                                  +{formatearMoneda(p.ingresosTotales)}
+                                </span>
+                              </div>
+                              <div className="p-1.5 rounded-lg bg-red-50/70 border border-red-100/80 flex flex-col items-center min-w-0">
+                                <span className="text-[10px] font-bold text-red-700 uppercase tracking-tight truncate w-full">
+                                  - Gastos
+                                </span>
+                                <span className="text-xs font-black text-red-600 whitespace-nowrap mt-0.5">
+                                  -{formatearMoneda(p.gastosTotales)}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -634,9 +636,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                   15
                                 </span>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-bold text-emerald-900 leading-none flex items-center gap-1 whitespace-nowrap">
-                                    Tras quincena
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  <div className="text-xs font-bold text-emerald-900 leading-none flex items-center gap-1.5 whitespace-nowrap">
+                                    <span>Tras quincena</span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                                   </div>
                                   <div className="text-[10px] text-emerald-700 leading-tight mt-0.5">Cobro de sueldos</div>
                                 </div>
@@ -689,7 +691,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           </span>
                           <div className="min-w-0">
                             <div className="text-xs font-black text-white leading-none whitespace-nowrap">Cierre de mes</div>
-                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Balance final neto</div>
+                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5 whitespace-nowrap">Balance final</div>
                           </div>
                         </div>
                         <strong
