@@ -630,17 +630,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             </div>
 
                             {/* Hito 2: Tras quincena */}
-                            <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50/50 border border-emerald-100 hover:bg-emerald-50/80 transition-colors">
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
                                   15
                                 </span>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-bold text-emerald-900 leading-none flex items-center gap-1.5 whitespace-nowrap">
-                                    <span>Tras quincena</span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                  <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
+                                    Tras quincena
                                   </div>
-                                  <div className="text-[10px] text-emerald-700 leading-tight mt-0.5">Cobro de sueldos</div>
+                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Cobro de sueldos</div>
                                 </div>
                               </div>
                               <strong
