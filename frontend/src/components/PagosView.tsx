@@ -594,10 +594,10 @@ export const PagosView: React.FC = () => {
 
       if(soporteEtapa5) {
         if(cuotasPrevias.length!==nCuotas)throw Error('El registro de cronograma no es válido.');
-        const datos={nombre:nombreDeuda.trim(),categoria_id:deudaCatId===''?null:Number(deudaCatId),cuotas:cuotasPrevias.map((c,i)=>({...c,pagada:historicos[i]?.pagada||false,fecha_pago:historicos[i]?.fecha||c.fecha}))};
+        const datos={nombre:nombreDeuda.trim(),categoria_id:deudaCatId===''?null:Number(deudaCatId),cuotas:cuotasPrevias.map((c,i)=>({...c,pagada:(c.fecha < fechaHoyStr && Boolean(historicos[i]?.pagada))||false,fecha_pago:historicos[i]?.fecha||c.fecha}))};
         await ejecutarOperacion('crear_cronograma',datos,solicitudPara('crear_cronograma',datos));
         solicitudes.current.delete('crear_cronograma');setModalNuevoProgramado(false);setHistoricos({});setNombreDeuda('');setMontoPorCuota('');
-        setSubTab('cronogramas');setBusquedaCronogramas('');setFiltroCronogramas('todos');toastExito('Cronograma y pagos históricos guardados');return;
+        setSubTab('cronogramas');setBusquedaCronogramas('');setFiltroCronogramas('todos');toastExito('Cronograma guardado');return;
       }
       const { data: dData, error } = await supabase
         .from('deudas')
@@ -2751,17 +2751,80 @@ export const PagosView: React.FC = () => {
                 </>
               )}
 
-              {soporteEtapa5&&modalTipoCrear==='cuotas'&&cuotasPrevias.length>0&&<section className="space-y-2 rounded-xl border border-slate-200 p-3">
-                  <h4 className="text-xs font-bold text-slate-800">Vencimientos y pagos históricos</h4>
-                  <p className="text-xs leading-relaxed text-slate-500">Marca solo las cuotas abonadas por completo e indica la fecha real. Para abonos parciales, crea el cronograma y usa Registrar pago.</p>
-                  <div className="max-h-64 space-y-3 overflow-y-auto">
-                    {cuotasPrevias.map((c,i)=><div key={c.fecha} className="rounded-lg bg-slate-50 p-2 text-xs">
-                      <div className="flex flex-wrap items-center justify-between gap-1"><span>Cuota {i+1} · {c.fecha.split('-').reverse().join('/')}</span><strong>{formatearMoneda(c.monto)}</strong></div>
-                      <label className="mt-1 flex min-h-10 items-center gap-2"><input type="checkbox" checked={historicos[i]?.pagada||false} onChange={e=>setHistoricos(prev=>({...prev,[i]:{pagada:e.target.checked,fecha:prev[i]?.fecha||c.fecha}}))}/>Ya pagada</label>
-                      {historicos[i]?.pagada&&<label className="block">Fecha real del pago<input required type="date" max={fechaHoyStr} value={historicos[i].fecha} onChange={e=>setHistoricos(prev=>({...prev,[i]:{pagada:true,fecha:e.target.value}}))} className="mt-1 min-h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-base"/></label>}
-                    </div>)}
-                  </div>
-                </section>}
+              {soporteEtapa5 &&
+                modalTipoCrear === 'cuotas' &&
+                cuotasPrevias.length > 0 &&
+                cuotasPrevias.some((c) => c.fecha < fechaHoyStr) && (
+                  <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">
+                        ℹ️
+                      </span>
+                      <h4 className="text-xs font-bold text-slate-800">
+                        Vencimientos y pagos históricos
+                      </h4>
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-600">
+                      Como la fecha de inicio es anterior a hoy, indica cuáles de las siguientes cuotas ya fueron pagadas en el pasado. Las cuotas no marcadas quedarán pendientes.
+                    </p>
+                    <div className="max-h-64 space-y-2.5 overflow-y-auto">
+                      {cuotasPrevias
+                        .map((c, i) => ({ ...c, originalIndex: i }))
+                        .filter((c) => c.fecha <= fechaHoyStr)
+                        .map((c) => {
+                          const i = c.originalIndex;
+                          return (
+                            <div
+                              key={c.fecha}
+                              className="rounded-lg border border-slate-200 bg-white p-2.5 text-xs shadow-xs"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-1">
+                                <span className="font-semibold text-slate-800">
+                                  Cuota {i + 1} · {c.fecha.split('-').reverse().join('/')}
+                                </span>
+                                <strong className="text-slate-900">{formatearMoneda(c.monto)}</strong>
+                              </div>
+                              <label className="mt-1.5 flex min-h-8 items-center gap-2 cursor-pointer font-medium text-slate-700">
+                                <input
+                                  type="checkbox"
+                                  checked={historicos[i]?.pagada || false}
+                                  onChange={(e) =>
+                                    setHistoricos((prev) => ({
+                                      ...prev,
+                                      [i]: {
+                                        pagada: e.target.checked,
+                                        fecha: prev[i]?.fecha || c.fecha,
+                                      },
+                                    }))
+                                  }
+                                  className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                />
+                                Ya pagada en el pasado
+                              </label>
+                              {historicos[i]?.pagada && (
+                                <label className="mt-1.5 block text-[11px] font-semibold text-slate-600">
+                                  Fecha real del pago
+                                  <input
+                                    required
+                                    type="date"
+                                    max={fechaHoyStr}
+                                    value={historicos[i].fecha}
+                                    onChange={(e) =>
+                                      setHistoricos((prev) => ({
+                                        ...prev,
+                                        [i]: { pagada: true, fecha: e.target.value },
+                                      }))
+                                    }
+                                    className="mt-1 min-h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 text-sm"
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </section>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                 <button disabled={soloLectura || creando}
                   type="button"
