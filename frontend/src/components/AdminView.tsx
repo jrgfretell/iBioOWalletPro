@@ -15,6 +15,7 @@ import {
   EyeOff,
   CheckCircle2,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { AdminStats, AdminUser } from '../types/wallet';
@@ -143,15 +144,16 @@ export const AdminView: React.FC = () => {
 
   // Alternar estado de suspensión
   const handleToggleEstadoUsuario = async (usuario: AdminUser) => {
-    const accion = usuario.bloqueado ? 'Reactivar' : 'Suspender';
+    const nuevoBloqueado = !usuario.bloqueado;
+    const accion = nuevoBloqueado ? 'Suspender' : 'Reactivar';
     const confirmado = await confirmarAccion({
       title: `¿${accion} cuenta de ${usuario.nombre}?`,
-      text: usuario.bloqueado
-        ? 'El usuario volverá a tener acceso normal a su billetera.'
-        : 'El usuario no podrá iniciar sesión mientras su cuenta esté suspendida.',
+      text: nuevoBloqueado
+        ? 'Se cerrará de inmediato la sesión activa del usuario y no podrá operar hasta que sea reactivado.'
+        : 'El usuario volverá a tener acceso normal a su billetera.',
       confirmButtonText: `Sí, ${accion.toLowerCase()}`,
-      isDanger: !usuario.bloqueado,
-      icon: usuario.bloqueado ? 'question' : 'warning',
+      isDanger: nuevoBloqueado,
+      icon: nuevoBloqueado ? 'warning' : 'question',
     });
 
     if (!confirmado) return;
@@ -159,16 +161,77 @@ export const AdminView: React.FC = () => {
     try {
       const { error: errRpc } = await supabase.rpc('admin_cambiar_estado_usuario', {
         p_target_user_id: usuario.id,
-        p_bloquear: !usuario.bloqueado,
+        p_bloquear: nuevoBloqueado,
       });
 
       if (errRpc) throw errRpc;
 
-      await toastExito(`Usuario ${usuario.bloqueado ? 'reactivado' : 'suspendido'} con éxito`);
+      if (nuevoBloqueado) {
+        // Enviar broadcast para cierre inmediato de sesión si el usuario está conectado
+        const canal = supabase.channel('canal_seguridad_auth');
+        canal.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await canal.send({
+              type: 'broadcast',
+              event: 'usuario_bloqueado',
+              payload: { userId: usuario.id },
+            });
+            setTimeout(() => void supabase.removeChannel(canal), 1000);
+          }
+        });
+      }
+
+      await toastExito(`Usuario ${nuevoBloqueado ? 'suspendido y sesión revocada' : 'reactivado'} con éxito`);
       await cargarDatosAdmin();
     } catch (err: unknown) {
       const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'No se pudo actualizar el estado.';
       await alertaError('Error al cambiar estado', msg);
+    }
+  };
+
+  // Eliminar usuario permanentemente
+  const handleEliminarUsuario = async (usuario: AdminUser) => {
+    if (usuario.es_admin || usuario.email.toLowerCase() === 'jrgfretell@gmail.com') {
+      await alertaError('Acción restringida', 'No es posible eliminar una cuenta administradora.');
+      return;
+    }
+
+    const confirmado = await confirmarAccion({
+      title: `¿Eliminar cuenta de ${usuario.nombre || usuario.email}?`,
+      text: `Esta acción es IRREVERSIBLE. Se eliminará la cuenta (${usuario.email}) y absolutamente todas sus billeteras, movimientos, deudas e historial completo.`,
+      confirmButtonText: 'Sí, eliminar cuenta definitivamente',
+      cancelButtonText: 'Cancelar',
+      isDanger: true,
+      icon: 'warning',
+    });
+
+    if (!confirmado) return;
+
+    try {
+      const { error: errRpc } = await supabase.rpc('admin_eliminar_usuario', {
+        p_target_user_id: usuario.id,
+      });
+
+      if (errRpc) throw errRpc;
+
+      // Enviar broadcast para cerrar sesión en tiempo real si el usuario está en línea
+      const canal = supabase.channel('canal_seguridad_auth');
+      canal.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await canal.send({
+            type: 'broadcast',
+            event: 'usuario_eliminado',
+            payload: { userId: usuario.id },
+          });
+          setTimeout(() => void supabase.removeChannel(canal), 1000);
+        }
+      });
+
+      await alertaExito('Usuario eliminado', `La cuenta de ${usuario.email} ha sido eliminada por completo.`);
+      await cargarDatosAdmin();
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'No se pudo eliminar el usuario.';
+      await alertaError('Error al eliminar usuario', msg);
     }
   };
 
@@ -428,19 +491,31 @@ export const AdminView: React.FC = () => {
                           </button>
 
                           {!u.es_admin && (
-                            <button
-                              type="button"
-                              title={u.bloqueado ? 'Reactivar acceso' : 'Suspender acceso'}
-                              onClick={() => handleToggleEstadoUsuario(u)}
-                              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 cursor-pointer ${
-                                u.bloqueado
-                                  ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                                  : 'border-rose-200 text-rose-600 hover:bg-rose-50'
-                              }`}
-                            >
-                              {u.bloqueado ? <UserCheck className="h-3.5 w-3.5" /> : <UserX className="h-3.5 w-3.5" />}
-                              <span className="hidden sm:inline">{u.bloqueado ? 'Reactivar' : 'Bloquear'}</span>
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                title={u.bloqueado ? 'Reactivar acceso' : 'Suspender acceso'}
+                                onClick={() => handleToggleEstadoUsuario(u)}
+                                className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 cursor-pointer transition-colors ${
+                                  u.bloqueado
+                                    ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                    : 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                                }`}
+                              >
+                                {u.bloqueado ? <UserCheck className="h-3.5 w-3.5" /> : <UserX className="h-3.5 w-3.5" />}
+                                <span className="hidden sm:inline">{u.bloqueado ? 'Reactivar' : 'Bloquear'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Eliminar cuenta y datos definitivamente"
+                                onClick={() => handleEliminarUsuario(u)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 px-2 py-1 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Eliminar</span>
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
