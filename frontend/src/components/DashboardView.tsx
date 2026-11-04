@@ -558,7 +558,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             )}
                           </div>
                           <span className="text-[11px] text-slate-400">
-                            {abierto ? 'Ocultar quincenas' : 'Ver desglose quincenal'}
+                            {abierto ? 'Ocultar desglose' : 'Ver desglose quincenal'}
                           </span>
                         </div>
 
@@ -571,73 +571,129 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                       {/* Cuerpo desplegable con los hitos del mes */}
                       <AnimatedDisclosure open={abierto} id={`proyeccion-${p.llave}`}>
-                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-xs">
-                          <div className="flex items-center justify-between gap-2 text-slate-600">
-                            <span className="truncate min-w-0">{fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`)?'Saldo de referencia:':'Saldo mes anterior:'}</span>
-                            <strong className="text-slate-900 whitespace-nowrap shrink-0 text-right">
-                              {formatearMoneda(p.balanceInicio)}
-                            </strong>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 text-slate-600">
-                            <span className="truncate min-w-0">Ingresos + Sueldos:</span>
-                            <strong className="text-emerald-600 whitespace-nowrap shrink-0 text-right">
-                              +{formatearMoneda(p.ingresosTotales)}
-                            </strong>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 text-slate-600">
-                            <span className="truncate min-w-0">Gastos proyectados:</span>
-                            <strong className="text-red-600 whitespace-nowrap shrink-0 text-right">
-                              -{formatearMoneda(p.gastosTotales)}
-                            </strong>
+                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                          {/* Bloque 1: Resumen de Flujo Mensual (Grid 3 columnas) */}
+                          <div className="grid grid-cols-3 gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200/60 text-center">
+                            <div className="flex flex-col items-center min-w-0">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate w-full">
+                                Saldo Base
+                              </span>
+                              <span className="text-xs font-black text-slate-700 whitespace-nowrap mt-0.5">
+                                {formatearMoneda(p.balanceInicio)}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center border-x border-slate-200/60 px-1 min-w-0">
+                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight truncate w-full">
+                                + Ingresos
+                              </span>
+                              <span className="text-xs font-black text-emerald-600 whitespace-nowrap mt-0.5">
+                                +{formatearMoneda(p.ingresosTotales)}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center min-w-0">
+                              <span className="text-[10px] font-bold text-red-500 uppercase tracking-tight truncate w-full">
+                                - Gastos
+                              </span>
+                              <span className="text-xs font-black text-red-600 whitespace-nowrap mt-0.5">
+                                -{formatearMoneda(p.gastosTotales)}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1.5 mt-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-slate-500 min-w-0">Antes del 15 (Días 1-14):</span>
+                          {/* Bloque 2: Timeline de Evolución por Quincenas */}
+                          <div className="space-y-1.5">
+                            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-between px-0.5">
+                              <span>Evolución de liquidez</span>
+                              <span className="font-normal lowercase">saldo proyectado</span>
+                            </div>
+
+                            {/* Hito 1: Pre-quincena */}
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                  1-14
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-quincena</div>
+                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 1 al 14</div>
+                                </div>
+                              </div>
                               <strong
-                                className={`whitespace-nowrap shrink-0 text-right ${
+                                className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
                                   p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
                                 }`}
                               >
-                                {p.antes15Disponible?formatearMoneda(p.bolsilloAntes15):'—'}
+                                {p.antes15Disponible ? formatearMoneda(p.bolsilloAntes15) : '—'}
                               </strong>
                             </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-slate-500 min-w-0">Tras quincena (Día 15):</span>
+
+                            {/* Hito 2: Tras quincena */}
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50/50 border border-emerald-100 hover:bg-emerald-50/80 transition-colors">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                  15
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-emerald-900 leading-none flex items-center gap-1 whitespace-nowrap">
+                                    Tras quincena
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  </div>
+                                  <div className="text-[10px] text-emerald-700 leading-tight mt-0.5">Cobro de sueldos</div>
+                                </div>
+                              </div>
                               <strong
-                                className={`whitespace-nowrap shrink-0 text-right ${
-                                  p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-600'
+                                className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                  p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-700'
                                 }`}
                               >
-                                {p.tras15Disponible?formatearMoneda(p.balanceTras15):'—'}
+                                {p.tras15Disponible ? formatearMoneda(p.balanceTras15) : '—'}
                               </strong>
                             </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-slate-500 min-w-0">
-                                Antes de fin de mes (16-{p.ultimoDia - 1}):
-                              </span>
+
+                            {/* Hito 3: Pre-cierre */}
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                  16-{p.ultimoDia - 1}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
+                                </div>
+                              </div>
                               <strong
-                                className={`whitespace-nowrap shrink-0 text-right ${
+                                className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
                                   p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
                                 }`}
                               >
-                                {p.antesFinDisponible?formatearMoneda(p.bolsilloAntesFinMes):'—'}
+                                {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
                               </strong>
                             </div>
                           </div>
-                          {(!p.antes15Disponible||!p.tras15Disponible||!p.antesFinDisponible)&&<p className="mt-2 text-[10px] text-slate-500">— Tramo anterior al saldo de referencia; no se reconstruye su saldo.</p>}
+
+                          {(!p.antes15Disponible || !p.tras15Disponible || !p.antesFinDisponible) && (
+                            <p className="mt-1 text-[10px] text-slate-400 text-center">
+                              — Tramo anterior al saldo de referencia; no se reconstruye su saldo.
+                            </p>
+                          )}
                         </div>
                       </AnimatedDisclosure>
                     </div>
 
                     {/* Pie siempre visible: Balance final del mes + Botón detalle */}
                     <div className="mt-3 pt-3 border-t border-slate-100">
-                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900 text-white">
-                        <span className="text-xs font-semibold text-slate-300 min-w-0">
-                          Al cierre (Día {p.ultimoDia})
-                        </span>
+                      <div className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-slate-900 text-white shadow-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center text-[10px] font-black shrink-0 border border-teal-500/30 whitespace-nowrap tracking-tight">
+                            {p.ultimoDia}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-black text-white leading-none whitespace-nowrap">Cierre de mes</div>
+                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Balance final neto</div>
+                          </div>
+                        </div>
                         <strong
-                          className={`text-sm font-black whitespace-nowrap shrink-0 text-right ${
+                          className={`text-sm font-black whitespace-nowrap shrink-0 text-right ml-2 ${
                             p.balanceFin < 0 ? 'text-red-400' : 'text-teal-400'
                           }`}
                         >
@@ -648,7 +704,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => setModalDetalleMes(p)}
-                        className="mt-2 w-full py-1.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        className="mt-2.5 w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Ver movimientos ({p.items.length})</span>
