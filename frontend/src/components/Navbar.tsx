@@ -8,6 +8,7 @@ import {
   CalendarClock,
   Tags,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -19,14 +20,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
 }) => {
-  const { user, signOut } = useAuth();
+  const { user, esAdmin, signOut } = useAuth();
 
-  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
+  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; isAdmin?: boolean }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'movimientos', label: 'Movimientos', icon: <History className="w-4 h-4" /> },
     { id: 'pagos', label: 'Pagos programados', icon: <CalendarClock className="w-4 h-4" /> },
     { id: 'categorias', label: 'Categorías', icon: <Tags className="w-4 h-4" /> },
   ];
+
+  if (esAdmin) {
+    navItems.push({
+      id: 'admin',
+      label: 'Admin',
+      icon: <ShieldCheck className="w-4 h-4 text-amber-400" />,
+      isAdmin: true,
+    });
+  }
 
   return (
     <>
@@ -56,7 +66,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-teal-500 text-white shadow-sm'
+                      ? item.isAdmin
+                        ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                        : 'bg-teal-500 text-white shadow-sm'
+                      : item.isAdmin
+                      ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-500/10'
                       : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
                   }`}
                 >
@@ -101,8 +115,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                isActive ? 'text-teal-400 bg-teal-500/10' : 'text-slate-400 hover:text-slate-200'
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                isActive
+                  ? item.isAdmin
+                    ? 'text-amber-400 bg-amber-500/15'
+                    : 'text-teal-400 bg-teal-500/10'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {item.icon}
@@ -114,4 +132,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </>
   );
 };
-

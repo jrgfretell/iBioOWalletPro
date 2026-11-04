@@ -96,7 +96,33 @@ export interface DeudaPago {
   solicitud?: string | null;
 }
 
-export type ActiveTab = 'dashboard' | 'movimientos' | 'pagos' | 'categorias';
+export type ActiveTab = 'dashboard' | 'movimientos' | 'pagos' | 'categorias' | 'admin';
+
+export interface AdminStats {
+  total_usuarios: number;
+  usuarios_activos_mes: number;
+  total_billeteras: number;
+  billeteras_pen: number;
+  billeteras_usd: number;
+  billeteras_eur: number;
+  total_movimientos: number;
+  total_deudas: number;
+  total_recurrentes: number;
+  migraciones: { version: string; aplicada_el: string }[];
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  nombre: string;
+  avatar_url: string | null;
+  proveedor: string;
+  creado_el: string;
+  ultimo_acceso: string | null;
+  billeteras_count: number;
+  es_admin: boolean;
+  bloqueado: boolean;
+}
 
 export const NOMBRES_MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
