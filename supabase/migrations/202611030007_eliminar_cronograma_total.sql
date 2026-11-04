@@ -157,3 +157,4 @@ VALUES ('202611030007_eliminar_cronograma_total')
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT;
+

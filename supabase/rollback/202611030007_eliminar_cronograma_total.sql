@@ -105,3 +105,4 @@ DELETE FROM wallet_internal.migraciones
 WHERE version = '202611030007_eliminar_cronograma_total';
 
 COMMIT;
+

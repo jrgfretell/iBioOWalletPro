@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye, Trash2, HelpCircle } from 'lucide-react';
+import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye, Trash2, HelpCircle, History } from 'lucide-react';
 import { AnimatedModal } from './AnimatedModal';
 import { OnboardingModal } from './OnboardingModal';
 import { useWallet } from '../context/WalletContext';
@@ -33,6 +33,7 @@ export function WalletSwitcher() {
   const [editing, setEditing] = useState<Billetera | null>(null);
   const [nombre, setNombre] = useState('');
   const [moneda, setMoneda] = useState<Moneda>('PEN');
+  const [modoSaldo, setModoSaldo] = useState<'hoy' | 'pasado'>('hoy');
   const [inputMontoBase, setInputMontoBase] = useState('0');
   const [inputFechaRef, setInputFechaRef] = useState(() => fechaHoyISO());
   const [busy, setBusy] = useState(false);
@@ -54,6 +55,7 @@ export function WalletSwitcher() {
     setEditing(null);
     setNombre('');
     setMoneda('PEN');
+    setModoSaldo('hoy');
     setInputMontoBase('0');
     setInputFechaRef(fechaHoyISO());
     setFailure(false);
@@ -65,6 +67,8 @@ export function WalletSwitcher() {
     const isCurrent = wallet.id === billeteraActual?.id;
     const baseVal = isCurrent ? montoBaseActual : (wallet.monto_base ?? 0);
     const fechaVal = (isCurrent ? fechaRefActual : wallet.fecha_referencia) || fechaHoyISO();
+    const hoy = fechaHoyISO();
+    setModoSaldo((fechaVal && fechaVal < hoy) ? 'pasado' : 'hoy');
     setEditing(wallet);
     setNombre(wallet.nombre);
     setMoneda(wallet.moneda);
@@ -102,7 +106,8 @@ export function WalletSwitcher() {
     try {
       const parsedMonto = parseFloat(inputMontoBase);
       const montoFinal = Number.isFinite(parsedMonto) ? parsedMonto : 0;
-      const fechaFinal = inputFechaRef || fechaHoyISO();
+      const hoy = fechaHoyISO();
+      const fechaFinal = modoSaldo === 'hoy' ? hoy : (inputFechaRef || hoy);
 
       const ok =
         view === 'create'
@@ -484,7 +489,69 @@ export function WalletSwitcher() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Selector de modalidad */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    ¿Cómo deseas definir tu saldo inicial?
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModoSaldo('hoy');
+                        setInputFechaRef(fechaHoyISO());
+                      }}
+                      className={`flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${
+                        modoSaldo === 'hoy'
+                          ? 'border-teal-500 bg-white text-teal-950 ring-2 ring-teal-500/20 shadow-sm'
+                          : 'border-slate-200 bg-white/60 text-slate-600 hover:bg-white'
+                      }`}
+                    >
+                      <div
+                        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                          modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}
+                      >
+                        <Wallet className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-slate-900">Dinero disponible HOY</span>
+                          <span className="rounded bg-teal-100 px-1.5 py-0.2 text-[9px] font-bold text-teal-800">Recomendado</span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
+                          Lo que tienes en mano o cuenta ahora mismo.
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setModoSaldo('pasado')}
+                      className={`flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${
+                        modoSaldo === 'pasado'
+                          ? 'border-teal-500 bg-white text-teal-950 ring-2 ring-teal-500/20 shadow-sm'
+                          : 'border-slate-200 bg-white/60 text-slate-600 hover:bg-white'
+                      }`}
+                    >
+                      <div
+                        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                          modoSaldo === 'pasado' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}
+                      >
+                        <History className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-slate-900">Capital inicial en el PASADO</span>
+                        <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
+                          Reconstruye tu saldo descontando pagos históricos.
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {modoSaldo === 'hoy' ? (
                   <div>
                     <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">
                       Saldo disponible ({MONEDAS[moneda].simbolo})
@@ -498,27 +565,48 @@ export function WalletSwitcher() {
                       onChange={(e) => setInputMontoBase(e.target.value)}
                       className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
                     />
+                    <div className="mt-2.5 rounded-xl bg-teal-50 border border-teal-200/80 p-2.5 text-xs text-teal-900 leading-relaxed">
+                      ✓ <strong>Punto de partida: Hoy ({fechaHoyISO()})</strong>. Si registras compromisos o cuotas que pagaste en meses anteriores, <strong>NO</strong> se descontarán de este dinero. Solo se descontarán pagos desde hoy en adelante.
+                    </div>
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">
+                          Capital inicial ({MONEDAS[moneda].simbolo})
+                        </label>
+                        <input
+                          id="wallet-base-amount"
+                          type="number"
+                          step="0.01"
+                          required
+                          value={inputMontoBase}
+                          onChange={(e) => setInputMontoBase(e.target.value)}
+                          className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                        />
+                      </div>
 
-                  <div>
-                    <label htmlFor="wallet-base-date" className="mb-1 block text-xs font-semibold text-slate-600">
-                      Al cierre del día
-                    </label>
-                    <input
-                      id="wallet-base-date"
-                      type="date"
-                      required
-                      max={fechaHoyISO()}
-                      value={inputFechaRef}
-                      onChange={(e) => setInputFechaRef(e.target.value)}
-                      className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
-                    />
+                      <div>
+                        <label htmlFor="wallet-base-date" className="mb-1 block text-xs font-semibold text-slate-600">
+                          ¿En qué fecha tenías este capital?
+                        </label>
+                        <input
+                          id="wallet-base-date"
+                          type="date"
+                          required
+                          max={fechaHoyISO()}
+                          value={inputFechaRef}
+                          onChange={(e) => setInputFechaRef(e.target.value)}
+                          className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                        />
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-amber-50 border border-amber-200/80 p-2.5 text-xs text-amber-900 leading-relaxed">
+                      ℹ️ <strong>Reconstrucción histórica</strong>: Los abonos de cuotas y gastos posteriores a <strong>{inputFechaRef || 'la fecha elegida'}</strong> se irán restando mes a mes hasta calcular cuánto te queda actualmente.
+                    </div>
                   </div>
-                </div>
-
-                <p className="text-[11px] leading-relaxed text-slate-500">
-                  Este saldo incluye los ingresos y gastos realizados hasta esa fecha. La proyección aplicará los movimientos posteriores y los pagos aún pendientes.
-                </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
