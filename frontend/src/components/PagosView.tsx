@@ -1473,71 +1473,173 @@ export const PagosView: React.FC = () => {
                 <button type="button" onClick={() => { setBusquedaCronogramas(''); setFiltroCronogramas('todos'); }}
                   className="min-h-11 mt-3 px-4 text-sm font-semibold text-teal-700 hover:bg-teal-50 rounded-xl cursor-pointer">Restablecer filtros</button>
               </div>}
-              {/* 1. SECCIÓN: COMPROMISOS CONTINUOS (HASTA CANCELAR - COMO "SUNO" EN LA FOTO 2) */}
+              {/* 1. SECCIÓN: COMPROMISOS CONTINUOS (HASTA CANCELAR) */}
               {continuosVisibles
                 .map((card) => {
                   const expandida = Boolean(cronogramasExpandidos[card.idKey]); // Colapsado por defecto
+                  const cat = categorias.find((c) => c.id === card.rec.categoria_id);
+                  const catColor = cat?.color || '#0d9488';
+                  const catIcon = cat?.icono || 'fa-calendar-alt';
 
                   return (
                     <article
                       key={card.idKey}
                       id={card.idKey}
-                      className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
+                      className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
-                      {/* Cabecera de la Tarjeta estilo PHP Schedule-Card */}
-                      <div className="p-4 sm:p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-teal-700">
-                            HASTA CANCELAR
-                          </span>
-                          <h2 className="text-xl font-bold text-slate-900 mt-0.5 mb-1.5 break-words">
-                            {card.nombre}
-                          </h2>
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500">
-                            <span>{card.categoriaNombre}</span>
-                            <span>·</span>
-                            <span>Recibido: {formatearMoneda(0)}</span>
-                            <span>·</span>
-                            <span>
-                              Importe del período: <strong>{formatearMoneda(card.importePeriodo)}</strong>
-                            </span>
+                      {/* Cabecera estilo Fintech */}
+                      <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
+                            style={{
+                              backgroundColor: `${catColor}15`,
+                              borderColor: `${catColor}30`,
+                              color: catColor,
+                            }}
+                          >
+                            <i className={`fas ${catIcon} text-base`}></i>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h2 className="text-base sm:text-lg font-black text-slate-900 truncate">
+                                {card.nombre}
+                              </h2>
+                              <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                                Recurrente
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                              {card.categoriaNombre} · {card.totalVencimientos} cuotas generadas
+                            </p>
                           </div>
                         </div>
 
-                        {/* Lateral con Pendiente y Herramientas (Sliders, Editar, Eliminar) */}
-                        <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 w-full md:w-auto">
-                          <div className="text-left md:text-right">
-                            <span className="block text-[11px] text-slate-400 font-semibold mb-0.5">
-                              Pendiente del período
+                        {/* Pendiente Total */}
+                        <div className="text-right shrink-0">
+                          <span className="block text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                            Pendiente
+                          </span>
+                          <strong className="block text-base sm:text-xl font-black text-slate-900 mt-0.5">
+                            {formatearMoneda(card.pendientePeriodo)}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Progreso Visual */}
+                      <div className="px-4 sm:px-5 pb-3">
+                        <div className="p-3 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[11px] font-bold text-slate-500">
+                              Progreso de pagos
                             </span>
-                            <strong className="block text-xl sm:text-2xl font-black text-slate-900">
-                              {formatearMoneda(card.pendientePeriodo)}
-                            </strong>
+                            <span className="text-xs font-black text-teal-700">
+                              {card.pct}%{' '}
+                              <span className="text-[10px] font-medium text-slate-400">
+                                ({card.pagosRealizados} de {card.totalVencimientos})
+                              </span>
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 pl-3 sm:pl-4 border-l border-slate-200">
-                            <button disabled={soloLectura}
-                              type="button"
-                              onClick={() => abrirModalEdicionRecurrente(card.rec)}
-                              title="Duración e importe"
-                              className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
-                            >
-                              <Sliders className="w-4 h-4" />
-                            </button>
+                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                              style={{ width: `${card.pct}%` }}
+                            />
+                          </div>
 
-                            <button disabled={soloLectura}
-                              type="button"
-                              onClick={() => abrirModalEdicionRecurrente(card.rec)}
-                              title="Editar cronograma"
-                              className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-0.5">
+                            <span>
+                              Abonado:{' '}
+                              <strong className="text-slate-600 font-black">
+                                {formatearMoneda(card.importePeriodo - card.pendientePeriodo)}
+                              </strong>
+                            </span>
+                            <span>
+                              Total:{' '}
+                              <strong className="text-slate-700 font-black">
+                                {formatearMoneda(card.importePeriodo)}
+                              </strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                            <button disabled={soloLectura}
-                              type="button"
-                              onClick={async () => {
-    try {
+                      {/* Próximo Vencimiento (Píldora destacada) */}
+                      <div className="px-4 sm:px-5 pb-3">
+                        {card.proximo ? (
+                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 border border-amber-200">
+                                {card.proximo.fecha.split('-')[2]}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-black text-amber-950 truncate">
+                                  Próximo vencimiento (Cuota {card.proximo.numero})
+                                </div>
+                                <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+                                  {card.proximo.fecha.split('-')[2]}/{card.proximo.fecha.split('-')[1]}/{card.proximo.fecha.split('-')[0]}
+                                </div>
+                              </div>
+                            </div>
+                            <strong className="text-xs sm:text-sm font-black text-amber-950 shrink-0 ml-2">
+                              {formatearMoneda(card.proximo.pendiente)}
+                            </strong>
+                          </div>
+                        ) : (
+                          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Al día: sin pagos pendientes en el período generado</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Barra de Acciones y Toggle de Cuotas al pie */}
+                      <div className="px-4 sm:px-5 py-2.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <button
+                          type="button"
+                          aria-expanded={expandida}
+                          aria-controls={`vencimientos-${card.idKey}`}
+                          onClick={() =>
+                            setCronogramasExpandidos((prev) => ({
+                              ...prev,
+                              [card.idKey]: !expandida,
+                            }))
+                          }
+                          className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
+                        >
+                          <span>{expandida ? 'Ocultar cuotas' : `Ver ${card.totalVencimientos} cuotas`}</span>
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
+                              expandida ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={soloLectura}
+                            type="button"
+                            onClick={() => abrirModalEdicionRecurrente(card.rec)}
+                            title="Duración e importe"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                          >
+                            <Sliders className="w-4 h-4" />
+                          </button>
+                          <button
+                            disabled={soloLectura}
+                            type="button"
+                            onClick={() => abrirModalEdicionRecurrente(card.rec)}
+                            title="Editar cronograma"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            disabled={soloLectura}
+                            type="button"
+                            onClick={async () => {
+                              try {
                                 const confirmado = await confirmarAccion({
                                   title: '¿Eliminar cronograma?',
                                   text: `Se retirará "${card.nombre}". Los pagos realizados permanecerán en el historial.`,
@@ -1545,7 +1647,12 @@ export const PagosView: React.FC = () => {
                                 });
                                 if (!confirmado) return;
 
-                                if(soporteEtapa5){const datos={recurrente_id:card.rec.id};await ejecutarOperacion('retirar_recurrente',datos,solicitudPara('retirar_recurrente',datos));toastExito('Cronograma retirado. Sus pagos se conservan.');return;}
+                                if (soporteEtapa5) {
+                                  const datos = { recurrente_id: card.rec.id };
+                                  await ejecutarOperacion('retirar_recurrente', datos, solicitudPara('retirar_recurrente', datos));
+                                  toastExito('Cronograma retirado. Sus pagos se conservan.');
+                                  return;
+                                }
                                 await supabase
                                   .from('movimientos_recurrentes')
                                   .delete()
@@ -1558,67 +1665,14 @@ export const PagosView: React.FC = () => {
                                   .eq('user_id', user!.id);
                                 await recargarTodo();
                                 toastExito(`"${card.nombre}" eliminado`);
-
-    } catch (error) { reportarError(error); }
-  }}
-                              title="Eliminar cronograma"
-                              className="w-8 h-8 rounded-lg bg-transparent hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Resumen de Progreso y Despliegue */}
-                      <div className="px-4 sm:px-6 pb-4">
-                        <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-                          <span>
-                            <strong>{card.pagosRealizados} pagos realizados</strong> ·{' '}
-                            {card.totalVencimientos - card.pagosRealizados} por completar en el período generado
-                          </span>
-                          <span className="font-bold">{card.pct}% abonado del período</span>
-                        </div>
-
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-teal-500 rounded-full transition-all duration-300"
-                            style={{ width: `${card.pct}%` }}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                          <div>
-                            {card.proximo ? (
-                              <span>
-                                Próximo pago: vencimiento {card.proximo.numero} - {card.proximo.fecha} -{' '}
-                                <strong className="text-slate-900">
-                                  {formatearMoneda(card.proximo.pendiente)}
-                                </strong>
-                              </span>
-                            ) : (
-                              <span>Sin pagos pendientes en el período generado.</span>
-                            )}
-                          </div>
-
-                          <button
-                            type="button"
-                            aria-expanded={expandida}
-                            aria-controls={`vencimientos-${card.idKey}`}
-                            onClick={() =>
-                              setCronogramasExpandidos((prev) => ({
-                                ...prev,
-                                [card.idKey]: !expandida,
-                              }))
-                            }
-                            className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:underline cursor-pointer"
+                              } catch (error) {
+                                reportarError(error);
+                              }
+                            }}
+                            title="Eliminar cronograma"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                           >
-                            <span>{expandida ? 'Ocultar vencimientos' : 'Ver vencimientos'}</span>
-                            <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
-                                expandida ? 'rotate-180' : ''
-                              }`}
-                            />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -1760,72 +1814,197 @@ export const PagosView: React.FC = () => {
                   const pct =
                     totalPactado > 0 ? Math.min(100, Math.round((totalAbonado / totalPactado) * 100)) : 0;
                   const expandida = Boolean(cronogramasExpandidos[`deuda-${d.id}`]); // Colapsado por defecto
+                  const catDeuda = categorias.find((c) => c.id === d.categoria_id);
+                  const catColor = catDeuda?.color || '#0d9488';
+                  const catIcon = catDeuda?.icono || 'fa-credit-card';
+
+                  // Próxima cuota pendiente
+                  const proximaCuota = cuotasD
+                    .filter((c) => {
+                      const abono = pagosDeuda
+                        .filter((p) => p.cuota_id === c.id)
+                        .reduce((acc, p) => acc + p.monto, 0);
+                      return c.monto - abono > 0.009;
+                    })
+                    .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))[0];
+
+                  const proximaPendiente = proximaCuota
+                    ? proximaCuota.monto -
+                      pagosDeuda
+                        .filter((p) => p.cuota_id === proximaCuota.id)
+                        .reduce((acc, p) => acc + p.monto, 0)
+                    : 0;
 
                   return (
                     <article
                       key={d.id}
                       id={`deuda-${d.id}`}
-                      className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
+                      className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
-                      <div className="p-4 sm:p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-teal-700">
-                            CANTIDAD DEFINIDA ({cuotasD.length} CUOTAS)
-                          </span>
-                          <h2 className="text-xl font-bold text-slate-900 mt-0.5 mb-1.5 break-words">{d.nombre}</h2>
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500">
-                            <span>{categorias.find((c) => c.id === d.categoria_id)?.nombre || 'General'}</span>
-                            <span>·</span>
-                            <span>Recibido: {formatearMoneda(d.monto_recibido)}</span>
-                            <span>·</span>
-                            <span>
-                              Total pactado: <strong>{formatearMoneda(totalPactado)}</strong>
-                            </span>
+                      {/* Cabecera estilo Fintech */}
+                      <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
+                            style={{
+                              backgroundColor: `${catColor}15`,
+                              borderColor: `${catColor}30`,
+                              color: catColor,
+                            }}
+                          >
+                            <i className={`fas ${catIcon} text-base`}></i>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h2 className="text-base sm:text-lg font-black text-slate-900 truncate">
+                                {d.nombre}
+                              </h2>
+                              <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                                {cuotasD.length} cuotas
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                              {catDeuda?.nombre || 'General'} · Recibido: {formatearMoneda(d.monto_recibido)}
+                            </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 w-full md:w-auto">
-                          <div className="text-left md:text-right">
-                            <span className="block text-[11px] text-slate-400 font-semibold mb-0.5">
-                              Pendiente total
+                        {/* Pendiente Total */}
+                        <div className="text-right shrink-0">
+                          <span className="block text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                            Pendiente
+                          </span>
+                          <strong className="block text-base sm:text-xl font-black text-slate-900 mt-0.5">
+                            {formatearMoneda(totalPactado - totalAbonado)}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Progreso Visual */}
+                      <div className="px-4 sm:px-5 pb-3">
+                        <div className="p-3 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[11px] font-bold text-slate-500">
+                              Progreso de pagos
                             </span>
-                            <strong className="block text-xl sm:text-2xl font-black text-slate-900">
-                              {formatearMoneda(totalPactado - totalAbonado)}
-                            </strong>
+                            <span className="text-xs font-black text-teal-700">
+                              {pct}%{' '}
+                              <span className="text-[10px] font-medium text-slate-400">
+                                ({pagadas} de {cuotasD.length} pagadas)
+                              </span>
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 pl-3 sm:pl-4 border-l border-slate-200">
-                            <button disabled={soloLectura}
-                              type="button"
-                              onClick={() => handleAjustarCuotasFinDeMes(d.id, d.nombre)}
-                              title="Ajustar todas las cuotas al último día de su mes (Fin de mes)"
-                              className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-teal-50 text-slate-500 hover:text-teal-700 flex items-center justify-center cursor-pointer transition-colors"
-                            >
-                              <CalendarCheck className="w-4 h-4" />
-                            </button>
+                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
 
-                            <button disabled={soloLectura}
-                              type="button"
-                              onClick={() => {
-                                setEditTipo('deuda');
-                                setEditTipoMovimiento('gasto');
-                                setEditId(d.id);
-                                setEditNombre(d.nombre);
-                                setEditMonto(String(cuotasD[0]?.monto || 0));
-                                setEditDia('1');
-                                setEditCatId(d.categoria_id ?? '');
-                                setModalEdicionAbierto(true);
-                              }}
-                              title="Editar cronograma"
-                              className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-0.5">
+                            <span>
+                              Abonado:{' '}
+                              <strong className="text-slate-600 font-black">
+                                {formatearMoneda(totalAbonado)}
+                              </strong>
+                            </span>
+                            <span>
+                              Total pactado:{' '}
+                              <strong className="text-slate-700 font-black">
+                                {formatearMoneda(totalPactado)}
+                              </strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                            <button disabled={soloLectura}
-                              type="button"
-                              onClick={async () => {
-    try {
+                      {/* Próximo Vencimiento (Píldora destacada) */}
+                      <div className="px-4 sm:px-5 pb-3">
+                        {proximaCuota ? (
+                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 border border-amber-200">
+                                {proximaCuota.fecha ? proximaCuota.fecha.split('-')[2] : '1'}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-black text-amber-950 truncate">
+                                  Próximo vencimiento (Cuota {proximaCuota.numero})
+                                </div>
+                                <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+                                  {proximaCuota.fecha
+                                    ? `${proximaCuota.fecha.split('-')[2]}/${proximaCuota.fecha.split('-')[1]}/${proximaCuota.fecha.split('-')[0]}`
+                                    : 'Fecha pendiente'}
+                                </div>
+                              </div>
+                            </div>
+                            <strong className="text-xs sm:text-sm font-black text-amber-950 shrink-0 ml-2">
+                              {formatearMoneda(proximaPendiente)}
+                            </strong>
+                          </div>
+                        ) : (
+                          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>¡Completado! Todas las cuotas están pagadas</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Barra de Acciones y Toggle de Cuotas al pie */}
+                      <div className="px-4 sm:px-5 py-2.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <button
+                          type="button"
+                          aria-expanded={expandida}
+                          aria-controls={`vencimientos-deuda-${d.id}`}
+                          onClick={() =>
+                            setCronogramasExpandidos((prev) => ({
+                              ...prev,
+                              [`deuda-${d.id}`]: !expandida,
+                            }))
+                          }
+                          className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
+                        >
+                          <span>{expandida ? 'Ocultar cuotas' : `Ver ${cuotasD.length} cuotas`}</span>
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
+                              expandida ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={soloLectura}
+                            type="button"
+                            onClick={() => handleAjustarCuotasFinDeMes(d.id, d.nombre)}
+                            title="Ajustar todas las cuotas al último día de su mes (Fin de mes)"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-teal-50 transition-colors cursor-pointer"
+                          >
+                            <CalendarCheck className="w-4 h-4" />
+                          </button>
+                          <button
+                            disabled={soloLectura}
+                            type="button"
+                            onClick={() => {
+                              setEditTipo('deuda');
+                              setEditTipoMovimiento('gasto');
+                              setEditId(d.id);
+                              setEditNombre(d.nombre);
+                              setEditMonto(String(cuotasD[0]?.monto || 0));
+                              setEditDia('1');
+                              setEditCatId(d.categoria_id ?? '');
+                              setModalEdicionAbierto(true);
+                            }}
+                            title="Editar cronograma"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            disabled={soloLectura}
+                            type="button"
+                            onClick={async () => {
+                              try {
                                 const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
                                 const pagadas = cuotasD.filter((c) => pagosDeuda.some((p) => p.cuota_id === c.id)).length;
 
@@ -1879,53 +2058,14 @@ export const PagosView: React.FC = () => {
                                   }
                                   toastExito(`"${d.nombre}" eliminado`);
                                 }
-    } catch (error) { reportarError(error); }
-  }}
-                              title="Eliminar cronograma"
-                              className="w-8 h-8 rounded-lg bg-transparent hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="px-4 sm:px-6 pb-4">
-                        <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-                          <span>
-                            <strong>
-                              {pagadas} de {cuotasD.length} cuotas pagadas
-                            </strong>
-                          </span>
-                          <span className="font-bold">{pct}% abonado</span>
-                        </div>
-
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-teal-500 rounded-full transition-all duration-300"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                          <button
-                            type="button"
-                            aria-expanded={expandida}
-                            aria-controls={`vencimientos-deuda-${d.id}`}
-                            onClick={() =>
-                              setCronogramasExpandidos((prev) => ({
-                                ...prev,
-                                [`deuda-${d.id}`]: !expandida,
-                              }))
-                            }
-                            className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:underline cursor-pointer ml-auto"
+                              } catch (error) {
+                                reportarError(error);
+                              }
+                            }}
+                            title="Eliminar cronograma"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                           >
-                            <span>{expandida ? 'Ocultar cuotas' : 'Ver cuotas'}</span>
-                            <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
-                                expandida ? 'rotate-180' : ''
-                              }`}
-                            />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
