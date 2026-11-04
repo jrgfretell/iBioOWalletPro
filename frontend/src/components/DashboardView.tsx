@@ -572,54 +572,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       {/* Cuerpo desplegable con los hitos del mes */}
                       <AnimatedDisclosure open={abierto} id={`proyeccion-${p.llave}`}>
                         <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-xs">
-                          <div className="flex items-center justify-between text-slate-600">
-                            <span>{fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`)?'Saldo de referencia:':'Saldo mes anterior:'}</span>
-                            <strong className="text-slate-900">
+                          <div className="flex items-center justify-between gap-2 text-slate-600">
+                            <span className="truncate min-w-0">{fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`)?'Saldo de referencia:':'Saldo mes anterior:'}</span>
+                            <strong className="text-slate-900 whitespace-nowrap shrink-0 text-right">
                               {formatearMoneda(p.balanceInicio)}
                             </strong>
                           </div>
-                          <div className="flex items-center justify-between text-slate-600">
-                            <span>Ingresos + Sueldos:</span>
-                            <strong className="text-emerald-600">
+                          <div className="flex items-center justify-between gap-2 text-slate-600">
+                            <span className="truncate min-w-0">Ingresos + Sueldos:</span>
+                            <strong className="text-emerald-600 whitespace-nowrap shrink-0 text-right">
                               +{formatearMoneda(p.ingresosTotales)}
                             </strong>
                           </div>
-                          <div className="flex items-center justify-between text-slate-600">
-                            <span>Gastos proyectados:</span>
-                            <strong className="text-red-600">
+                          <div className="flex items-center justify-between gap-2 text-slate-600">
+                            <span className="truncate min-w-0">Gastos proyectados:</span>
+                            <strong className="text-red-600 whitespace-nowrap shrink-0 text-right">
                               -{formatearMoneda(p.gastosTotales)}
                             </strong>
                           </div>
 
                           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1.5 mt-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-500">Antes del 15 (Días 1-14):</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-500 min-w-0">Antes del 15 (Días 1-14):</span>
                               <strong
-                                className={
+                                className={`whitespace-nowrap shrink-0 text-right ${
                                   p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
-                                }
+                                }`}
                               >
                                 {p.antes15Disponible?formatearMoneda(p.bolsilloAntes15):'—'}
                               </strong>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-500">Tras quincena (Día 15):</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-500 min-w-0">Tras quincena (Día 15):</span>
                               <strong
-                                className={
+                                className={`whitespace-nowrap shrink-0 text-right ${
                                   p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-600'
-                                }
+                                }`}
                               >
                                 {p.tras15Disponible?formatearMoneda(p.balanceTras15):'—'}
                               </strong>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-500">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-500 min-w-0">
                                 Antes de fin de mes (16-{p.ultimoDia - 1}):
                               </span>
                               <strong
-                                className={
+                                className={`whitespace-nowrap shrink-0 text-right ${
                                   p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
-                                }
+                                }`}
                               >
                                 {p.antesFinDisponible?formatearMoneda(p.bolsilloAntesFinMes):'—'}
                               </strong>
@@ -632,12 +632,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                     {/* Pie siempre visible: Balance final del mes + Botón detalle */}
                     <div className="mt-3 pt-3 border-t border-slate-100">
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 text-white">
-                        <span className="text-xs font-semibold text-slate-300">
+                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900 text-white">
+                        <span className="text-xs font-semibold text-slate-300 min-w-0">
                           Al cierre (Día {p.ultimoDia})
                         </span>
                         <strong
-                          className={`text-sm font-black ${
+                          className={`text-sm font-black whitespace-nowrap shrink-0 text-right ${
                             p.balanceFin < 0 ? 'text-red-400' : 'text-teal-400'
                           }`}
                         >
