@@ -1527,7 +1527,7 @@ export const PagosView: React.FC = () => {
                       className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
                       {/* Cabecera estilo Fintech */}
-                      <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
+                      <div className="p-4 sm:p-5 pb-3 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
                             className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
@@ -1548,9 +1548,6 @@ export const PagosView: React.FC = () => {
                                 Recurrente
                               </span>
                             </div>
-                            <p className="text-xs text-slate-400 font-medium leading-tight mt-0.5">
-                              {card.categoriaNombre} · {card.totalVencimientos} cuotas
-                            </p>
                           </div>
                         </div>
 
@@ -1881,7 +1878,7 @@ export const PagosView: React.FC = () => {
                       className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
                       {/* Cabecera estilo Fintech */}
-                      <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
+                      <div className="p-4 sm:p-5 pb-3 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
                             className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
@@ -1902,9 +1899,6 @@ export const PagosView: React.FC = () => {
                                 {cuotasD.length} cuotas
                               </span>
                             </div>
-                            <p className="text-xs text-slate-400 font-medium leading-tight mt-0.5">
-                              {catDeuda?.nombre || 'General'} · {cuotasD.length} cuotas pactadas
-                            </p>
                           </div>
                         </div>
 
