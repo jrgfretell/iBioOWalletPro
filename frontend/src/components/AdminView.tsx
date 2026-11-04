@@ -271,12 +271,12 @@ export const AdminView: React.FC = () => {
 
       {/* Tarjetas KPI Resumen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Usuarios</span>
-            <Users className="h-4 w-4 text-teal-600" />
+            <Users className="h-4 w-4 shrink-0 text-teal-600" />
           </div>
-          <strong className="mt-2 block text-2xl font-black text-slate-900">
+          <strong className="mt-2 block text-xl sm:text-2xl font-black text-slate-900 truncate">
             {stats ? stats.total_usuarios : '—'}
           </strong>
           <span className="mt-1 block text-[11px] text-slate-500">
@@ -284,12 +284,12 @@ export const AdminView: React.FC = () => {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Billeteras Activas</span>
-            <Wallet className="h-4 w-4 text-emerald-600" />
+            <Wallet className="h-4 w-4 shrink-0 text-emerald-600" />
           </div>
-          <strong className="mt-2 block text-2xl font-black text-slate-900">
+          <strong className="mt-2 block text-xl sm:text-2xl font-black text-slate-900 truncate">
             {stats ? stats.total_billeteras : '—'}
           </strong>
           <span className="mt-1 block text-[11px] text-slate-500 truncate">
@@ -297,12 +297,12 @@ export const AdminView: React.FC = () => {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operaciones Globales</span>
-            <Activity className="h-4 w-4 text-blue-600" />
+            <Activity className="h-4 w-4 shrink-0 text-blue-600" />
           </div>
-          <strong className="mt-2 block text-2xl font-black text-slate-900">
+          <strong className="mt-2 block text-xl sm:text-2xl font-black text-slate-900 truncate">
             {stats ? stats.total_movimientos : '—'}
           </strong>
           <span className="mt-1 block text-[11px] text-slate-500">
@@ -310,17 +310,17 @@ export const AdminView: React.FC = () => {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Salud de Base de Datos</span>
-            <Database className="h-4 w-4 text-amber-600" />
+            <Database className="h-4 w-4 shrink-0 text-amber-600" />
           </div>
-          <strong className="mt-2 block text-2xl font-black text-slate-900">
+          <strong className="mt-2 block text-lg sm:text-2xl font-black text-slate-900 truncate">
             {stats ? `${stats.migraciones.length} migraciones` : '—'}
           </strong>
           <span className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Sistema 100% Operativo</span>
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Sistema 100% Operativo</span>
           </span>
         </div>
       </div>
@@ -333,32 +333,32 @@ export const AdminView: React.FC = () => {
       )}
 
       {/* Pestañas de Navegación del Panel */}
-      <div className="w-full overflow-x-auto pb-1 scrollbar-none">
-        <div className="inline-flex min-w-max gap-2 rounded-2xl bg-slate-200/70 p-1.5">
+      <div className="w-full">
+        <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto gap-1.5 sm:gap-2 rounded-2xl bg-slate-200/70 p-1.5">
           <button
             type="button"
             onClick={() => setSubTab('usuarios')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold transition-all cursor-pointer min-w-0 ${
               subTab === 'usuarios'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            <Users className="h-4 w-4" />
-            <span>Directorio de Usuarios ({usuarios.length})</span>
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Directorio ({usuarios.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSubTab('migraciones')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold transition-all cursor-pointer min-w-0 ${
               subTab === 'migraciones'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            <Database className="h-4 w-4" />
-            <span>Base de Datos y Versiones</span>
+            <Database className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Base de Datos y Versiones</span>
           </button>
         </div>
       </div>
@@ -530,14 +530,14 @@ export const AdminView: React.FC = () => {
 
       {/* VISTA 2: Versiones y Migraciones de Base de Datos */}
       {subTab === 'migraciones' && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-          <div className="flex items-center gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs space-y-4 overflow-hidden">
+          <div className="flex items-start sm:items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
               <Database className="h-5 w-5" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Historial de Migraciones Supabase</h2>
-              <p className="text-xs text-slate-500">
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">Historial de Migraciones Supabase</h2>
+              <p className="text-xs text-slate-500 break-words">
                 Registro inmutable de versiones de base de datos aplicadas en <code className="font-mono text-slate-700">wallet_internal.migraciones</code>.
               </p>
             </div>
@@ -547,18 +547,20 @@ export const AdminView: React.FC = () => {
             {stats?.migraciones.map((mig) => (
               <div
                 key={mig.version}
-                className="flex items-center justify-between rounded-xl border border-slate-200 p-3.5 hover:bg-slate-50 transition-colors"
+                className="flex items-start sm:items-center justify-between gap-2.5 rounded-xl border border-slate-200 p-3 sm:p-3.5 hover:bg-slate-50 transition-colors overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  <div>
-                    <strong className="block text-sm font-mono text-slate-900">{mig.version}</strong>
-                    <span className="text-xs text-slate-400">
+                <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+                  <div className="min-w-0 flex-1">
+                    <strong className="block text-xs sm:text-sm font-mono text-slate-900 break-all leading-snug">
+                      {mig.version}
+                    </strong>
+                    <span className="mt-0.5 block text-[11px] sm:text-xs text-slate-400">
                       Aplicada el: {new Date(mig.aplicada_el).toLocaleString('es-PE')}
                     </span>
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                <span className="shrink-0 rounded-full bg-emerald-100 px-2 sm:px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                   Activa
                 </span>
               </div>

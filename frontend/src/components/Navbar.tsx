@@ -108,14 +108,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-1 py-1.5 flex items-center justify-between gap-0.5 shadow-2xl">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+              className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-1 rounded-xl text-[10px] font-semibold transition-all cursor-pointer ${
                 isActive
                   ? item.isAdmin
                     ? 'text-amber-400 bg-amber-500/15'
@@ -124,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               {item.icon}
-              <span className="mt-0.5 truncate max-w-[80px]">{item.label.split(' ')[0]}</span>
+              <span className="mt-0.5 truncate w-full text-center">{item.label.split(' ')[0]}</span>
             </button>
           );
         })}
