@@ -1,11 +1,11 @@
+import { AnimatedModal } from './AnimatedModal';
 import React, { useState, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useWallet } from '../context/WalletContext';
+import { useWallet, useWalletFormGuard } from '../context/WalletContext';
 import {
   NOMBRES_MESES,
-  formatearMoneda,
   fechaHoyISO,
+  fechaRealMovimiento,
 } from '../types/wallet';
 import type { MovimientoAgenda } from '../types/wallet';
 import { confirmarAccion, toastExito } from '../lib/alerts';
@@ -24,8 +24,9 @@ import {
 } from 'lucide-react';
 
 export const MovimientosView: React.FC = () => {
+  const { error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
-  const { movimientos, categorias, recargarTodo } = useWallet();
+  const { movimientos, categorias, recargarTodo, fechaReferencia, pagosDeuda } = useWallet();
 
   const hoy = new Date();
   const [filtroMes, setFiltroMes] = useState<number>(hoy.getMonth()); // -1 = Todos
@@ -44,6 +45,8 @@ export const MovimientosView: React.FC = () => {
   const [categoriaId, setCategoriaId] = useState<number | ''>('');
   const [pagoConfirmado, setPagoConfirmado] = useState<boolean>(true);
   const [guardando, setGuardando] = useState<boolean>(false);
+
+  useWalletFormGuard(modalAbierto, 'Movimiento');
 
   const mapaCategorias = useMemo(() => {
     const map = new Map<number, { nombre: string; color: string; icono: string }>();
@@ -74,6 +77,7 @@ export const MovimientosView: React.FC = () => {
   };
 
   const handleGuardar = async (e: React.FormEvent) => {
+    try {
     e.preventDefault();
     if (!user) return;
     const montoNum = parseFloat(monto);
@@ -107,9 +111,12 @@ export const MovimientosView: React.FC = () => {
     } finally {
       setGuardando(false);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   const handleToggleConfirmado = async (m: MovimientoAgenda) => {
+    try {
     if (!user) return;
     const nuevoEstado = !m.pago_confirmado;
     await supabase
@@ -121,9 +128,12 @@ export const MovimientosView: React.FC = () => {
       .eq('id', m.id)
       .eq('user_id', user.id);
     await recargarTodo();
+
+    } catch (error) { reportarError(error); }
   };
 
   const handleEliminar = async (id: number) => {
+    try {
     if (!user) return;
     const confirmado = await confirmarAccion({
       title: '¿Eliminar movimiento?',
@@ -135,13 +145,15 @@ export const MovimientosView: React.FC = () => {
     await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
     await recargarTodo();
     toastExito('Movimiento eliminado');
+
+    } catch (error) { reportarError(error); }
   };
 
   // Filtrado de movimientos
   const movimientosFiltrados = useMemo(() => {
     return movimientos.filter((m) => {
       if (!m.fecha) return false;
-      const [y, month] = m.fecha.split('-').map(Number);
+      const [y, month] = fechaRealMovimiento(m).split('-').map(Number);
       const mIdx = month - 1;
 
       if (filtroAnio !== -1 && y !== filtroAnio) return false;
@@ -181,7 +193,7 @@ export const MovimientosView: React.FC = () => {
     ]);
     movimientos.forEach((m) => {
       if (m.fecha) {
-        const y = Number(m.fecha.split('-')[0]);
+        const y = Number(fechaRealMovimiento(m).split('-')[0]);
         if (!isNaN(y)) set.add(y);
       }
     });
@@ -200,14 +212,14 @@ export const MovimientosView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
+          <button disabled={soloLectura}
             onClick={() => abrirNuevo('ingreso')}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
           >
             <ArrowUpCircle className="w-4 h-4" />
             <span>+ Ingreso</span>
           </button>
-          <button
+          <button disabled={soloLectura}
             onClick={() => abrirNuevo('gasto')}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
           >
@@ -348,7 +360,7 @@ export const MovimientosView: React.FC = () => {
             <p className="text-sm font-semibold text-slate-500">
               No se encontraron movimientos para los filtros seleccionados.
             </p>
-            <button
+            <button disabled={soloLectura}
               onClick={() => abrirNuevo('gasto')}
               className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:underline cursor-pointer"
             >
@@ -362,7 +374,9 @@ export const MovimientosView: React.FC = () => {
               const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
               const catNombre = cat ? cat.nombre : 'Otros';
               const catColor = cat ? cat.color : '#7f8c8d';
-              const [y, month, d] = m.fecha.split('-');
+              const vinculado=pagosDeuda.some(p=>p.movimiento_id===m.id);
+              const incluido=!!fechaReferencia&&m.pago_confirmado&&fechaRealMovimiento(m)<=fechaReferencia;
+              const [y, month, d] = fechaRealMovimiento(m).split('-');
 
               return (
                 <div
@@ -396,12 +410,14 @@ export const MovimientosView: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-slate-400">
                         <span>
                           {d}/{month}/{y}
                         </span>
                         <span>·</span>
-                        <button
+                        {incluido&&<span className="text-teal-700">Incluido en saldo de referencia</span>}
+                        {vinculado&&<span className="text-slate-500">Abono de cronograma · se corrige en Pagos</span>}
+                        <button disabled={soloLectura || vinculado}
                           onClick={() => handleToggleConfirmado(m)}
                           className={`inline-flex items-center gap-1 font-semibold cursor-pointer ${
                             m.pago_confirmado ? 'text-emerald-600' : 'text-amber-600'
@@ -436,14 +452,14 @@ export const MovimientosView: React.FC = () => {
                     </span>
 
                     <div className="flex items-center gap-1">
-                      <button
+                      <button disabled={soloLectura || vinculado}
                         onClick={() => abrirEdicion(m)}
                         className="p-2 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
                         title="Editar"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button
+                      <button disabled={soloLectura || vinculado}
                         onClick={() => handleEliminar(m.id)}
                         className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                         title="Eliminar"
@@ -460,9 +476,10 @@ export const MovimientosView: React.FC = () => {
       </div>
 
       {/* MODAL PARA CREAR / EDITAR MOVIMIENTO */}
+      <AnimatedModal open={Boolean(modalAbierto)} label="Registrar o editar movimiento">
       {modalAbierto && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+            {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
               <h3 className="text-base font-bold">
                 {editandoId ? 'Editar Movimiento' : 'Nuevo Movimiento'}
@@ -521,7 +538,7 @@ export const MovimientosView: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Monto (S/.)
+                    Monto ({simboloMoneda})
                   </label>
                   <input
                     type="number"
@@ -592,7 +609,7 @@ export const MovimientosView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={guardando}
+                  disabled={soloLectura || (guardando)}
                   className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm cursor-pointer"
                 >
                   {guardando ? 'Guardando...' : editandoId ? 'Guardar Cambios' : 'Registrar'}
@@ -600,8 +617,8 @@ export const MovimientosView: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
       )}
+      </AnimatedModal>
     </div>
   );
 };

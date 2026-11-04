@@ -1,12 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useWallet } from '../context/WalletContext';
+import { SaldoReferenciaEditor } from './SaldoReferenciaEditor';
+import { calcularProyeccionBilletera } from '../lib/projection';
+import type { ProyeccionMesCalculada } from '../lib/projection';
+import { AnimatedModal } from './AnimatedModal';
+import React, { useState, useMemo } from 'react';
+import { AnimatedDisclosure } from './AnimatedDisclosure';
+import { useWallet, useWalletFormGuard } from '../context/WalletContext';
 import {
   NOMBRES_MESES,
   MESES_CORTOS,
-  formatearMoneda,
-  obtenerUltimoDiaMes,
   fechaHoyISO,
-  recurrenteAplicaEnMes,
+  fechaRealMovimiento,
 } from '../types/wallet';
 import type { ActiveTab } from '../types/wallet';
 import {
@@ -28,40 +31,8 @@ interface DashboardViewProps {
   onNavigate: (tab: ActiveTab) => void;
 }
 
-interface ItemDetalleMes {
-  id: string;
-  fecha: string;
-  dia: number;
-  descripcion: string;
-  monto: number;
-  tipo: 'ingreso' | 'gasto';
-  origen: 'realizado' | 'recurrente' | 'cuota' | 'sueldo';
-  categoriaNombre: string;
-  categoriaColor: string;
-}
-
-interface ProyeccionMesCalculada {
-  llave: string;
-  anio: number;
-  mes: number;
-  label: string;
-  labelCorto: string;
-  ultimoDia: number;
-  esPasado: boolean;
-  esActual: boolean;
-  balanceInicio: number;
-  bolsilloAntes15: number;
-  balanceTras15: number;
-  bolsilloAntesFinMes: number;
-  balanceFin: number;
-  ingresosTotales: number;
-  gastosTotales: number;
-  sueldo15: number;
-  sueldo30: number;
-  items: ItemDetalleMes[];
-}
-
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
+  const { billeteraActual, modoLegacy, fechaReferencia, soloLectura, formatearMoneda } = useWallet();
   const {
     montoBase,
     categorias,
@@ -71,7 +42,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     deudas,
     cuotas,
     pagosDeuda,
-    actualizarMontoBase,
   } = useWallet();
 
   const hoy = new Date();
@@ -81,8 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // Estado para editar saldo base
   const [editandoBase, setEditandoBase] = useState(false);
-  const [inputBase, setInputBase] = useState(String(montoBase));
-  const [guardandoBase, setGuardandoBase] = useState(false);
+
 
   // Estado para Gastos por Categoría
   const [catMes, setCatMes] = useState<number>(mesHoy);
@@ -93,9 +62,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [mesesAbiertos, setMesesAbiertos] = useState<Record<string, boolean>>({});
   const [modalDetalleMes, setModalDetalleMes] = useState<ProyeccionMesCalculada | null>(null);
 
-  useEffect(() => {
-    setInputBase(String(montoBase));
-  }, [montoBase]);
+
+
+  useWalletFormGuard(editandoBase, 'Saldo de referencia');
 
   // Mapa rápido de categorías
   const mapaCategorias = useMemo(() => {
@@ -103,17 +72,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color }));
     return map;
   }, [categorias]);
-
-  // Guardar saldo base
-  const handleGuardarBase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(inputBase);
-    if (isNaN(val) || val < 0) return;
-    setGuardandoBase(true);
-    await actualizarMontoBase(val);
-    setGuardandoBase(false);
-    setEditandoBase(false);
-  };
 
   // Calcular Próximos Pagos Pendientes (Cuotas de deudas + Movimientos pendientes)
   const proximosPagos = useMemo(() => {
@@ -135,6 +93,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       const pendiente = Math.round((c.monto - pagado) * 100) / 100;
       if (pendiente > 0.009) {
         const deuda = deudas.find((d) => d.id === c.deuda_id);
+        if (!deuda) return;
         const totalCuotasDeuda = cuotas.filter((q) => q.deuda_id === c.deuda_id).length;
         lista.push({
           id: `cuota-${c.id}`,
@@ -169,8 +128,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   // Calcular Gastos por Categoría del mes seleccionado
   const reporteGastosCategoria = useMemo(() => {
     const gastosDelMes = movimientos.filter((m) => {
-      if (m.tipo !== 'gasto' || !m.fecha) return false;
-      const [y, month] = m.fecha.split('-').map(Number);
+      if (m.tipo !== 'gasto' || !m.fecha || !m.pago_confirmado) return false;
+      const [y, month] = fechaRealMovimiento(m).split('-').map(Number);
       return y === catAnio && month - 1 === catMes;
     });
 
@@ -194,216 +153,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // MOTOR DE PROYECCIÓN ACUMULATIVA MENSUAL
   const proyecciones = useMemo(() => {
-    let anioInicio = anioHoy;
-    let mesInicio = mesHoy;
-
-    movimientos.forEach((m) => {
-      if (!m.fecha) return;
-      const [y, month] = m.fecha.split('-').map(Number);
-      const mIdx = month - 1;
-      if (y < anioInicio || (y === anioInicio && mIdx < mesInicio)) {
-        anioInicio = y;
-        mesInicio = mIdx;
-      }
-    });
-
-    sueldos.forEach((s) => {
-      if (s.sueldo_15 > 0 || s.sueldo_30 > 0) {
-        if (s.anio < anioInicio || (s.anio === anioInicio && s.mes < mesInicio)) {
-          anioInicio = s.anio;
-          mesInicio = s.mes;
-        }
-      }
-    });
-
-    // Proyectar hasta 12 meses a partir del mes actual
-    const fechaLimite = new Date(anioHoy, mesHoy + 12, 1);
-    const anioLimite = fechaLimite.getFullYear();
-    const mesLimite = fechaLimite.getMonth();
-
-    let balanceAcumulado = montoBase;
-    const resultado: ProyeccionMesCalculada[] = [];
-
-    let aCursor = anioInicio;
-    let mCursor = mesInicio;
-
-    while (aCursor < anioLimite || (aCursor === anioLimite && mCursor <= mesLimite)) {
-      const llave = `${aCursor}-${mCursor}`;
-      const ultimoDia = obtenerUltimoDiaMes(aCursor, mCursor);
-      const esPasado = aCursor < anioHoy || (aCursor === anioHoy && mCursor < mesHoy);
-      const esActual = aCursor === anioHoy && mCursor === mesHoy;
-
-      // Sueldos del mes
-      const regSueldo = sueldos.find((s) => s.anio === aCursor && s.mes === mCursor);
-      const s15 = regSueldo ? regSueldo.sueldo_15 : 0;
-      const s30 = regSueldo ? regSueldo.sueldo_30 : 0;
-
-      const itemsMes: ItemDetalleMes[] = [];
-      const mesStr = String(mCursor + 1).padStart(2, '0');
-      const prefijoMes = `${aCursor}-${mesStr}`;
-
-      // 1. Movimientos en agenda (confirmados y pendientes) de este mes
-      const movsDelMes = movimientos.filter((m) => m.fecha && m.fecha.startsWith(prefijoMes));
-      const recurrentesYaEnAgenda = new Set<number>();
-
-      movsDelMes.forEach((m) => {
-        if (m.recurrente_id) recurrentesYaEnAgenda.add(m.recurrente_id);
-        const dia = Number(m.fecha.split('-')[2]) || 1;
-        const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
-        itemsMes.push({
-          id: `mov-${m.id}`,
-          fecha: m.fecha,
-          dia,
-          descripcion: m.descripcion,
-          monto: m.monto,
-          tipo: m.tipo,
-          origen: m.pago_confirmado ? 'realizado' : 'recurrente',
-          categoriaNombre: cat ? cat.nombre : 'Otros',
-          categoriaColor: cat ? cat.color : '#7f8c8d',
-        });
-      });
-
-      // 2. Plantillas recurrentes que aún no tienen registro en movimientos_agenda en este mes (solo para mes actual o futuro)
-      if (!esPasado) {
-        recurrentes.forEach((rec) => {
-          if (!recurrentesYaEnAgenda.has(rec.id) && recurrenteAplicaEnMes(rec, aCursor, mCursor)) {
-            const diaReal = Math.min(rec.dia_pago, ultimoDia);
-            const fechaRec = `${prefijoMes}-${String(diaReal).padStart(2, '0')}`;
-            const cat = rec.categoria_id ? mapaCategorias.get(rec.categoria_id) : undefined;
-            itemsMes.push({
-              id: `rec-virtual-${rec.id}-${llave}`,
-              fecha: fechaRec,
-              dia: diaReal,
-              descripcion: `${rec.descripcion} (Fijo)`,
-              monto: rec.monto,
-              tipo: rec.tipo,
-              origen: 'recurrente',
-              categoriaNombre: cat ? cat.nombre : 'Servicios',
-              categoriaColor: cat ? cat.color : '#3498db',
-            });
-          }
-        });
-      }
-
-      // 3. Cuotas de deuda con saldo pendiente en este mes (que no estén ya reflejadas en un movimiento de pago)
-      cuotas
-        .filter((c) => c.fecha && c.fecha.startsWith(prefijoMes))
-        .forEach((c) => {
-          const pagado = pagosDeuda
-            .filter((p) => p.cuota_id === c.id)
-            .reduce((acc, p) => acc + p.monto, 0);
-          const pendiente = Math.round((c.monto - pagado) * 100) / 100;
-          if (pendiente > 0.009) {
-            const deuda = deudas.find((d) => d.id === c.deuda_id);
-            const cat = deuda?.categoria_id ? mapaCategorias.get(deuda.categoria_id) : undefined;
-            const dia = Number(c.fecha.split('-')[2]) || 1;
-            itemsMes.push({
-              id: `cuota-${c.id}`,
-              fecha: c.fecha,
-              dia,
-              descripcion: `${deuda ? deuda.nombre : 'Deuda'} · Cuota #${c.numero}`,
-              monto: pendiente,
-              tipo: 'gasto',
-              origen: 'cuota',
-              categoriaNombre: cat ? cat.nombre : 'Deudas',
-              categoriaColor: cat ? cat.color : '#e74c3c',
-            });
-          }
-        });
-
-      // Separar por tramos del mes (1-14, 15, 16-penúltimo, último día)
-      let ing1a = 0, gas1a = 0;
-      let ing1b = 0, gas1b = 0;
-      let ing2a = 0, gas2a = 0;
-      let ing2b = 0, gas2b = 0;
-
-      itemsMes.forEach((item) => {
-        if (item.dia < 15) {
-          if (item.tipo === 'ingreso') ing1a += item.monto;
-          else gas1a += item.monto;
-        } else if (item.dia === 15) {
-          if (item.tipo === 'ingreso') ing1b += item.monto;
-          else gas1b += item.monto;
-        } else if (item.dia < ultimoDia && item.dia < 30) {
-          if (item.tipo === 'ingreso') ing2a += item.monto;
-          else gas2a += item.monto;
-        } else {
-          if (item.tipo === 'ingreso') ing2b += item.monto;
-          else gas2b += item.monto;
-        }
-      });
-
-      // Agregar sueldos al detalle visual
-      if (s15 > 0) {
-        itemsMes.push({
-          id: `s15-${llave}`,
-          fecha: `${prefijoMes}-15`,
-          dia: 15,
-          descripcion: 'Sueldo Quincena (Día 15)',
-          monto: s15,
-          tipo: 'ingreso',
-          origen: 'sueldo',
-          categoriaNombre: 'Sueldo',
-          categoriaColor: '#10b981',
-        });
-      }
-      if (s30 > 0) {
-        itemsMes.push({
-          id: `s30-${llave}`,
-          fecha: `${prefijoMes}-${String(ultimoDia).padStart(2, '0')}`,
-          dia: ultimoDia,
-          descripcion: `Sueldo Fin de Mes (Día ${ultimoDia})`,
-          monto: s30,
-          tipo: 'ingreso',
-          origen: 'sueldo',
-          categoriaNombre: 'Sueldo',
-          categoriaColor: '#10b981',
-        });
-      }
-
-      const balanceInicio = balanceAcumulado;
-      const bolsilloAntes15 = balanceInicio + ing1a - gas1a;
-      const balanceTras15 = bolsilloAntes15 + s15 + ing1b - gas1b;
-      const bolsilloAntesFinMes = balanceTras15 + ing2a - gas2a;
-      const balanceFin = bolsilloAntesFinMes + s30 + ing2b - gas2b;
-
-      balanceAcumulado = balanceFin;
-
-      const ingresosTotales = s15 + s30 + ing1a + ing1b + ing2a + ing2b;
-      const gastosTotales = gas1a + gas1b + gas2a + gas2b;
-
-      itemsMes.sort((a, b) => a.dia - b.dia);
-
-      resultado.push({
-        llave,
-        anio: aCursor,
-        mes: mCursor,
-        label: `${NOMBRES_MESES[mCursor]} ${aCursor}`,
-        labelCorto: `${MESES_CORTOS[mCursor]} ${String(aCursor).slice(-2)}`,
-        ultimoDia,
-        esPasado,
-        esActual,
-        balanceInicio,
-        bolsilloAntes15,
-        balanceTras15,
-        bolsilloAntesFinMes,
-        balanceFin,
-        ingresosTotales,
-        gastosTotales,
-        sueldo15: s15,
-        sueldo30: s30,
-        items: itemsMes,
-      });
-
-      mCursor++;
-      if (mCursor > 11) {
-        mCursor = 0;
-        aCursor++;
-      }
-    }
-
-    return resultado;
-  }, [montoBase, movimientos, sueldos, recurrentes, cuotas, pagosDeuda, deudas, mapaCategorias, anioHoy, mesHoy]);
+    if (!billeteraActual) return [];
+    return calcularProyeccionBilletera({ billetera: billeteraActual, modoLegacy, hoy: fechaHoyStr,
+      montoBase, fechaReferencia, categorias, movimientos, sueldos, recurrentes, cuotas, pagosDeuda, deudas });
+  }, [billeteraActual, modoLegacy, fechaReferencia, fechaHoyStr, montoBase, categorias, movimientos, sueldos, recurrentes, cuotas, pagosDeuda, deudas]);
 
   const proyeccionesVisibles = useMemo(
     () => (mostrarHistorico ? proyecciones : proyecciones.filter((p) => !p.esPasado)),
@@ -427,7 +180,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const actual = base.find((p) => p.esActual) || base[0];
     const alertaDeficit = base.find((p) => p.balanceFin < 0);
     const alertaLiquidez = base.find(
-      (p) => p.bolsilloAntes15 < 0 || p.balanceTras15 < 0 || p.bolsilloAntesFinMes < 0
+      (p) => (p.antes15Disponible&&p.bolsilloAntes15 < 0) || (p.tras15Disponible&&p.balanceTras15 < 0) || (p.antesFinDisponible&&p.bolsilloAntesFinMes < 0)
     );
 
     return { mejorMes, menorLiquidez, actual, alertaDeficit, alertaLiquidez };
@@ -470,11 +223,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
 
               <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                Punto de partida para calcular tus saldos acumulados mes a mes junto con sueldos, ingresos y gastos.
+                {fechaReferencia ? `Saldo al cierre del ${fechaReferencia.split('-').reverse().join('/')}. Los movimientos anteriores ya están incluidos.` : 'Saldo sin fecha de referencia. Confirma la fecha para cargar históricos sin volver a descontarlos.'}
               </p>
 
               {!editandoBase ? (
-                <button
+                <button disabled={soloLectura}
                   onClick={() => setEditandoBase(true)}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all cursor-pointer border border-white/20"
                 >
@@ -482,36 +235,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <span>Actualizar saldo base</span>
                 </button>
               ) : (
-                <form onSubmit={handleGuardarBase} className="mt-4 flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                      S/.
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={inputBase}
-                      onChange={(e) => setInputBase(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950/70 border border-teal-400/50 text-white text-sm font-semibold focus:outline-none"
-                      autoFocus
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={guardandoBase}
-                    className="px-3.5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs cursor-pointer transition-colors"
-                  >
-                    {guardandoBase ? '...' : 'Guardar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditandoBase(false)}
-                    className="px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                </form>
+                <SaldoReferenciaEditor onClose={() => setEditandoBase(false)} />
               )}
             </div>
           </div>
@@ -699,8 +423,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
+                  <h2 className="flex flex-wrap items-center gap-2 text-base font-bold text-slate-900">
                     Proyección Mensual Estimada
+                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{billeteraActual?.moneda}</span>
                   </h2>
                   <p className="text-xs text-slate-500">
                     Cálculo acumulado aplicando sueldos, movimientos realizados y pagos programados pendientes
@@ -776,7 +501,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
                     <span className="text-[11px] font-bold uppercase text-slate-400 block">
-                      Gastos de {kpisProyeccion.actual.label}
+                      Gastos por aplicar · {kpisProyeccion.actual.label}
                     </span>
                     <strong className="text-sm font-extrabold text-slate-800 block mt-0.5">
                       Mes en curso
@@ -844,9 +569,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   >
                     <div>
                       {/* Cabecera del mes */}
-                      <div
+                      <button
+                        type="button"
+                        aria-expanded={abierto}
+                        aria-controls={`proyeccion-${p.llave}`}
+                        aria-label={`${p.label}: ${abierto ? 'ocultar' : 'ver'} desglose quincenal`}
                         onClick={() => toggleMesAbierto(p.llave)}
-                        className="flex items-center justify-between cursor-pointer select-none"
+                        className="flex w-full items-center justify-between text-left cursor-pointer select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
                       >
                         <div>
                           <div className="flex items-center gap-2">
@@ -873,17 +602,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                         </div>
 
                         <ChevronDown
-                          className={`w-4 h-4 text-slate-400 transition-transform ${
+                          className={`w-4 h-4 text-slate-400 transition-transform duration-200 motion-reduce:transition-none ${
                             abierto ? 'rotate-180' : ''
                           }`}
                         />
-                      </div>
+                      </button>
 
                       {/* Cuerpo desplegable con los hitos del mes */}
-                      {abierto && (
+                      <AnimatedDisclosure open={abierto} id={`proyeccion-${p.llave}`}>
                         <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-xs">
                           <div className="flex items-center justify-between text-slate-600">
-                            <span>Saldo mes anterior:</span>
+                            <span>{fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`)?'Saldo de referencia:':'Saldo mes anterior:'}</span>
                             <strong className="text-slate-900">
                               {formatearMoneda(p.balanceInicio)}
                             </strong>
@@ -909,7 +638,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                   p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
                                 }
                               >
-                                {formatearMoneda(p.bolsilloAntes15)}
+                                {p.antes15Disponible?formatearMoneda(p.bolsilloAntes15):'—'}
                               </strong>
                             </div>
                             <div className="flex items-center justify-between">
@@ -919,7 +648,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                   p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-600'
                                 }
                               >
-                                {formatearMoneda(p.balanceTras15)}
+                                {p.tras15Disponible?formatearMoneda(p.balanceTras15):'—'}
                               </strong>
                             </div>
                             <div className="flex items-center justify-between">
@@ -931,12 +660,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                   p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
                                 }
                               >
-                                {formatearMoneda(p.bolsilloAntesFinMes)}
+                                {p.antesFinDisponible?formatearMoneda(p.bolsilloAntesFinMes):'—'}
                               </strong>
                             </div>
                           </div>
+                          {(!p.antes15Disponible||!p.tras15Disponible||!p.antesFinDisponible)&&<p className="mt-2 text-[10px] text-slate-500">— Tramo anterior al saldo de referencia; no se reconstruye su saldo.</p>}
                         </div>
-                      )}
+                      </AnimatedDisclosure>
                     </div>
 
                     {/* Pie siempre visible: Balance final del mes + Botón detalle */}
@@ -972,8 +702,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       </div>
 
       {/* MODAL DE DETALLE DE MOVIMIENTOS DEL MES PROYECTADO */}
+      <AnimatedModal open={Boolean(modalDetalleMes)} label="Detalle mensual">
       {modalDetalleMes && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
               <div>
@@ -994,7 +724,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-2 gap-3 mb-2">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <span className="text-[11px] text-slate-400 font-bold uppercase block">
-                    Saldo Inicial Mes
+                    {fechaReferencia?.startsWith(`${modalDetalleMes.anio}-${String(modalDetalleMes.mes+1).padStart(2,'0')}`)?'Saldo de referencia':'Saldo Inicial Mes'}
                   </span>
                   <strong className="text-sm font-extrabold text-slate-900">
                     {formatearMoneda(modalDetalleMes.balanceInicio)}
@@ -1023,15 +753,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {modalDetalleMes.items.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 flex items-center justify-between gap-3 bg-white hover:bg-slate-50/80 text-xs"
+                      className="p-3 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-2 bg-white hover:bg-slate-50/80 text-xs"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center justify-center shrink-0">
                           {item.dia}
                         </span>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate">{item.descripcion}</p>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                          <p className="font-bold text-slate-900 break-words">{item.descripcion}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                             <span
                               className="w-2 h-2 rounded-full inline-block"
                               style={{ backgroundColor: item.categoriaColor }}
@@ -1040,10 +770,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             <span>·</span>
                             <span className="capitalize">{item.origen}</span>
                           </div>
+                          {item.vencimientoOriginal&&<p className="mt-1 text-[11px] text-slate-500">Venció: {item.vencimientoOriginal.split('-').reverse().join('/')}</p>}
                         </div>
                       </div>
                       <span
-                        className={`font-extrabold shrink-0 ${
+                        className={`font-extrabold shrink-0 self-end sm:self-center ${
                           item.tipo === 'ingreso' ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
@@ -1075,8 +806,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </button>
             </div>
           </div>
-        </div>
       )}
+      </AnimatedModal>
     </div>
   );
 };

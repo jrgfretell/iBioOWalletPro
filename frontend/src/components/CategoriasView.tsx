@@ -1,8 +1,7 @@
+import { AnimatedModal } from './AnimatedModal';
 import React, { useState, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useWallet } from '../context/WalletContext';
-import { formatearMoneda } from '../types/wallet';
+import { useWallet, useWalletFormGuard } from '../context/WalletContext';
 import type { Categoria } from '../types/wallet';
 import { confirmarAccion, alertaInfo, toastExito } from '../lib/alerts';
 import { Plus, Edit2, Trash2, X, Check, Search } from 'lucide-react';
@@ -52,6 +51,7 @@ const PRESET_ICONS = [
 ];
 
 export const CategoriasView: React.FC = () => {
+  const { error: errorBilletera, reportarError, soloLectura, formatearMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
   const { categorias, movimientos, recargarTodo } = useWallet();
 
@@ -62,6 +62,8 @@ export const CategoriasView: React.FC = () => {
   const [icono, setIcono] = useState<string>('fa-folder');
   const [busquedaIcono, setBusquedaIcono] = useState<string>('');
   const [guardando, setGuardando] = useState<boolean>(false);
+
+  useWalletFormGuard(modalAbierto, 'Categoría');
 
   const estadisticasPorCategoria = useMemo(() => {
     const stats = new Map<number, { cantidad: number; totalGasto: number }>();
@@ -105,6 +107,7 @@ export const CategoriasView: React.FC = () => {
   };
 
   const handleGuardar = async (e: React.FormEvent) => {
+    try {
     e.preventDefault();
     if (!user || !nombre.trim()) return;
     setGuardando(true);
@@ -130,9 +133,12 @@ export const CategoriasView: React.FC = () => {
     } finally {
       setGuardando(false);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   const handleEliminar = async (c: Categoria) => {
+    try {
     if (!user) return;
     if (c.nombre.toLowerCase() === 'otros') {
       alertaInfo('Categoría reservada', 'La categoría predeterminada "Otros" no se puede eliminar.');
@@ -148,6 +154,8 @@ export const CategoriasView: React.FC = () => {
     await supabase.from('categorias').delete().eq('id', c.id).eq('user_id', user.id);
     await recargarTodo();
     toastExito(`Categoría "${c.nombre}" eliminada`);
+
+    } catch (error) { reportarError(error); }
   };
 
   return (
@@ -160,7 +168,7 @@ export const CategoriasView: React.FC = () => {
           </p>
         </div>
 
-        <button
+        <button disabled={soloLectura}
           onClick={abrirNueva}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start transition-colors"
         >
@@ -193,7 +201,7 @@ export const CategoriasView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
-                <button
+                <button disabled={soloLectura}
                   onClick={() => abrirEdicion(c)}
                   className="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 cursor-pointer transition-colors"
                   title="Editar"
@@ -201,7 +209,7 @@ export const CategoriasView: React.FC = () => {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 {c.nombre.toLowerCase() !== 'otros' && (
-                  <button
+                  <button disabled={soloLectura}
                     onClick={() => handleEliminar(c)}
                     className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
                     title="Eliminar"
@@ -215,9 +223,10 @@ export const CategoriasView: React.FC = () => {
         })}
       </div>
 
+      <AnimatedModal open={Boolean(modalAbierto)} label="Registrar o editar categoría">
       {modalAbierto && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+            {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-4 px-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
               <h3 className="text-base font-bold flex items-center gap-2">
                 <i className={`fas ${editId ? 'fa-pen-to-square' : 'fa-plus-circle'} text-teal-400`}></i>
@@ -342,7 +351,7 @@ export const CategoriasView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={guardando}
+                  disabled={soloLectura || (guardando)}
                   className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
                 >
                   {guardando ? 'Guardando...' : 'Guardar Categoría'}
@@ -350,8 +359,8 @@ export const CategoriasView: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
       )}
+      </AnimatedModal>
     </div>
   );
 };

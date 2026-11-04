@@ -1,0 +1,15 @@
+{
+  "name": "ibioo-wallet-database-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:etapa2": "node etapa2.mjs",
+    "test:etapa3": "node etapa3.mjs",
+    "test:etapa4": "node etapa4.mjs",
+    "test:etapa5": "node etapa5.mjs && node etapa5-projection.mjs",
+    "preview:api": "node preview-api.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.15"
+  }
+}

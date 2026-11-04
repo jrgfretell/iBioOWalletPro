@@ -1,10 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { SaldoReferenciaEditor } from './SaldoReferenciaEditor';
+import { RegistrarPagoModal } from './RegistrarPagoModal';
+import type { ObjetivoPago } from './RegistrarPagoModal';
+import { generarCuotas } from '../lib/schedule';
+import { AnimatedModal } from './AnimatedModal';
+import React, { useState, useMemo, useRef } from 'react';
+import { AnimatedDisclosure } from './AnimatedDisclosure';
 import { useAuth } from '../context/AuthContext';
-import { useWallet } from '../context/WalletContext';
+import { useWallet, useWalletFormGuard } from '../context/WalletContext';
 import {
   NOMBRES_MESES,
-  formatearMoneda,
   obtenerUltimoDiaMes,
   fechaHoyISO,
   obtenerMesInicioRecurrente,
@@ -26,6 +30,7 @@ import {
   ChevronDown,
   ChevronRight,
   Sliders,
+  Search,
 } from 'lucide-react';
 
 type SubTabPagos = 'agenda' | 'cronogramas' | 'ingresos';
@@ -49,6 +54,7 @@ interface FilaAgenda {
 }
 
 export const PagosView: React.FC = () => {
+  const { soporteEtapa5, fechaReferencia, ejecutarOperacion, escribiendo, error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
   const {
     montoBase,
@@ -60,7 +66,6 @@ export const PagosView: React.FC = () => {
     pagosDeuda,
     sueldos,
     recargarTodo,
-    actualizarMontoBase,
     guardarSueldoMes,
     guardarSueldoAnual,
   } = useWallet();
@@ -121,6 +126,8 @@ export const PagosView: React.FC = () => {
   const [recAnioInicio, setRecAnioInicio] = useState<number>(hoy.getFullYear());
   const [recInicioManual, setRecInicioManual] = useState<boolean>(false);
 
+  const [busquedaCronogramas, setBusquedaCronogramas] = useState('');
+
   // Estado pestaña Cronogramas
   const [filtroCronogramas, setFiltroCronogramas] = useState<'todos' | 'activas' | 'pagadas'>('todos');
   const [cronogramasExpandidos, setCronogramasExpandidos] = useState<Record<string, boolean>>({});
@@ -136,7 +143,19 @@ export const PagosView: React.FC = () => {
   const [mensajeSueldo, setMensajeSueldo] = useState<string | null>(null);
 
   const [editandoBase, setEditandoBase] = useState<boolean>(false);
-  const [inputBase, setInputBase] = useState<string>(String(montoBase));
+  const [pagoObjetivo,setPagoObjetivo]=useState<ObjetivoPago|null>(null);
+  const [creando,setCreando]=useState(false);
+  const [historicos,setHistoricos]=useState<Record<number,{pagada:boolean;fecha:string}>>({});
+  const solicitudes=useRef(new Map<string,{datos:string;id:string}>());
+  const solicitudPara=(accion:string,datos:unknown)=>{
+    const texto=JSON.stringify(datos); const anterior=solicitudes.current.get(accion);
+    if(anterior?.datos===texto)return anterior.id;
+    const id=crypto.randomUUID();solicitudes.current.set(accion,{datos:texto,id});return id;
+  };
+  const abrirPago=(objetivo:Omit<ObjetivoPago,'solicitud'>)=>setPagoObjetivo({...objetivo,solicitud:crypto.randomUUID()});
+  const cuotasPrevias=generarCuotas(fecha1raCuota,Number(numCuotas),Number(montoPorCuota),forzarFinDeMes);
+
+  useWalletFormGuard(!!pagoObjetivo || modalNuevoProgramado || modalEdicionAbierto || editandoBase || editandoCuotaId !== null, 'Pagos programados');
 
   // Cargar sueldo del mes seleccionado en la pestaña de Ingresos
   React.useEffect(() => {
@@ -147,10 +166,6 @@ export const PagosView: React.FC = () => {
     setIngresoS30(String(s30));
     setIngresoModo(s15 === 0 && s30 > 0 ? 'mensual' : 'quincenal');
   }, [ingresoAnio, ingresoMes, sueldos]);
-
-  React.useEffect(() => {
-    setInputBase(String(montoBase));
-  }, [montoBase]);
 
   // FILAS DE LA AGENDA MENSUAL
   const filasAgenda = useMemo(() => {
@@ -264,6 +279,7 @@ export const PagosView: React.FC = () => {
 
   // ELIMINAR COMPROMISO DIRECTAMENTE
   const handleEliminarCompromiso = async (fila: FilaAgenda) => {
+    try {
     if (!user) return;
     const confirmado = await confirmarAccion({
       title: '¿Eliminar compromiso?',
@@ -274,6 +290,11 @@ export const PagosView: React.FC = () => {
 
     setProcesandoAccion(fila.id);
     try {
+      if(soporteEtapa5) {
+        const accion=fila.recurrenteId?'retirar_recurrente':'retirar_cronograma';
+        const datos=fila.recurrenteId?{recurrente_id:fila.recurrenteId}:{deuda_id:fila.deudaId};
+        await ejecutarOperacion(accion,datos,solicitudPara(accion,datos));toastExito('Compromiso retirado. Se conserva el historial pagado.');return;
+      }
       if (fila.recurrenteId) {
         // Eliminar plantilla recurrente
         await supabase
@@ -296,10 +317,13 @@ export const PagosView: React.FC = () => {
     } finally {
       setProcesandoAccion(null);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   // ELIMINAR INGRESO PROGRAMADO
   const handleEliminarIngresoProgramado = async (item: { id: number; descripcion: string }) => {
+    try {
     if (!user) return;
     const confirmado = await confirmarAccion({
       title: '¿Eliminar ingreso programado?',
@@ -308,6 +332,7 @@ export const PagosView: React.FC = () => {
     });
     if (!confirmado) return;
 
+    if(soporteEtapa5){const datos={recurrente_id:item.id};await ejecutarOperacion('retirar_recurrente',datos,solicitudPara('retirar_recurrente',datos));toastExito('Ingreso retirado. Se conserva el historial.');return;}
     try {
       await supabase
         .from('movimientos_recurrentes')
@@ -322,8 +347,10 @@ export const PagosView: React.FC = () => {
       await recargarTodo();
       toastExito(`"${item.descripcion}" eliminado`);
     } catch (err: any) {
-      console.error(err);
+      reportarError(err);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   // ABRIR MODAL DE EDICIÓN RECURRENTE
@@ -362,6 +389,7 @@ export const PagosView: React.FC = () => {
 
   // GUARDAR EDICIÓN DEL COMPROMISO
   const handleGuardarEdicion = async (e: React.FormEvent) => {
+    try {
     e.preventDefault();
     if (!user || !editId || !editNombre.trim()) return;
     const montoNum = parseFloat(editMonto);
@@ -400,11 +428,17 @@ export const PagosView: React.FC = () => {
     } finally {
       setGuardandoEdicion(false);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   // Acciones de pago en la Agenda
   const handleRegistrarPagoAgenda = async (fila: FilaAgenda) => {
+    try {
     if (!user) return;
+    if(soporteEtapa5) {
+      abrirPago({nombre:fila.nombre,monto:fila.pendiente,vencimiento:fila.fecha,cuotaId:fila.cuotaRef?.id,recurrenteId:fila.recurrenteId}); return;
+    }
     setProcesandoAccion(fila.id);
     try {
       if (fila.tipo === 'Cuotas' && fila.cuotaRef) {
@@ -458,9 +492,12 @@ export const PagosView: React.FC = () => {
     } finally {
       setProcesandoAccion(null);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   const handleAnularPagoAgenda = async (fila: FilaAgenda) => {
+    try {
     if (!user || !fila.movimientoId) return;
     const confirmado = await confirmarAccion({
       title: '¿Anular este pago?',
@@ -483,10 +520,13 @@ export const PagosView: React.FC = () => {
     } finally {
       setProcesandoAccion(null);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   // Guardar fecha individual de una cuota
   const handleGuardarFechaCuota = async (cuotaId: number) => {
+    try {
     if (!user || !nuevaFechaCuota) return;
     setGuardandoCuotaFecha(true);
     try {
@@ -500,14 +540,17 @@ export const PagosView: React.FC = () => {
       setEditandoCuotaId(null);
       toastExito('Fecha de vencimiento actualizada');
     } catch (err) {
-      console.error('Error al actualizar fecha de cuota:', err);
+      reportarError(err);
     } finally {
       setGuardandoCuotaFecha(false);
     }
+
+    } catch (error) { reportarError(error); }
   };
 
   // Ajustar en lote todas las cuotas de un cronograma al último día de cada mes
   const handleAjustarCuotasFinDeMes = async (deudaId: number, nombreDeuda: string) => {
+    try {
     if (!user) return;
     const cuotasD = cuotas.filter((c) => c.deuda_id === deudaId);
     if (!cuotasD.length) return;
@@ -521,6 +564,7 @@ export const PagosView: React.FC = () => {
     });
     if (!confirmado) return;
 
+    if(soporteEtapa5) {const datos={deuda_id:deudaId};await ejecutarOperacion('ajustar_fin_mes',datos,solicitudPara('ajustar_fin_mes',datos));toastExito('Se ajustaron las cuotas sin abonos');return;}
     for (const c of cuotasD) {
       const [y, m] = c.fecha.split('-').map(Number);
       const ultimoDia = obtenerUltimoDiaMes(y, m - 1);
@@ -535,10 +579,14 @@ export const PagosView: React.FC = () => {
     }
     await recargarTodo();
     toastExito('Cuotas ajustadas al último día de cada mes');
+
+    } catch (error) { reportarError(error); }
   };
 
   // Crear nuevo compromiso (Modal)
   const handleCrearNuevoProgramado = async (e: React.FormEvent) => {
+    if(creando)return; setCreando(true);
+    try {
     e.preventDefault();
     if (!user) return;
 
@@ -547,6 +595,13 @@ export const PagosView: React.FC = () => {
       const mCuota = parseFloat(montoPorCuota);
       if (!nombreDeuda.trim() || isNaN(mCuota) || mCuota <= 0 || !fecha1raCuota) return;
 
+      if(soporteEtapa5) {
+        if(cuotasPrevias.length!==nCuotas)throw Error('El registro de cronograma no es válido.');
+        const datos={nombre:nombreDeuda.trim(),categoria_id:deudaCatId===''?null:Number(deudaCatId),cuotas:cuotasPrevias.map((c,i)=>({...c,pagada:historicos[i]?.pagada||false,fecha_pago:historicos[i]?.fecha||c.fecha}))};
+        await ejecutarOperacion('crear_cronograma',datos,solicitudPara('crear_cronograma',datos));
+        solicitudes.current.delete('crear_cronograma');setModalNuevoProgramado(false);setHistoricos({});setNombreDeuda('');setMontoPorCuota('');
+        setSubTab('cronogramas');setBusquedaCronogramas('');setFiltroCronogramas('todos');toastExito('Cronograma y pagos históricos guardados');return;
+      }
       const { data: dData, error } = await supabase
         .from('deudas')
         .insert({
@@ -609,10 +664,13 @@ export const PagosView: React.FC = () => {
     setRecMesInicio(hoy.getMonth());
     setRecAnioInicio(hoy.getFullYear());
     setRecInicioManual(false);
+
+    } catch (error) { reportarError(error); } finally {setCreando(false);}
   };
 
   // Guardar sueldo desde la pestaña Ingresos
   const handleGuardarSueldoIngresos = async (e: React.FormEvent) => {
+    try {
     e.preventDefault();
     const s15 = ingresoModo === 'mensual' ? 0 : Math.max(0, parseFloat(ingresoS15) || 0);
     const s30 = Math.max(0, parseFloat(ingresoS30) || 0);
@@ -632,14 +690,8 @@ export const PagosView: React.FC = () => {
       );
       setTimeout(() => setMensajeSueldo(null), 3000);
     }
-  };
 
-  const handleGuardarBasePerfil = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(inputBase);
-    if (isNaN(val) || val < 0) return;
-    await actualizarMontoBase(val);
-    setEditandoBase(false);
+    } catch (error) { reportarError(error); }
   };
 
   // Otros ingresos programados en el mes
@@ -680,6 +732,9 @@ export const PagosView: React.FC = () => {
   const mesesConfiguradosAnio = useMemo(() => {
     return sueldos.filter((s) => s.anio === ingresoAnio && s.sueldo_15 + s.sueldo_30 > 0).length;
   }, [sueldos, ingresoAnio]);
+
+  const sueldoGuardado = sueldos.find(s => s.anio === ingresoAnio && s.mes === ingresoMes);
+  useWalletFormGuard(subTab === 'ingresos' && (Number(ingresoS15) !== (sueldoGuardado?.sueldo_15 || 0) || Number(ingresoS30) !== (sueldoGuardado?.sueldo_30 || 0) || ingresoAplicarAnio), 'Sueldos sin guardar');
 
   const ultimoDiaSueldo = obtenerUltimoDiaMes(ingresoAnio, ingresoMes);
 
@@ -761,8 +816,42 @@ export const PagosView: React.FC = () => {
       });
   }, [recurrentes, categorias, movimientos, hoy, fechaHoyStr]);
 
+  const normalizarBusqueda = (texto: string) =>
+    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+  const consultaCronogramas = normalizarBusqueda(busquedaCronogramas);
+  const coincideBusqueda = (nombre: string, categoria: string) =>
+    consultaCronogramas.split(/\s+/).every((palabra) =>
+      normalizarBusqueda(`${nombre} ${categoria}`).includes(palabra)
+    );
+  const continuosVisibles = cronogramasContinuos.filter((item) => {
+    if (!coincideBusqueda(item.nombre, item.categoriaNombre)) return false;
+    if (filtroCronogramas === 'pagadas') return item.pendientePeriodo === 0;
+    if (filtroCronogramas === 'activas') return item.pendientePeriodo > 0;
+    return true;
+  });
+  const deudasVisibles = deudas.filter((d) => {
+    const categoria = categorias.find((c) => c.id === d.categoria_id)?.nombre || 'Otros';
+    if (!coincideBusqueda(d.nombre, categoria)) return false;
+    const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
+    const estaPagada = cuotasD.length > 0 && cuotasD.every((c) => {
+      const pagado = pagosDeuda.filter((p) => p.cuota_id === c.id)
+        .reduce((total, p) => total + p.monto, 0);
+      return c.monto - pagado <= 0.009;
+    });
+    if (filtroCronogramas === 'activas') return !estaPagada;
+    if (filtroCronogramas === 'pagadas') return estaPagada;
+    return true;
+  });
+  const clavesVisibles = [
+    ...continuosVisibles.map((c) => c.idKey),
+    ...deudasVisibles.map((d) => `deuda-${d.id}`),
+  ];
+  const totalCronogramas = deudas.length + cronogramasContinuos.length;
+  const hayAbiertos = clavesVisibles.some((k) => cronogramasExpandidos[k]);
+
   return (
     <div className="space-y-6 pb-20 md:pb-8 w-full min-w-0">
+
       {/* Cabecera Principal */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -775,7 +864,7 @@ export const PagosView: React.FC = () => {
           </p>
         </div>
 
-        <button
+        <button disabled={soloLectura}
           onClick={() => {
             setModalTipoCrear('continuo');
             setModalNuevoProgramado(true);
@@ -787,46 +876,40 @@ export const PagosView: React.FC = () => {
         </button>
       </div>
 
-      {/* Píldoras de Navegación Exactas del PHP: Agenda mensual | Cronogramas | Ingresos programados */}
-      <div className="w-full overflow-x-auto pb-1 scrollbar-none">
-        <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-200/80 rounded-2xl border border-slate-300/60 shadow-xs min-w-max">
-          <button
-            onClick={() => setSubTab('agenda')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              subTab === 'agenda'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-900'
-            }`}
-          >
-            <CalendarCheck className="w-4 h-4 shrink-0" />
-            <span>Agenda mensual</span>
+      {/* Navegación de pagos: tres opciones completas también en móvil. */}
+      <nav aria-label="Secciones de pagos programados"
+        className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-white p-1 sm:inline-flex sm:gap-1.5">
+        {([
+          { id: 'agenda', label: 'Agenda', desktopLabel: 'Agenda mensual', icon: CalendarCheck },
+          { id: 'cronogramas', label: 'Cronogramas', desktopLabel: 'Cronogramas', icon: FileText },
+          { id: 'ingresos', label: 'Ingresos', desktopLabel: 'Ingresos programados', icon: Wallet },
+        ] as const).map(({ id, label, desktopLabel, icon: Icon }) => (
+          <button key={id} type="button" onClick={() => setSubTab(id)} aria-pressed={subTab === id}
+            className={`flex min-w-0 min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-2 text-[11px] font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:min-h-11 sm:flex-row sm:gap-2 sm:px-4 sm:text-xs ${
+              subTab === id
+                ? 'bg-teal-50 text-teal-800'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+            }`}>
+            <Icon aria-hidden="true" className="w-[18px] h-[18px] shrink-0 sm:w-4 sm:h-4" />
+            <span className="sm:hidden">{label}</span>
+            <span className="hidden sm:inline">{desktopLabel}</span>
           </button>
-
-          <button
-            onClick={() => setSubTab('cronogramas')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              subTab === 'cronogramas'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-900'
-            }`}
-          >
-            <FileText className="w-4 h-4 shrink-0" />
-            <span>Cronogramas</span>
-          </button>
-
-          <button
-            onClick={() => setSubTab('ingresos')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              subTab === 'ingresos'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-700 hover:text-slate-900'
-            }`}
-          >
-            <Wallet className="w-4 h-4 shrink-0" />
-            <span>Ingresos programados</span>
-          </button>
-        </div>
-      </div>
+        ))}
+      </nav>
+      {soporteEtapa5&&pagosDeuda.length>0&&<details className="rounded-2xl border border-slate-200 bg-white p-4">
+        <summary className="min-h-10 cursor-pointer text-sm font-semibold text-slate-700">Abonos registrados ({pagosDeuda.length})</summary>
+        <p className="mb-3 text-xs text-slate-500">Para corregir un abono, anúlalo completo y vuelve a registrarlo con los datos correctos.</p>
+        <div className="max-h-80 divide-y divide-slate-100 overflow-y-auto">{[...pagosDeuda].sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.id-a.id).map(p=>{
+          const c=cuotas.find(c=>c.id===p.cuota_id); const d=deudas.find(d=>d.id===c?.deuda_id);
+          return <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
+            <div><strong>{d?`${d.nombre} · Cuota ${c?.numero}`:'Abono de cronograma retirado'}</strong><p className="mt-1 text-slate-500">{p.fecha.split('-').reverse().join('/')} · {formatearMoneda(p.monto)}{fechaReferencia&&p.fecha<=fechaReferencia?' · Incluido en saldo de referencia':''}</p></div>
+            <button type="button" disabled={soloLectura||escribiendo} className="min-h-10 rounded-lg border border-slate-200 px-3 text-red-600 disabled:opacity-50" onClick={async()=>{try{
+              if(!await confirmarAccion({title:'¿Anular este abono?',text:'Se retirará también su gasto vinculado. Una cuota activa volverá a quedar pendiente.',confirmButtonText:'Anular abono'}))return;
+              const datos={pago_id:p.id};await ejecutarOperacion('anular_abono',datos,solicitudPara('anular_abono',datos));
+            }catch(error){reportarError(error);}}}>Anular abono</button>
+          </div>;
+        })}</div>
+      </details>}
 
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* PESTAÑA 1: AGENDA MENSUAL                                                */}
@@ -1073,7 +1156,7 @@ export const PagosView: React.FC = () => {
                               {!isPaid ? (
                                 <button
                                   type="button"
-                                  disabled={procesandoAccion === r.id}
+                                  disabled={soloLectura || (procesandoAccion === r.id)}
                                   onClick={() => handleRegistrarPagoAgenda(r)}
                                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs cursor-pointer mr-1"
                                 >
@@ -1084,7 +1167,7 @@ export const PagosView: React.FC = () => {
                                 </button>
                               ) : (
                                 r.tipo === 'Continuo' && (
-                                  <button
+                                  <button disabled={soloLectura}
                                     type="button"
                                     onClick={() => handleAnularPagoAgenda(r)}
                                     className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold text-[11px] cursor-pointer mr-1"
@@ -1107,7 +1190,7 @@ export const PagosView: React.FC = () => {
                               {/* Botón Eliminar Compromiso */}
                               <button
                                 type="button"
-                                disabled={procesandoAccion === r.id}
+                                disabled={soloLectura || (procesandoAccion === r.id)}
                                 onClick={() => handleEliminarCompromiso(r)}
                                 title="Eliminar compromiso"
                                 className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
@@ -1151,12 +1234,14 @@ export const PagosView: React.FC = () => {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {subTab === 'cronogramas' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(180px,1fr)_auto] md:items-center">
             {/* Filtros de cronogramas */}
-            <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="inline-flex justify-center bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
                 type="button"
                 onClick={() => setFiltroCronogramas('todos')}
+                aria-pressed={filtroCronogramas === 'todos'}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                   filtroCronogramas === 'todos' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
@@ -1166,6 +1251,7 @@ export const PagosView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFiltroCronogramas('activas')}
+                aria-pressed={filtroCronogramas === 'activas'}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                   filtroCronogramas === 'activas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
@@ -1175,6 +1261,7 @@ export const PagosView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFiltroCronogramas('pagadas')}
+                aria-pressed={filtroCronogramas === 'pagadas'}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                   filtroCronogramas === 'pagadas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
@@ -1183,44 +1270,28 @@ export const PagosView: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              {(deudas.length > 0 || cronogramasContinuos.length > 0) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const keys = [
-                      ...cronogramasContinuos.map((c) => c.idKey),
-                      ...deudas.map((d) => `deuda-${d.id}`),
-                    ];
-                    const algunoAbierto = keys.some((k) => cronogramasExpandidos[k]);
-                    const nuevo: Record<string, boolean> = {};
-                    keys.forEach((k) => {
-                      nuevo[k] = !algunoAbierto;
-                    });
-                    setCronogramasExpandidos(nuevo);
-                  }}
-                  className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors shadow-xs"
-                >
-                  {[
-                    ...cronogramasContinuos.map((c) => c.idKey),
-                    ...deudas.map((d) => `deuda-${d.id}`),
-                  ].some((k) => cronogramasExpandidos[k])
-                    ? 'Contraer todos'
-                    : 'Expandir todos'}
-                </button>
-              )}
-
-              <button
-                onClick={() => {
-                  setModalTipoCrear('continuo');
-                  setModalNuevoProgramado(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo cronograma</span>
-              </button>
+            <div className="relative min-w-0">
+              <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input type="search" aria-label="Buscar cronograma por nombre o categoría" placeholder="Buscar cronograma…"
+                value={busquedaCronogramas} onChange={(e) => setBusquedaCronogramas(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') setBusquedaCronogramas(''); }}
+                className="w-full h-11 pl-10 pr-11 rounded-xl border border-slate-200 bg-slate-50 text-base md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/25 focus:border-teal-500 [&::-webkit-search-cancel-button]:appearance-none" />
+              {busquedaCronogramas && <button type="button" aria-label="Limpiar búsqueda" onClick={() => setBusquedaCronogramas('')}
+                className="absolute right-0 top-0 w-11 h-11 flex items-center justify-center text-slate-500 hover:text-slate-900 rounded-xl cursor-pointer"><X aria-hidden="true" className="w-4 h-4" /></button>}
             </div>
+            {totalCronogramas > 0 && <button type="button" disabled={clavesVisibles.length === 0}
+              onClick={() => setCronogramasExpandidos((prev) => {
+                const nuevo = { ...prev };
+                clavesVisibles.forEach((k) => { nuevo[k] = !hayAbiertos; });
+                return nuevo;
+              })}
+              className="min-h-11 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-default">
+              {hayAbiertos ? 'Contraer todos' : 'Expandir todos'}
+            </button>}
+            </div>
+            <p role="status" aria-live="polite" aria-atomic="true" className="text-xs text-slate-500">
+              {clavesVisibles.length} de {totalCronogramas} cronogramas{consultaCronogramas && ' · Por nombre o categoría'}
+            </p>
           </div>
 
           {deudas.length === 0 && cronogramasContinuos.length === 0 ? (
@@ -1228,7 +1299,7 @@ export const PagosView: React.FC = () => {
               <p className="text-sm font-semibold text-slate-600">
                 No tienes cronogramas registrados.
               </p>
-              <button
+              <button disabled={soloLectura}
                 onClick={() => {
                   setModalTipoCrear('continuo');
                   setModalNuevoProgramado(true);
@@ -1241,13 +1312,15 @@ export const PagosView: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-6">
+              {clavesVisibles.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+                <Search aria-hidden="true" className="w-6 h-6 text-slate-400 mx-auto mb-3" />
+                <h2 className="text-sm font-bold text-slate-800">No encontramos cronogramas</h2>
+                <p className="text-xs text-slate-500 mt-2">Prueba otro nombre, categoría o estado.</p>
+                <button type="button" onClick={() => { setBusquedaCronogramas(''); setFiltroCronogramas('todos'); }}
+                  className="min-h-11 mt-3 px-4 text-sm font-semibold text-teal-700 hover:bg-teal-50 rounded-xl cursor-pointer">Restablecer filtros</button>
+              </div>}
               {/* 1. SECCIÓN: COMPROMISOS CONTINUOS (HASTA CANCELAR - COMO "SUNO" EN LA FOTO 2) */}
-              {cronogramasContinuos
-                .filter((item) => {
-                  if (filtroCronogramas === 'pagadas') return item.pendientePeriodo === 0;
-                  if (filtroCronogramas === 'activas') return item.pendientePeriodo > 0;
-                  return true;
-                })
+              {continuosVisibles
                 .map((card) => {
                   const expandida = Boolean(cronogramasExpandidos[card.idKey]); // Colapsado por defecto
 
@@ -1269,7 +1342,7 @@ export const PagosView: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500">
                             <span>{card.categoriaNombre}</span>
                             <span>·</span>
-                            <span>Recibido: S/ 0.00</span>
+                            <span>Recibido: {formatearMoneda(0)}</span>
                             <span>·</span>
                             <span>
                               Importe del período: <strong>{formatearMoneda(card.importePeriodo)}</strong>
@@ -1289,7 +1362,7 @@ export const PagosView: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-1.5 pl-3 sm:pl-4 border-l border-slate-200">
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={() => abrirModalEdicionRecurrente(card.rec)}
                               title="Duración e importe"
@@ -1298,7 +1371,7 @@ export const PagosView: React.FC = () => {
                               <Sliders className="w-4 h-4" />
                             </button>
 
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={() => abrirModalEdicionRecurrente(card.rec)}
                               title="Editar cronograma"
@@ -1307,16 +1380,18 @@ export const PagosView: React.FC = () => {
                               <Edit2 className="w-4 h-4" />
                             </button>
 
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={async () => {
+    try {
                                 const confirmado = await confirmarAccion({
                                   title: '¿Eliminar cronograma?',
-                                  text: `Se borrará "${card.nombre}" y todos sus vencimientos generados.`,
+                                  text: `Se retirará "${card.nombre}". Los pagos realizados permanecerán en el historial.`,
                                   confirmButtonText: 'Sí, eliminar',
                                 });
                                 if (!confirmado) return;
 
+                                if(soporteEtapa5){const datos={recurrente_id:card.rec.id};await ejecutarOperacion('retirar_recurrente',datos,solicitudPara('retirar_recurrente',datos));toastExito('Cronograma retirado. Sus pagos se conservan.');return;}
                                 await supabase
                                   .from('movimientos_recurrentes')
                                   .delete()
@@ -1329,7 +1404,9 @@ export const PagosView: React.FC = () => {
                                   .eq('user_id', user!.id);
                                 await recargarTodo();
                                 toastExito(`"${card.nombre}" eliminado`);
-                              }}
+
+    } catch (error) { reportarError(error); }
+  }}
                               title="Eliminar cronograma"
                               className="w-8 h-8 rounded-lg bg-transparent hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
                             >
@@ -1372,6 +1449,8 @@ export const PagosView: React.FC = () => {
 
                           <button
                             type="button"
+                            aria-expanded={expandida}
+                            aria-controls={`vencimientos-${card.idKey}`}
                             onClick={() =>
                               setCronogramasExpandidos((prev) => ({
                                 ...prev,
@@ -1382,7 +1461,7 @@ export const PagosView: React.FC = () => {
                           >
                             <span>{expandida ? 'Ocultar vencimientos' : 'Ver vencimientos'}</span>
                             <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform ${
+                              className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
                                 expandida ? 'rotate-180' : ''
                               }`}
                             />
@@ -1391,7 +1470,7 @@ export const PagosView: React.FC = () => {
                       </div>
 
                       {/* Tabla de los 13 Vencimientos (Idéntica a la Foto 2) */}
-                      {expandida && (
+                      <AnimatedDisclosure open={expandida} id={`vencimientos-${card.idKey}`}>
                         <div className="border-t border-slate-200 overflow-x-auto w-full">
                           <table className="w-full text-left text-xs min-w-[550px]">
                             <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
@@ -1449,9 +1528,11 @@ export const PagosView: React.FC = () => {
                                     <td className="py-3 px-4 text-right">
                                       <div className="flex items-center justify-end gap-1.5">
                                         {!isPaid ? (
-                                          <button
+                                          <button disabled={soloLectura}
                                             type="button"
                                             onClick={async () => {
+    try {
+                                              if(soporteEtapa5){abrirPago({nombre:card.nombre,monto:v.importe,vencimiento:v.fecha,recurrenteId:card.rec.id});return;}
                                               await supabase.from('movimientos_agenda').insert({
                                                 user_id: user!.id,
                                                 tipo: 'gasto',
@@ -1465,23 +1546,28 @@ export const PagosView: React.FC = () => {
                                                 fecha_pago: fechaHoyStr,
                                               });
                                               await recargarTodo();
-                                            }}
+
+    } catch (error) { reportarError(error); }
+  }}
                                             className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs"
                                           >
                                             + Registrar pago
                                           </button>
                                         ) : (
                                           v.movimientoId && (
-                                            <button
+                                            <button disabled={soloLectura}
                                               type="button"
                                               onClick={async () => {
+    try {
                                                 await supabase
                                                   .from('movimientos_agenda')
                                                   .delete()
                                                   .eq('id', v.movimientoId!)
                                                   .eq('user_id', user!.id);
                                                 await recargarTodo();
-                                              }}
+
+    } catch (error) { reportarError(error); }
+  }}
                                               className="px-2 py-1 text-slate-400 hover:text-red-600 text-[11px] font-semibold cursor-pointer"
                                             >
                                               Anular
@@ -1496,27 +1582,13 @@ export const PagosView: React.FC = () => {
                             </tbody>
                           </table>
                         </div>
-                      )}
+                      </AnimatedDisclosure>
                     </article>
                   );
                 })}
 
               {/* 2. SECCIÓN: CRONOGRAMAS EN CUOTAS */}
-              {deudas
-                .filter((d) => {
-                  const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
-                  let pagadasCount = 0;
-                  cuotasD.forEach((c) => {
-                    const pagado = pagosDeuda
-                      .filter((p) => p.cuota_id === c.id)
-                      .reduce((acc, p) => acc + p.monto, 0);
-                    if (c.monto - pagado <= 0.009) pagadasCount++;
-                  });
-                  const estaPagada = pagadasCount === cuotasD.length && cuotasD.length > 0;
-                  if (filtroCronogramas === 'activas') return !estaPagada;
-                  if (filtroCronogramas === 'pagadas') return estaPagada;
-                  return true;
-                })
+              {deudasVisibles
                 .map((d) => {
                   const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
                   const totalPactado = cuotasD.reduce((acc, c) => acc + c.monto, 0);
@@ -1569,7 +1641,7 @@ export const PagosView: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-1.5 pl-3 sm:pl-4 border-l border-slate-200">
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={() => handleAjustarCuotasFinDeMes(d.id, d.nombre)}
                               title="Ajustar todas las cuotas al último día de su mes (Fin de mes)"
@@ -1578,7 +1650,7 @@ export const PagosView: React.FC = () => {
                               <CalendarCheck className="w-4 h-4" />
                             </button>
 
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={() => {
                                 setEditTipo('deuda');
@@ -1596,20 +1668,24 @@ export const PagosView: React.FC = () => {
                               <Edit2 className="w-4 h-4" />
                             </button>
 
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={async () => {
+    try {
                                 const confirmado = await confirmarAccion({
                                   title: '¿Eliminar cronograma?',
-                                  text: `Se borrará "${d.nombre}" y todas sus cuotas asociadas.`,
+                                  text: `Se retirará "${d.nombre}" de los pagos pendientes. Se conservarán sus abonos y gastos históricos.`,
                                   confirmButtonText: 'Sí, eliminar',
                                 });
                                 if (!confirmado) return;
 
+                                if(soporteEtapa5){const datos={deuda_id:d.id};await ejecutarOperacion('retirar_cronograma',datos,solicitudPara('retirar_cronograma',datos));toastExito('Cronograma retirado. Sus pagos se conservan.');return;}
                                 await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
                                 await recargarTodo();
                                 toastExito(`"${d.nombre}" eliminado`);
-                              }}
+
+    } catch (error) { reportarError(error); }
+  }}
                               title="Eliminar cronograma"
                               className="w-8 h-8 rounded-lg bg-transparent hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center cursor-pointer transition-colors"
                             >
@@ -1639,6 +1715,8 @@ export const PagosView: React.FC = () => {
                         <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
                           <button
                             type="button"
+                            aria-expanded={expandida}
+                            aria-controls={`vencimientos-deuda-${d.id}`}
                             onClick={() =>
                               setCronogramasExpandidos((prev) => ({
                                 ...prev,
@@ -1649,7 +1727,7 @@ export const PagosView: React.FC = () => {
                           >
                             <span>{expandida ? 'Ocultar cuotas' : 'Ver cuotas'}</span>
                             <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform ${
+                              className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
                                 expandida ? 'rotate-180' : ''
                               }`}
                             />
@@ -1657,7 +1735,7 @@ export const PagosView: React.FC = () => {
                         </div>
                       </div>
 
-                      {expandida && (
+                      <AnimatedDisclosure open={expandida} id={`vencimientos-deuda-${d.id}`}>
                         <div className="border-t border-slate-200 overflow-x-auto w-full">
                           <table className="w-full text-left text-xs min-w-[550px]">
                             <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
@@ -1697,14 +1775,14 @@ export const PagosView: React.FC = () => {
                                           />
                                           <button
                                             type="button"
-                                            disabled={guardandoCuotaFecha}
+                                            disabled={soloLectura || (guardandoCuotaFecha)}
                                             onClick={() => handleGuardarFechaCuota(c.id)}
                                             className="p-1 rounded bg-teal-600 hover:bg-teal-700 text-white cursor-pointer transition-colors"
                                             title="Guardar fecha"
                                           >
                                             <Check className="w-3.5 h-3.5" />
                                           </button>
-                                          <button
+                                          <button disabled={soloLectura}
                                             type="button"
                                             onClick={() => setEditandoCuotaId(null)}
                                             className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer transition-colors"
@@ -1718,7 +1796,7 @@ export const PagosView: React.FC = () => {
                                           <span>
                                             {diaC}/{mesC}/{anioC}
                                           </span>
-                                          <button
+                                          <button disabled={soloLectura}
                                             type="button"
                                             onClick={() => {
                                               setEditandoCuotaId(c.id);
@@ -1763,9 +1841,11 @@ export const PagosView: React.FC = () => {
                                     </td>
                                     <td className="py-3 px-4 text-right">
                                       {!pagada && (
-                                        <button
+                                        <button disabled={soloLectura}
                                           type="button"
                                           onClick={async () => {
+    try {
+                                            if(soporteEtapa5){abrirPago({nombre:d.nombre,monto:pendiente,vencimiento:c.fecha,cuotaId:c.id});return;}
                                             const { data: movData } = await supabase
                                               .from('movimientos_agenda')
                                               .insert({
@@ -1791,7 +1871,9 @@ export const PagosView: React.FC = () => {
                                               solicitud: `pago-cuota-${c.id}-${Date.now()}`,
                                             });
                                             await recargarTodo();
-                                          }}
+
+    } catch (error) { reportarError(error); }
+  }}
                                           className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs cursor-pointer"
                                         >
                                           + Registrar pago
@@ -1804,7 +1886,7 @@ export const PagosView: React.FC = () => {
                             </tbody>
                           </table>
                         </div>
-                      )}
+                      </AnimatedDisclosure>
                     </article>
                   );
                 })}
@@ -1830,7 +1912,7 @@ export const PagosView: React.FC = () => {
               </div>
               <div className="mt-2">
                 {!editandoBase ? (
-                  <button
+                  <button disabled={soloLectura}
                     type="button"
                     onClick={() => setEditandoBase(true)}
                     className="text-xs font-semibold text-teal-600 hover:underline cursor-pointer"
@@ -1838,21 +1920,7 @@ export const PagosView: React.FC = () => {
                     Ajustar base
                   </button>
                 ) : (
-                  <form onSubmit={handleGuardarBasePerfil} className="flex gap-1 mt-1">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={inputBase}
-                      onChange={(e) => setInputBase(e.target.value)}
-                      className="w-20 px-2 py-1 text-xs border rounded-lg"
-                    />
-                    <button
-                      type="submit"
-                      className="px-2 py-1 bg-teal-600 text-white text-[11px] rounded-lg font-bold"
-                    >
-                      OK
-                    </button>
-                  </form>
+                  <SaldoReferenciaEditor onClose={() => setEditandoBase(false)} />
                 )}
               </div>
             </div>
@@ -1993,7 +2061,7 @@ export const PagosView: React.FC = () => {
                 {ingresoModo === 'quincenal' && (
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Sueldo de Quincena (Día 15)
+                      Sueldo de Quincena (Día 15) · {simboloMoneda}
                     </label>
                     <input
                       type="number"
@@ -2008,7 +2076,7 @@ export const PagosView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Sueldo Fin de Mes (Día {ultimoDiaSueldo})
+                    Sueldo Fin de Mes (Día {ultimoDiaSueldo}) · {simboloMoneda}
                   </label>
                   <input
                     type="number"
@@ -2038,7 +2106,7 @@ export const PagosView: React.FC = () => {
                   )}
                   <button
                     type="submit"
-                    disabled={guardandoSueldo}
+                    disabled={soloLectura || (guardandoSueldo)}
                     className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer ml-auto"
                   >
                     {guardandoSueldo ? 'Guardando...' : 'Guardar Sueldo'}
@@ -2055,7 +2123,7 @@ export const PagosView: React.FC = () => {
                     Ingresos fijos adicionales en {NOMBRES_MESES[ingresoMes]}
                   </p>
                 </div>
-                <button
+                <button disabled={soloLectura}
                   type="button"
                   onClick={() => {
                     setModalTipoCrear('ingreso');
@@ -2073,7 +2141,7 @@ export const PagosView: React.FC = () => {
                   <p className="text-xs text-slate-500 mb-2">
                     No tienes otros ingresos programados para <strong>{NOMBRES_MESES[ingresoMes]} {ingresoAnio}</strong>.
                   </p>
-                  <button
+                  <button disabled={soloLectura}
                     type="button"
                     onClick={() => {
                       setModalTipoCrear('ingreso');
@@ -2116,9 +2184,11 @@ export const PagosView: React.FC = () => {
                           +{formatearMoneda(item.monto)}
                         </strong>
                         {!item.recibido ? (
-                          <button
+                          <button disabled={soloLectura}
                             type="button"
                             onClick={async () => {
+    try {
+                              if(soporteEtapa5){abrirPago({nombre:item.descripcion,monto:item.monto,vencimiento:item.fecha,recurrenteId:item.id});return;}
                               await supabase.from('movimientos_agenda').insert({
                                 user_id: user!.id,
                                 tipo: 'ingreso',
@@ -2132,16 +2202,19 @@ export const PagosView: React.FC = () => {
                               });
                               await recargarTodo();
                               toastExito('Ingreso confirmado');
-                            }}
+
+    } catch (error) { reportarError(error); }
+  }}
                             className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
                           >
                             Confirmar
                           </button>
                         ) : (
                           item.movimientoId && (
-                            <button
+                            <button disabled={soloLectura}
                               type="button"
                               onClick={async () => {
+    try {
                                 await supabase
                                   .from('movimientos_agenda')
                                   .delete()
@@ -2149,7 +2222,9 @@ export const PagosView: React.FC = () => {
                                   .eq('user_id', user!.id);
                                 await recargarTodo();
                                 toastExito('Ingreso desmarcado');
-                              }}
+
+    } catch (error) { reportarError(error); }
+  }}
                               className="px-2.5 py-1 text-slate-400 hover:text-amber-600 text-xs font-semibold cursor-pointer"
                             >
                               Anular
@@ -2157,7 +2232,7 @@ export const PagosView: React.FC = () => {
                           )
                         )}
 
-                        <button
+                        <button disabled={soloLectura}
                           type="button"
                           onClick={() => abrirModalEdicionRecurrente(item.rec)}
                           title="Editar ingreso programado"
@@ -2166,7 +2241,7 @@ export const PagosView: React.FC = () => {
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
 
-                        <button
+                        <button disabled={soloLectura}
                           type="button"
                           onClick={() => handleEliminarIngresoProgramado(item)}
                           title="Eliminar ingreso programado"
@@ -2187,9 +2262,10 @@ export const PagosView: React.FC = () => {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* MODAL: EDITAR COMPROMISO (NOMBRE, MONTO, DÍA, CATEGORÍA)                   */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
+      <AnimatedModal open={Boolean(modalEdicionAbierto)} label="Editar pago programado">
       {modalEdicionAbierto && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+            {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
               <h3 className="text-base font-bold">
                 {editTipo === 'recurrente'
@@ -2198,7 +2274,7 @@ export const PagosView: React.FC = () => {
                     : 'Editar Compromiso Continuo'
                   : 'Editar Cronograma'}
               </h3>
-              <button
+              <button disabled={soloLectura}
                 onClick={() => setModalEdicionAbierto(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
               >
@@ -2257,7 +2333,7 @@ export const PagosView: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Monto mensual (S/.)
+                        Monto mensual ({simboloMoneda})
                       </label>
                       <input
                         type="number"
@@ -2341,7 +2417,7 @@ export const PagosView: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <button
+                <button disabled={soloLectura}
                   type="button"
                   onClick={() => setModalEdicionAbierto(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer"
@@ -2350,7 +2426,7 @@ export const PagosView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={guardandoEdicion}
+                  disabled={soloLectura || (guardandoEdicion)}
                   className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
                 >
                   {guardandoEdicion ? 'Guardando...' : 'Guardar Cambios'}
@@ -2358,18 +2434,20 @@ export const PagosView: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
       )}
+      </AnimatedModal>
 
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* MODAL: NUEVO PAGO PROGRAMADO                                              */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
+      {pagoObjetivo&&<RegistrarPagoModal key={pagoObjetivo.solicitud} objetivo={pagoObjetivo} onClose={()=>setPagoObjetivo(null)} />}
+      <AnimatedModal open={Boolean(modalNuevoProgramado)} label="Nuevo pago programado">
       {modalNuevoProgramado && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+            {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
               <h3 className="text-base font-bold">Nuevo Pago Programado</h3>
-              <button
+              <button disabled={soloLectura||creando}
                 onClick={() => setModalNuevoProgramado(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
               >
@@ -2378,6 +2456,7 @@ export const PagosView: React.FC = () => {
             </div>
 
             <form onSubmit={handleCrearNuevoProgramado} className="p-5 space-y-4">
+              <fieldset disabled={creando||soloLectura} className="space-y-4">
               <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
                 <button
                   type="button"
@@ -2435,13 +2514,13 @@ export const PagosView: React.FC = () => {
                         max="120"
                         required
                         value={numCuotas}
-                        onChange={(e) => setNumCuotas(e.target.value)}
+                        onChange={(e) => {setNumCuotas(e.target.value);setHistoricos({});}}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Monto por cuota (S/.)
+                        Monto por cuota ({simboloMoneda})
                       </label>
                       <input
                         type="number"
@@ -2542,7 +2621,7 @@ export const PagosView: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Monto mensual (S/.)
+                        Monto mensual ({simboloMoneda})
                       </label>
                       <input
                         type="number"
@@ -2658,25 +2737,38 @@ export const PagosView: React.FC = () => {
                 </>
               )}
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
+              {soporteEtapa5&&modalTipoCrear==='cuotas'&&cuotasPrevias.length>0&&<section className="space-y-2 rounded-xl border border-slate-200 p-3">
+                  <h4 className="text-xs font-bold text-slate-800">Vencimientos y pagos históricos</h4>
+                  <p className="text-xs leading-relaxed text-slate-500">Marca solo las cuotas abonadas por completo e indica la fecha real. Para abonos parciales, crea el cronograma y usa Registrar pago.</p>
+                  <div className="max-h-64 space-y-3 overflow-y-auto">
+                    {cuotasPrevias.map((c,i)=><div key={c.fecha} className="rounded-lg bg-slate-50 p-2 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-1"><span>Cuota {i+1} · {c.fecha.split('-').reverse().join('/')}</span><strong>{formatearMoneda(c.monto)}</strong></div>
+                      <label className="mt-1 flex min-h-10 items-center gap-2"><input type="checkbox" checked={historicos[i]?.pagada||false} onChange={e=>setHistoricos(prev=>({...prev,[i]:{pagada:e.target.checked,fecha:prev[i]?.fecha||c.fecha}}))}/>Ya pagada</label>
+                      {historicos[i]?.pagada&&<label className="block">Fecha real del pago<input required type="date" max={fechaHoyStr} value={historicos[i].fecha} onChange={e=>setHistoricos(prev=>({...prev,[i]:{pagada:true,fecha:e.target.value}}))} className="mt-1 min-h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-base"/></label>}
+                    </div>)}
+                  </div>
+                </section>}
+                <div className="flex justify-end gap-2 pt-2">
+                <button disabled={soloLectura || creando}
                   type="button"
                   onClick={() => setModalNuevoProgramado(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer"
                 >
                   Cancelar
                 </button>
-                <button
+                <button disabled={soloLectura || creando}
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
                 >
                   Guardar Compromiso
                 </button>
               </div>
-            </form>
+
+              </fieldset>
+</form>
           </div>
-        </div>
       )}
+      </AnimatedModal>
     </div>
   );
 };

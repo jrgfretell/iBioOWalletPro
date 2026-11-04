@@ -1,6 +1,24 @@
+export type Moneda = 'PEN' | 'USD' | 'EUR';
+export interface Billetera {
+  id: number;
+  user_id: string;
+  nombre: string;
+  moneda: Moneda;
+  archivada: boolean;
+  es_principal: boolean;
+  creado_el?: string;
+  actualizado_el?: string;
+}
+export const MONEDAS: Record<Moneda, { nombre: string; simbolo: string }> = {
+  PEN: { nombre: 'Soles', simbolo: 'S/' },
+  USD: { nombre: 'Dólares', simbolo: 'US$' },
+  EUR: { nombre: 'Euros', simbolo: '€' },
+};
+
 export interface Categoria {
   id: number;
   user_id?: string;
+  billetera_id?: number;
   nombre: string;
   color: string;
   icono: string;
@@ -9,6 +27,7 @@ export interface Categoria {
 export interface SueldoMes {
   id?: number;
   user_id?: string;
+  billetera_id?: number;
   anio: number;
   mes: number; // 0 = Enero, 11 = Diciembre
   sueldo_15: number;
@@ -18,6 +37,7 @@ export interface SueldoMes {
 export interface MovimientoRecurrente {
   id: number;
   user_id?: string;
+  billetera_id?: number;
   tipo: 'gasto' | 'ingreso';
   descripcion: string;
   monto: number;
@@ -30,6 +50,7 @@ export interface MovimientoRecurrente {
 export interface MovimientoAgenda {
   id: number;
   user_id?: string;
+  billetera_id?: number;
   tipo: 'gasto' | 'ingreso';
   descripcion: string;
   monto: number;
@@ -42,8 +63,10 @@ export interface MovimientoAgenda {
 }
 
 export interface Deuda {
+  archivada?: boolean;
   id: number;
   user_id?: string;
+  billetera_id?: number;
   nombre: string;
   monto_recibido: number;
   categoria_id: number | null;
@@ -53,6 +76,7 @@ export interface Deuda {
 export interface DeudaCuota {
   id: number;
   user_id?: string;
+  billetera_id?: number;
   deuda_id: number;
   numero: number;
   monto: number;
@@ -62,6 +86,7 @@ export interface DeudaCuota {
 export interface DeudaPago {
   id: number;
   user_id?: string;
+  billetera_id?: number;
   cuota_id: number;
   monto: number;
   fecha: string; // YYYY-MM-DD
@@ -81,8 +106,10 @@ export const MESES_CORTOS = [
   'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
 ];
 
-export function formatearMoneda(monto: number): string {
-  return `S/. ${Number(monto || 0).toLocaleString('es-PE', {
+export function formatearMoneda(monto: number, moneda: Moneda): string {
+  if (!Number.isFinite(monto)) return '—';
+  const normalizado = Math.abs(monto) < 0.005 ? 0 : monto;
+  return `${normalizado < 0 ? '-' : ''}${MONEDAS[moneda].simbolo} ${Math.abs(normalizado).toLocaleString('es-PE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -98,6 +125,10 @@ export function fechaHoyISO(): string {
   const m = String(hoy.getMonth() + 1).padStart(2, '0');
   const d = String(hoy.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+export function fechaRealMovimiento(m: MovimientoAgenda): string {
+  return m.pago_confirmado ? (m.fecha_pago || m.fecha) : m.fecha;
 }
 
 export function obtenerMesInicioRecurrente(
