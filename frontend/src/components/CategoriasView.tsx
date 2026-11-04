@@ -61,6 +61,7 @@ export const CategoriasView: React.FC = () => {
   const [color, setColor] = useState<string>('#3498db');
   const [icono, setIcono] = useState<string>('fa-folder');
   const [busquedaIcono, setBusquedaIcono] = useState<string>('');
+  const [busquedaCategoria, setBusquedaCategoria] = useState<string>('');
   const [guardando, setGuardando] = useState<boolean>(false);
 
   useWalletFormGuard(modalAbierto, 'Categoría');
@@ -79,6 +80,12 @@ export const CategoriasView: React.FC = () => {
 
     return stats;
   }, [categorias, movimientos]);
+
+  const categoriasFiltradas = useMemo(() => {
+    if (!busquedaCategoria.trim()) return categorias;
+    const q = busquedaCategoria.toLowerCase().trim();
+    return categorias.filter((c) => c.nombre.toLowerCase().includes(q));
+  }, [categorias, busquedaCategoria]);
 
   const iconosFiltrados = useMemo(() => {
     if (!busquedaIcono.trim()) return PRESET_ICONS;
@@ -160,67 +167,102 @@ export const CategoriasView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900">Gestión de Categorías</h1>
+          <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Directorio de Categorías</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Personaliza los colores, iconos y nombres para clasificar tus gastos e ingresos
+            Personaliza colores, iconos y etiquetas para organizar tus movimientos
           </p>
         </div>
 
         <button disabled={soloLectura}
           onClick={abrirNueva}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start sm:self-auto transition-colors disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
           <span>Nueva Categoría</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categorias.map((c) => {
-          const stat = estadisticasPorCategoria.get(c.id) || { cantidad: 0, totalGasto: 0 };
-          return (
-            <div
-              key={c.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex items-center justify-between gap-4 hover:border-slate-300 transition-all"
+      {/* Buscador rápido de categorías */}
+      <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={busquedaCategoria}
+            onChange={(e) => setBusquedaCategoria(e.target.value)}
+            placeholder="Buscar categoría..."
+            className="w-full pl-8 pr-7 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 font-medium"
+          />
+          {busquedaCategoria && (
+            <button
+              type="button"
+              onClick={() => setBusquedaCategoria('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
             >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xs shrink-0 text-xl"
-                  style={{ backgroundColor: c.color }}
-                >
-                  <i className={`fas ${c.icono || 'fa-folder'}`}></i>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-extrabold text-slate-900 truncate">{c.nombre}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {stat.cantidad} movimiento(s) · {formatearMoneda(stat.totalGasto)}
-                  </p>
-                </div>
-              </div>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        <span className="text-[11px] font-bold text-slate-400 shrink-0 hidden sm:inline">
+          {categoriasFiltradas.length} de {categorias.length}
+        </span>
+      </div>
 
-              <div className="flex items-center gap-1 shrink-0">
-                <button disabled={soloLectura}
-                  onClick={() => abrirEdicion(c)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 cursor-pointer transition-colors"
-                  title="Editar"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                {c.nombre.toLowerCase() !== 'otros' && (
-                  <button disabled={soloLectura}
-                    onClick={() => handleEliminar(c)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
-                    title="Eliminar"
+      {/* Lista directorio de categorías */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5">
+        {categoriasFiltradas.length === 0 ? (
+          <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400">
+            <Search className="w-6 h-6 mx-auto mb-2 text-slate-300" />
+            <strong className="block text-slate-700 text-sm">No se encontraron categorías</strong>
+            <span className="text-xs">Prueba con otro término de búsqueda.</span>
+          </div>
+        ) : (
+          categoriasFiltradas.map((c) => {
+            const stat = estadisticasPorCategoria.get(c.id) || { cantidad: 0, totalGasto: 0 };
+            return (
+              <div
+                key={c.id}
+                className="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 transition-all"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-2xs shrink-0 text-base"
+                    style={{ backgroundColor: c.color }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <i className={`fas ${c.icono || 'fa-folder'}`}></i>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 truncate">{c.nombre}</h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {stat.cantidad} mov. · {formatearMoneda(stat.totalGasto)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button disabled={soloLectura}
+                    onClick={() => abrirEdicion(c)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 cursor-pointer transition-colors"
+                    title="Editar"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                )}
+                  {c.nombre.toLowerCase() !== 'otros' && (
+                    <button disabled={soloLectura}
+                      onClick={() => handleEliminar(c)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       <AnimatedModal open={Boolean(modalAbierto)} label="Registrar o editar categoría">

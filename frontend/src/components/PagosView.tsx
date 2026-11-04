@@ -941,41 +941,130 @@ export const PagosView: React.FC = () => {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {subTab === 'agenda' && (
         <div className="space-y-4">
-          {/* Barra de Filtros: Mes, Tipo, Estado, Mes actual */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-              <div className="lg:col-span-4">
-                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+          {/* Resumen de Compromisos del Mes (Estilo Fintech) */}
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                  Compromisos de {NOMBRES_MESES[agendaMes]} {agendaAnio}
+                </span>
+                <span className="text-base sm:text-lg font-black text-slate-900 mt-0.5 block">
+                  Total: {formatearMoneda(resumenAgenda.programado)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAgendaMes(hoy.getMonth());
+                  setAgendaAnio(hoy.getFullYear());
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="Volver al mes actual"
+              >
+                <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                <span className="hidden sm:inline">Mes actual</span>
+              </button>
+            </div>
+
+            {/* Barra visual de estado segmentada */}
+            {resumenAgenda.programado > 0 && (
+              <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex">
+                <div
+                  className="h-full bg-teal-500 transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, Math.round((resumenAgenda.pagado / resumenAgenda.programado) * 100))}%`,
+                  }}
+                  title={`Pagado: ${formatearMoneda(resumenAgenda.pagado)}`}
+                />
+                <div
+                  className="h-full bg-amber-400 transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, Math.round((Math.max(0, resumenAgenda.pendiente - resumenAgenda.vencido) / resumenAgenda.programado) * 100))}%`,
+                  }}
+                  title={`Pendiente: ${formatearMoneda(resumenAgenda.pendiente - resumenAgenda.vencido)}`}
+                />
+                <div
+                  className="h-full bg-red-500 transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, Math.round((resumenAgenda.vencido / resumenAgenda.programado) * 100))}%`,
+                  }}
+                  title={`Vencido: ${formatearMoneda(resumenAgenda.vencido)}`}
+                />
+              </div>
+            )}
+
+            {/* 3 Métricas en una sola fila dividida */}
+            <div className="grid grid-cols-3 divide-x divide-slate-100 text-center pt-1">
+              <div className="px-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-teal-700 block">
+                  Pagado
+                </span>
+                <span className="text-xs sm:text-sm font-black text-teal-700 block mt-0.5 truncate">
+                  {formatearMoneda(resumenAgenda.pagado)}
+                </span>
+              </div>
+              <div className="px-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">
+                  Pendiente
+                </span>
+                <span className="text-xs sm:text-sm font-black text-amber-700 block mt-0.5 truncate">
+                  {formatearMoneda(resumenAgenda.pendiente)}
+                </span>
+              </div>
+              <div className="px-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-red-500 block">
+                  Vencido
+                </span>
+                <span
+                  className={`text-xs sm:text-sm font-black block mt-0.5 truncate ${
+                    resumenAgenda.vencido > 0 ? 'text-red-600' : 'text-slate-400'
+                  }`}
+                >
+                  {formatearMoneda(resumenAgenda.vencido)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de Filtros Rápida y Compacta */}
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
                   Mes
                 </label>
-                <div className="flex gap-2">
-                  <select
-                    value={agendaMes}
-                    onChange={(e) => setAgendaMes(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
-                  >
-                    {NOMBRES_MESES.map((m, idx) => (
-                      <option key={idx} value={idx}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={agendaAnio}
-                    onChange={(e) => setAgendaAnio(Number(e.target.value))}
-                    className="w-24 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
-                  >
-                    {[hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1].map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  value={agendaMes}
+                  onChange={(e) => setAgendaMes(Number(e.target.value))}
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
+                >
+                  {NOMBRES_MESES.map((m, idx) => (
+                    <option key={idx} value={idx}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="lg:col-span-3">
-                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                  Año
+                </label>
+                <select
+                  value={agendaAnio}
+                  onChange={(e) => setAgendaAnio(Number(e.target.value))}
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
+                >
+                  {[hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1].map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
                   Tipo
                 </label>
                 <select
@@ -983,7 +1072,7 @@ export const PagosView: React.FC = () => {
                   onChange={(e) =>
                     setAgendaTipo(e.target.value as 'todos' | 'continuo' | 'cuotas')
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
                   <option value="todos">Todos los pagos</option>
                   <option value="continuo">Continuos o fijos</option>
@@ -991,8 +1080,8 @@ export const PagosView: React.FC = () => {
                 </select>
               </div>
 
-              <div className="lg:col-span-3">
-                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
                   Estado
                 </label>
                 <select
@@ -1002,7 +1091,7 @@ export const PagosView: React.FC = () => {
                       e.target.value as 'todos' | 'pendiente' | 'pagado' | 'vencido'
                     )
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
                   <option value="todos">Todos</option>
                   <option value="pendiente">Pendientes</option>
@@ -1010,69 +1099,8 @@ export const PagosView: React.FC = () => {
                   <option value="vencido">Vencidos</option>
                 </select>
               </div>
-
-              <div className="lg:col-span-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAgendaMes(hoy.getMonth());
-                    setAgendaAnio(hoy.getFullYear());
-                  }}
-                  className="w-full py-2 px-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Mes actual</span>
-                </button>
-              </div>
             </div>
           </div>
-
-          {/* 4 Tarjetas KPI: Programado del mes, Pagado de este mes, Pendiente, Vencido */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
-                Programado del mes
-              </span>
-              <strong className="text-lg sm:text-xl font-black text-slate-900 block mt-0.5 truncate">
-                {formatearMoneda(resumenAgenda.programado)}
-              </strong>
-            </div>
-
-            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
-                Pagado de este mes
-              </span>
-              <strong className="text-lg sm:text-xl font-black text-emerald-600 block mt-0.5 truncate">
-                {formatearMoneda(resumenAgenda.pagado)}
-              </strong>
-            </div>
-
-            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
-                Pendiente
-              </span>
-              <strong className="text-lg sm:text-xl font-black text-amber-600 block mt-0.5 truncate">
-                {formatearMoneda(resumenAgenda.pendiente)}
-              </strong>
-            </div>
-
-            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block truncate">
-                Vencido
-              </span>
-              <strong
-                className={`text-lg sm:text-xl font-black block mt-0.5 truncate ${
-                  resumenAgenda.vencido > 0 ? 'text-red-600' : 'text-slate-900'
-                }`}
-              >
-                {formatearMoneda(resumenAgenda.vencido)}
-              </strong>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-slate-400">
-            Totales según el mes de vencimiento. Los pagos se registran en Movimientos con su fecha real. Un vencimiento no confirma un pago automáticamente.
-          </p>
 
           {/* Vista Móvil: Tarjetas Nativas para Celulares (md:hidden) */}
           <div className="md:hidden space-y-3">
@@ -1084,7 +1112,7 @@ export const PagosView: React.FC = () => {
               </div>
             ) : (
               filasFiltradas.map((r) => {
-                const [y, m, d] = r.fecha.split('-');
+                const [, m, d] = r.fecha.split('-');
                 const isOverdue = r.estado === 'vencido';
                 const isPaid = r.estado === 'pagado';
                 const cardKey = r.deudaId ? `deuda-${r.deudaId}` : `rec-card-${r.recurrenteId}`;
@@ -1092,99 +1120,110 @@ export const PagosView: React.FC = () => {
                 return (
                   <div
                     key={r.id}
-                    className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all ${
-                      isOverdue ? 'border-red-200 bg-red-50/20' : ''
+                    className={`rounded-2xl border bg-white p-3.5 shadow-2xs transition-all ${
+                      isOverdue
+                        ? 'border-red-200 bg-red-50/15'
+                        : isPaid
+                        ? 'border-slate-200/80 bg-slate-50/30'
+                        : 'border-slate-200/90'
                     }`}
                   >
-                    {/* Fila superior: Fecha + Badges Tipo y Estado */}
-                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-100 font-bold text-xs text-slate-800">
-                          {d}/{m}/{y}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px]">
-                          {r.tipo}
-                        </span>
-                      </div>
-                      <div>
-                        {isPaid ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            Pagado
+                    {/* Fila principal: Avatar fecha + Nombre + Monto */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex flex-col items-center justify-center shrink-0 border text-xs font-black ${
+                            isPaid
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                              : isOverdue
+                              ? 'bg-red-50 text-red-700 border-red-200/80'
+                              : 'bg-slate-100 text-slate-800 border-slate-200/70'
+                          }`}
+                        >
+                          <span className="leading-none">{d}</span>
+                          <span className="text-[9px] font-semibold uppercase text-slate-400 mt-0.5">
+                            {NOMBRES_MESES[Number(m) - 1]?.slice(0, 3)}
                           </span>
-                        ) : isOverdue ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                            Vencido
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            Pendiente
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                        </div>
 
-                    {/* Información del Compromiso */}
-                    <div className="mt-3 flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-extrabold text-slate-900 text-base leading-tight break-words">
-                          {r.nombre}
-                        </h4>
-                        <p className="text-xs text-slate-500 mt-0.5">{r.detalle}</p>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate">
+                            {r.nombre}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px]">
+                            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-bold">
+                              {r.tipo}
+                            </span>
+                            {r.detalle && (
+                              <span className="text-slate-400 truncate max-w-[120px]">
+                                · {r.detalle}
+                              </span>
+                            )}
+                            {isPaid ? (
+                              <span className="font-bold text-emerald-600">✓ Pagado</span>
+                            ) : isOverdue ? (
+                              <span className="font-bold text-red-600">! Vencido</span>
+                            ) : (
+                              <span className="font-bold text-amber-600">● Pendiente</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Monto */}
                       <div className="text-right shrink-0">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block">
                           {isPaid ? 'Abonado' : 'Por pagar'}
                         </span>
-                        <strong className={`text-base font-black ${isPaid ? 'text-emerald-600' : 'text-slate-900'}`}>
+                        <strong
+                          className={`text-xs sm:text-sm font-black ${
+                            isPaid ? 'text-emerald-600' : 'text-slate-900'
+                          }`}
+                        >
                           {formatearMoneda(isPaid ? r.pagado : r.pendiente)}
                         </strong>
                       </div>
                     </div>
 
-                    {/* Acciones móviles directas */}
-                    <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
+                    {/* Acciones */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleIrACronograma(cardKey)}
+                        className="text-teal-700 hover:text-teal-800 font-bold text-[11px] inline-flex items-center gap-0.5 cursor-pointer hover:underline"
+                      >
+                        <span>Cronograma</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleAbrirEdicion(r)}
                           title="Editar compromiso"
-                          className="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 active:bg-teal-100 transition-colors cursor-pointer"
+                          className="p-1 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
-                          disabled={soloLectura || (procesandoAccion === r.id)}
+                          disabled={soloLectura || procesandoAccion === r.id}
                           onClick={() => handleEliminarCompromiso(r)}
                           title="Eliminar compromiso"
-                          className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors cursor-pointer"
+                          className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-40"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleIrACronograma(cardKey)}
-                          className="text-teal-700 hover:text-teal-800 font-bold text-xs inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-xl hover:bg-teal-50 active:bg-teal-100 transition-colors cursor-pointer"
-                        >
-                          <span>Ver cronograma</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
 
                         {!isPaid ? (
                           <button
                             type="button"
-                            disabled={soloLectura || (procesandoAccion === r.id)}
+                            disabled={soloLectura || procesandoAccion === r.id}
                             onClick={() => handleRegistrarPagoAgenda(r)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-xs shadow-xs cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] shadow-2xs cursor-pointer ml-1"
                           >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>{procesandoAccion === r.id ? '...' : 'Registrar'}</span>
+                            <Plus className="w-3 h-3" />
+                            <span>{procesandoAccion === r.id ? '...' : 'Pagar'}</span>
                           </button>
                         ) : (
                           r.tipo === 'Continuo' && (
@@ -1192,7 +1231,7 @@ export const PagosView: React.FC = () => {
                               disabled={soloLectura}
                               type="button"
                               onClick={() => handleAnularPagoAgenda(r)}
-                              className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 font-bold text-xs cursor-pointer"
+                              className="px-2 py-1 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold text-[11px] cursor-pointer ml-1"
                             >
                               Anular
                             </button>
