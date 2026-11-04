@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye } from 'lucide-react';
+import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye, Trash2 } from 'lucide-react';
 import { AnimatedModal } from './AnimatedModal';
 import { useWallet } from '../context/WalletContext';
 import { MONEDAS } from '../types/wallet';
 import type { Billetera, Moneda } from '../types/wallet';
-import { confirmarAccion } from '../lib/alerts';
+import { confirmarAccion, alertaInfo, alertaError, toastExito } from '../lib/alerts';
 
 export function WalletSwitcher() {
-  const { billeteras, billeteraActual, modoLegacy, loading, escribiendo, seleccionarBilletera,
-    crearBilletera, editarBilletera, archivarBilletera } = useWallet();
+  const { billeteras, billeteraActual, modoLegacy, loading, escribiendo, error, seleccionarBilletera,
+    crearBilletera, editarBilletera, archivarBilletera, eliminarBilletera } = useWallet();
   const [open,setOpen]=useState(false);
   const [view,setView]=useState<'list'|'create'|'edit'>('list');
   const [editing,setEditing]=useState<Billetera|null>(null);
@@ -42,6 +42,34 @@ export function WalletSwitcher() {
     try {if(!await archivarBilletera(wallet.id,!wallet.archivada))setFailure(true);}
     finally{setBusy(false);}
   };
+  const handleDelete=async(wallet:Billetera)=>{
+    if(wallet.es_principal){
+      await alertaInfo('Billetera principal','La billetera principal no puede ser eliminada.');
+      return;
+    }
+    const confirmado=await confirmarAccion({
+      title:`¿Eliminar ${wallet.nombre}?`,
+      text:'Esta acción es permanente. Solo se completará si la billetera no tiene movimientos, compromisos ni saldos registrados.',
+      confirmButtonText:'Sí, eliminar',
+      isDanger:true,
+      icon:'warning'
+    });
+    if(!confirmado) return;
+    setBusy(true);setFailure(false);
+    try {
+      const ok=await eliminarBilletera(wallet.id);
+      if(ok){
+        await toastExito(`Billetera "${wallet.nombre}" eliminada`);
+      } else {
+        setFailure(true);
+      }
+    } catch(err:unknown) {
+      const msg=err&&typeof err==='object'&&'message' in err?String(err.message):'No se pudo eliminar la billetera.';
+      await alertaError('No se pudo eliminar',msg);
+    } finally {
+      setBusy(false);
+    }
+  };
   return <>
     <div className="mb-6 flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4">
       <button type="button" onClick={()=>{setOpen(true);setView('list');setFailure(false);}}
@@ -69,7 +97,7 @@ export function WalletSwitcher() {
           </div>
           <button type="button" disabled={busy} aria-label="Cerrar billeteras" onClick={close} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700"><X className="h-5 w-5" /></button>
         </div>
-        {failure&&<p role="alert" className="mx-5 mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">No se confirmó el cambio. Revisa los datos e inténtalo de nuevo.</p>}
+        {failure&&<p role="alert" className="mx-5 mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">{error||'No se confirmó el cambio. Revisa los datos e inténtalo de nuevo.'}</p>}
         {modoLegacy?<div className="p-5 text-sm text-slate-600">La administración de billeteras aún no está disponible. Puedes seguir usando Personal con tus registros actuales.</div>:
           view==='list'?<div className="overflow-y-auto p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -88,9 +116,12 @@ export function WalletSwitcher() {
                   <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{wallet.nombre}</span><span className="text-xs text-slate-500">{MONEDAS[wallet.moneda].nombre} · {wallet.moneda}</span></span>
                   {wallet.id===billeteraActual?.id?<Check className="h-4 w-4 shrink-0 text-teal-600" />:wallet.archivada?<Eye className="h-4 w-4 text-slate-400" />:null}
                 </button>
-                <div className="mt-2 flex justify-end gap-1 border-t border-slate-100 pt-1">
-                  <button type="button" disabled={busy||escribiendo} aria-label={`Editar ${wallet.nombre}`} onClick={()=>startEdit(wallet)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-slate-500 hover:bg-slate-100"><Pencil className="h-3.5 w-3.5" />Editar</button>
-                  <button type="button" disabled={busy||escribiendo} aria-label={`${wallet.archivada?'Reactivar':'Archivar'} ${wallet.nombre}`} onClick={()=>toggleArchive(wallet)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-slate-500 hover:bg-slate-100">{wallet.archivada?<RotateCcw className="h-3.5 w-3.5" />:<Archive className="h-3.5 w-3.5" />}{wallet.archivada?'Reactivar':'Archivar'}</button>
+                <div className="mt-2 flex flex-wrap justify-end gap-1 border-t border-slate-100 pt-1">
+                  <button type="button" disabled={busy||escribiendo} aria-label={`Editar ${wallet.nombre}`} onClick={()=>startEdit(wallet)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-slate-500 hover:bg-slate-100 cursor-pointer"><Pencil className="h-3.5 w-3.5" />Editar</button>
+                  <button type="button" disabled={busy||escribiendo} aria-label={`${wallet.archivada?'Reactivar':'Archivar'} ${wallet.nombre}`} onClick={()=>toggleArchive(wallet)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-slate-500 hover:bg-slate-100 cursor-pointer">{wallet.archivada?<RotateCcw className="h-3.5 w-3.5" />:<Archive className="h-3.5 w-3.5" />}{wallet.archivada?'Reactivar':'Archivar'}</button>
+                  {!wallet.es_principal && (
+                    <button type="button" disabled={busy||escribiendo} aria-label={`Eliminar ${wallet.nombre}`} onClick={()=>handleDelete(wallet)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"><Trash2 className="h-3.5 w-3.5" />Eliminar</button>
+                  )}
                 </div>
               </div>)}
             </div>

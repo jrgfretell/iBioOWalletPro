@@ -38,6 +38,7 @@ interface WalletContextType extends WalletData {
   crearBilletera: (nombre: string, moneda: Moneda) => Promise<boolean>;
   editarBilletera: (id: number, nombre: string) => Promise<boolean>;
   archivarBilletera: (id: number, archivada: boolean) => Promise<boolean>;
+  eliminarBilletera: (id: number) => Promise<boolean>;
   registrarFormulario: (id: string, label: string) => () => void;
   recargarTodo: () => Promise<void>;
   actualizarMontoBase: (monto: number, fecha?: string, solicitud?: string) => Promise<boolean>;
@@ -244,6 +245,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } catch(reason) {reportarError(reason);return false;} finally {endWrite();}
   };
 
+  const eliminarBilletera = async(id:number)=>{
+    if(modoLegacy||!user||pendingWrites.current) return false;
+    const target=list.current.find(w=>w.id===id);
+    if(!target||target.es_principal) {
+      reportarError(new Error('No se puede eliminar la billetera principal.'));
+      return false;
+    }
+    if(id===current.current?.id&&!await canLeave()) return false;
+    beginWrite();
+    try {
+      const uid=user.id;
+      const response=await supabase.rpc('eliminar_billetera',{p_billetera_id:id});
+      if(response.error) throw response.error;
+      if(uid!==userRef.current) return false;
+      const wasCurrent=id===current.current?.id;
+      const wallets=await refreshList();
+      if(wasCurrent) {
+        const fallback=wallets.find(w=>!w.archivada&&w.es_principal)||wallets.find(w=>!w.archivada)||null;
+        await activate(fallback,false);
+      }
+      return true;
+    } catch(reason) {reportarError(reason);throw reason;} finally {endWrite();}
+  };
+
   const ejecutarOperacion = async(accion:string,datos:Record<string,unknown>,solicitud:string)=>{
     const wallet=billeteraActual;
     if(!data.soporteEtapa5||!wallet||wallet.archivada||wallet.user_id!==userRef.current||wallet.id!==current.current?.id) throw Error('Billetera no disponible para esta operación.');
@@ -280,7 +305,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const currency=billeteraActual?.moneda||'PEN';
   const belongsToSession=!!user&&billeteraActual?.user_id===user.id;
   const formatearMoneda=useCallback((amount:number)=>formatoMonetario(amount,currency),[currency]);
-  return <WalletContext.Provider value={{...(belongsToSession?data:emptyData()),billeteras:billeteras.filter(w=>w.user_id===user?.id),billeteraActual:belongsToSession?billeteraActual:null,modoLegacy,soloLectura:!belongsToSession||!billeteraActual||billeteraActual.archivada,loading,ready:belongsToSession&&ready,escribiendo,error,limpiarError:()=>setError(null),reportarError,clienteBilletera,seleccionarBilletera,crearBilletera,editarBilletera,archivarBilletera,registrarFormulario,recargarTodo,ejecutarOperacion,actualizarMontoBase,guardarSueldoMes:(a,m,s15,s30)=>saveSalaries(a,[m],s15,s30),guardarSueldoAnual:(a,m,s15,s30)=>saveSalaries(a,Array.from({length:12-m},(_,i)=>m+i),s15,s30),formatearMoneda,simboloMoneda:MONEDAS[currency].simbolo}}>{children}</WalletContext.Provider>;
+  return <WalletContext.Provider value={{...(belongsToSession?data:emptyData()),billeteras:billeteras.filter(w=>w.user_id===user?.id),billeteraActual:belongsToSession?billeteraActual:null,modoLegacy,soloLectura:!belongsToSession||!billeteraActual||billeteraActual.archivada,loading,ready:belongsToSession&&ready,escribiendo,error,limpiarError:()=>setError(null),reportarError,clienteBilletera,seleccionarBilletera,crearBilletera,editarBilletera,archivarBilletera,eliminarBilletera,registrarFormulario,recargarTodo,ejecutarOperacion,actualizarMontoBase,guardarSueldoMes:(a,m,s15,s30)=>saveSalaries(a,[m],s15,s30),guardarSueldoAnual:(a,m,s15,s30)=>saveSalaries(a,Array.from({length:12-m},(_,i)=>m+i),s15,s30),formatearMoneda,simboloMoneda:MONEDAS[currency].simbolo}}>{children}</WalletContext.Provider>;
 }
 export function useWallet(): WalletContextType {
   const value=useContext(WalletContext);
