@@ -1074,8 +1074,140 @@ export const PagosView: React.FC = () => {
             Totales según el mes de vencimiento. Los pagos se registran en Movimientos con su fecha real. Un vencimiento no confirma un pago automáticamente.
           </p>
 
-          {/* Tabla de la Agenda con Botones Directos de Registrar Pago, Editar y Eliminar */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
+          {/* Vista Móvil: Tarjetas Nativas para Celulares (md:hidden) */}
+          <div className="md:hidden space-y-3">
+            {filasFiltradas.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+                <CalendarCheck className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                <strong className="block text-slate-700 text-sm">No hay pagos para esta selección</strong>
+                <span className="text-xs">Prueba otro mes o cambia los filtros.</span>
+              </div>
+            ) : (
+              filasFiltradas.map((r) => {
+                const [y, m, d] = r.fecha.split('-');
+                const isOverdue = r.estado === 'vencido';
+                const isPaid = r.estado === 'pagado';
+                const cardKey = r.deudaId ? `deuda-${r.deudaId}` : `rec-card-${r.recurrenteId}`;
+
+                return (
+                  <div
+                    key={r.id}
+                    className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all ${
+                      isOverdue ? 'border-red-200 bg-red-50/20' : ''
+                    }`}
+                  >
+                    {/* Fila superior: Fecha + Badges Tipo y Estado */}
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-100 font-bold text-xs text-slate-800">
+                          {d}/{m}/{y}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px]">
+                          {r.tipo}
+                        </span>
+                      </div>
+                      <div>
+                        {isPaid ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Pagado
+                          </span>
+                        ) : isOverdue ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            Vencido
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            Pendiente
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Información del Compromiso */}
+                    <div className="mt-3 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-extrabold text-slate-900 text-base leading-tight break-words">
+                          {r.nombre}
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5">{r.detalle}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                          {isPaid ? 'Abonado' : 'Por pagar'}
+                        </span>
+                        <strong className={`text-base font-black ${isPaid ? 'text-emerald-600' : 'text-slate-900'}`}>
+                          {formatearMoneda(isPaid ? r.pagado : r.pendiente)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Acciones móviles directas */}
+                    <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAbrirEdicion(r)}
+                          title="Editar compromiso"
+                          className="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 active:bg-teal-100 transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={soloLectura || (procesandoAccion === r.id)}
+                          onClick={() => handleEliminarCompromiso(r)}
+                          title="Eliminar compromiso"
+                          className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIrACronograma(cardKey)}
+                          className="text-teal-700 hover:text-teal-800 font-bold text-xs inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-xl hover:bg-teal-50 active:bg-teal-100 transition-colors cursor-pointer"
+                        >
+                          <span>Ver cronograma</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+
+                        {!isPaid ? (
+                          <button
+                            type="button"
+                            disabled={soloLectura || (procesandoAccion === r.id)}
+                            onClick={() => handleRegistrarPagoAgenda(r)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-xs shadow-xs cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{procesandoAccion === r.id ? '...' : 'Registrar'}</span>
+                          </button>
+                        ) : (
+                          r.tipo === 'Continuo' && (
+                            <button
+                              disabled={soloLectura}
+                              type="button"
+                              onClick={() => handleAnularPagoAgenda(r)}
+                              className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 font-bold text-xs cursor-pointer"
+                            >
+                              Anular
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Tabla de la Agenda para Pantallas Medianas y Grandes (hidden md:block) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left text-xs min-w-[700px]">
                 <thead className="bg-slate-50/80 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">

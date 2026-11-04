@@ -315,12 +315,12 @@ export const AdminView: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Salud de Base de Datos</span>
             <Database className="h-4 w-4 shrink-0 text-amber-600" />
           </div>
-          <strong className="mt-2 block text-lg sm:text-2xl font-black text-slate-900 truncate">
+          <strong className="mt-2 block text-base sm:text-2xl font-black text-slate-900 leading-tight">
             {stats ? `${stats.migraciones.length} migraciones` : '—'}
           </strong>
-          <span className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+          <span className="mt-1 flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-emerald-700 leading-tight">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Sistema 100% Operativo</span>
+            <span>Sistema 100% Operativo</span>
           </span>
         </div>
       </div>
@@ -358,7 +358,10 @@ export const AdminView: React.FC = () => {
             }`}
           >
             <Database className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span className="truncate">Base de Datos y Versiones</span>
+            <span className="truncate">
+              <span className="sm:hidden">Migraciones</span>
+              <span className="hidden sm:inline">Base de Datos y Versiones</span>
+            </span>
           </button>
         </div>
       </div>

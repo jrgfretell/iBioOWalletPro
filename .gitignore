@@ -5,6 +5,7 @@
 .env.*
 node_modules/
 dist/
+scratch/
 client_secret_*.json
 *.credentials.json
 

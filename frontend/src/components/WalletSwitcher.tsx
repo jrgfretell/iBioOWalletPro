@@ -445,11 +445,12 @@ export function WalletSwitcher() {
               </div>
             </div>
           ) : (
-            <form onSubmit={save} className="space-y-4 p-5 overflow-y-auto max-h-[75vh]">
-              <div>
-                <label htmlFor="wallet-name" className="mb-1.5 block text-xs font-semibold text-slate-700">
-                  Nombre de la billetera
-                </label>
+            <form onSubmit={save} className="flex flex-col max-h-[75vh] overflow-hidden">
+              <div className="space-y-4 p-4 sm:p-5 overflow-y-auto flex-1">
+                <div>
+                  <label htmlFor="wallet-name" className="mb-1.5 block text-xs font-semibold text-slate-700">
+                    Nombre de la billetera
+                  </label>
                 <input
                   id="wallet-name"
                   required
@@ -609,7 +610,9 @@ export function WalletSwitcher() {
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-slate-100 p-4 bg-white shrink-0">
                 <button
                   type="button"
                   disabled={busy}
@@ -618,14 +621,14 @@ export function WalletSwitcher() {
                     setFailure(false);
                     limpiarError();
                   }}
-                  className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm text-slate-600 cursor-pointer"
+                  className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={busy || !nombre.trim()}
-                  className="min-h-11 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer"
+                  className="min-h-11 rounded-xl bg-teal-600 px-5 text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
                 >
                   {busy ? 'Guardando…' : view === 'create' ? 'Crear billetera' : 'Guardar cambios'}
                 </button>
