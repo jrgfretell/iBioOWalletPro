@@ -2,36 +2,19 @@
 -- Migración: 202611030006_admin_bloqueo_y_eliminar_usuario.sql
 -- Propósito:
 --   1. Revocación inmediata de sesiones activas al suspender/bloquear un usuario.
---   2. Bloqueo en RLS y triggers de escritura para cuentas suspendidas.
+--   2. Bloqueo en triggers de escritura para cuentas suspendidas (validando auth.users directamente).
 --   3. Función RPC public.verificar_mi_estado() para validación en tiempo real en cliente.
 --   4. Función RPC public.admin_eliminar_usuario() con borrado en cascada seguro y
 --      protección estricta para cuentas administradoras.
+--   5. Mantener la política RLS limpia de billeteras sin dependencias cruzadas de esquemas.
 -- ==============================================================================
 
 BEGIN;
 
--- 1. Helper interno para verificar si un usuario se encuentra suspendido
-CREATE OR REPLACE FUNCTION wallet_internal.usuario_esta_suspendido(p_user_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $funcion$
-BEGIN
-  IF p_user_id IS NULL THEN
-    RETURN false;
-  END IF;
-
-  RETURN EXISTS (
-    SELECT 1 FROM auth.users
-    WHERE id = p_user_id
-      AND banned_until IS NOT NULL
-      AND banned_until > now()
-  );
-END;
-$funcion$;
-
-REVOKE ALL ON FUNCTION wallet_internal.usuario_esta_suspendido(uuid) FROM PUBLIC, anon, authenticated;
+-- 1. Restaurar política RLS limpia para lectura de billeteras (evita errores de permisos en esquemas)
+DROP POLICY IF EXISTS billeteras_lectura ON public.billeteras;
+CREATE POLICY billeteras_lectura ON public.billeteras FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
 
 -- 2. Función RPC para que el cliente valide el estado de su propia cuenta
 CREATE OR REPLACE FUNCTION public.verificar_mi_estado()
@@ -179,7 +162,7 @@ $funcion$;
 REVOKE ALL ON FUNCTION public.admin_eliminar_usuario(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_eliminar_usuario(uuid) TO authenticated;
 
--- 5. Actualizar trigger validar_escritura_billetera para denegar escrituras a suspendidos
+-- 5. Actualizar trigger validar_escritura_billetera para denegar escrituras a suspendidos consultando auth.users
 CREATE OR REPLACE FUNCTION public.validar_escritura_billetera() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $funcion$
 DECLARE
@@ -187,10 +170,17 @@ DECLARE
   propietario uuid;
   archivada_actual boolean;
   v_caller uuid := auth.uid();
+  v_suspendido boolean := false;
 BEGIN
-  -- Denegar cualquier escritura si el usuario está suspendido
-  IF v_caller IS NOT NULL AND wallet_internal.usuario_esta_suspendido(v_caller) THEN
-    RAISE EXCEPTION 'Tu cuenta ha sido suspendida por un administrador' USING ERRCODE = '42501';
+  -- Denegar cualquier escritura si el usuario que llama está suspendido
+  IF v_caller IS NOT NULL THEN
+    SELECT (banned_until IS NOT NULL AND banned_until > now()) INTO v_suspendido
+    FROM auth.users
+    WHERE id = v_caller;
+
+    IF coalesce(v_suspendido, false) THEN
+      RAISE EXCEPTION 'Tu cuenta ha sido suspendida por un administrador' USING ERRCODE = '42501';
+    END IF;
   END IF;
 
   IF TG_OP='UPDATE' AND (NEW.user_id IS DISTINCT FROM OLD.user_id OR NEW.billetera_id IS DISTINCT FROM OLD.billetera_id) THEN
@@ -229,10 +219,8 @@ BEGIN
 END;
 $funcion$;
 
--- 6. Actualizar política RLS de lectura de billeteras para no devolver datos a suspendidos
-DROP POLICY IF EXISTS billeteras_lectura ON public.billeteras;
-CREATE POLICY billeteras_lectura ON public.billeteras FOR SELECT TO authenticated
-  USING (user_id = (SELECT auth.uid()) AND NOT wallet_internal.usuario_esta_suspendido((SELECT auth.uid())));
+-- 6. Limpieza de función previa si existiera en wallet_internal
+DROP FUNCTION IF EXISTS wallet_internal.usuario_esta_suspendido(uuid);
 
 -- 7. Registrar versión de migración
 INSERT INTO wallet_internal.migraciones (version)

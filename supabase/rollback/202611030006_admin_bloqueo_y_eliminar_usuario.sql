@@ -67,7 +67,7 @@ BEGIN
 END;
 $funcion$;
 
--- 6. Eliminar helper interno
+-- 6. Eliminar helper interno si persistiera
 DROP FUNCTION IF EXISTS wallet_internal.usuario_esta_suspendido(uuid);
 
 -- 7. Eliminar registro de migración
