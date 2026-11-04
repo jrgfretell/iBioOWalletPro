@@ -152,6 +152,34 @@ export const PagosView: React.FC = () => {
   const abrirPago=(objetivo:Omit<ObjetivoPago,'solicitud'>)=>setPagoObjetivo({...objetivo,solicitud:crypto.randomUUID()});
   const cuotasPrevias=generarCuotas(fecha1raCuota,Number(numCuotas),Number(montoPorCuota),forzarFinDeMes);
 
+  const handleIrACronograma = (cardKey: string) => {
+    // 1. Limpiar filtros y búsqueda para asegurar que el cronograma esté visible
+    setBusquedaCronogramas('');
+    setFiltroCronogramas('todos');
+
+    // 2. Cambiar a la pestaña de cronogramas
+    setSubTab('cronogramas');
+
+    // 3. Expandir la tabla de cuotas del cronograma seleccionado
+    setCronogramasExpandidos((prev) => ({
+      ...prev,
+      [cardKey]: true,
+    }));
+
+    // 4. Scroll suave hacia la tarjeta con resalte visual (optimizado para desktop y móvil)
+    setTimeout(() => {
+      const el = document.getElementById(cardKey);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Efecto destello visual de foco
+        el.classList.add('ring-4', 'ring-teal-500/60', 'shadow-xl');
+        setTimeout(() => {
+          el.classList.remove('ring-4', 'ring-teal-500/60', 'shadow-xl');
+        }, 2200);
+      }
+    }, 120);
+  };
+
   useWalletFormGuard(!!pagoObjetivo || modalNuevoProgramado || modalEdicionAbierto || editandoCuotaId !== null, 'Pagos programados');
 
   // Cargar sueldo del mes seleccionado en la pestaña de Ingresos
@@ -1195,20 +1223,17 @@ export const PagosView: React.FC = () => {
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
 
-                              {/* Ver cronograma completo */}
+                              {/* Ver cronograma completo con redirección, apertura y foco suave */}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setSubTab('cronogramas');
                                   const cardKey = r.deudaId
                                     ? `deuda-${r.deudaId}`
                                     : `rec-card-${r.recurrenteId}`;
-                                  setCronogramasExpandidos((prev) => ({
-                                    ...prev,
-                                    [cardKey]: true,
-                                  }));
+                                  handleIrACronograma(cardKey);
                                 }}
-                                className="text-teal-600 hover:text-teal-700 font-bold text-[11px] inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                                title="Ver cronograma completo"
+                                className="text-teal-600 hover:text-teal-700 font-bold text-[11px] inline-flex items-center gap-0.5 cursor-pointer ml-1 whitespace-nowrap min-h-8 py-1 px-2 rounded-lg hover:bg-teal-50 active:bg-teal-100 transition-colors"
                               >
                                 <span>Ver cronograma</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
@@ -1325,7 +1350,7 @@ export const PagosView: React.FC = () => {
                     <article
                       key={card.idKey}
                       id={card.idKey}
-                      className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden"
+                      className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
                       {/* Cabecera de la Tarjeta estilo PHP Schedule-Card */}
                       <div className="p-4 sm:p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -1608,7 +1633,7 @@ export const PagosView: React.FC = () => {
                     <article
                       key={d.id}
                       id={`deuda-${d.id}`}
-                      className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden"
+                      className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
                       <div className="p-4 sm:p-6 pb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
