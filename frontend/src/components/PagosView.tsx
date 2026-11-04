@@ -14,7 +14,7 @@ import {
   recurrenteAplicaEnMes,
 } from '../types/wallet';
 import type { DeudaCuota, MovimientoRecurrente } from '../types/wallet';
-import { confirmarAccion, toastExito } from '../lib/alerts';
+import Swal, { confirmarAccion, toastExito } from '../lib/alerts';
 import {
   CalendarCheck,
   FileText,
@@ -1669,18 +1669,59 @@ export const PagosView: React.FC = () => {
                               type="button"
                               onClick={async () => {
     try {
-                                const confirmado = await confirmarAccion({
-                                  title: '¿Eliminar cronograma?',
-                                  text: `Se retirará "${d.nombre}" de los pagos pendientes. Se conservarán sus abonos y gastos históricos.`,
-                                  confirmButtonText: 'Sí, eliminar',
-                                });
-                                if (!confirmado) return;
+                                const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
+                                const pagadas = cuotasD.filter((c) => pagosDeuda.some((p) => p.cuota_id === c.id)).length;
 
-                                if(soporteEtapa5){const datos={deuda_id:d.id};await ejecutarOperacion('retirar_cronograma',datos,solicitudPara('retirar_cronograma',datos));toastExito('Cronograma retirado. Sus pagos se conservan.');return;}
-                                await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
-                                await recargarTodo();
-                                toastExito(`"${d.nombre}" eliminado`);
+                                if (pagadas > 0) {
+                                  const res = await Swal.fire({
+                                    title: `¿Eliminar "${d.nombre}"?`,
+                                    text: `Este cronograma tiene ${pagadas} cuota(s) pagada(s). ¿Deseas eliminar todo (el cronograma y todos sus pagos del historial) o solo retirar las cuotas pendientes?`,
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    showDenyButton: true,
+                                    confirmButtonText: 'Eliminar todo (cronograma y pagos)',
+                                    denyButtonText: 'Solo retirar pendientes (conservar pagos)',
+                                    cancelButtonText: 'Cancelar',
+                                    confirmButtonColor: '#e11d48',
+                                    denyButtonColor: '#0d9488',
+                                    cancelButtonColor: '#64748b',
+                                  });
 
+                                  if (res.isDismissed) return;
+
+                                  if (res.isConfirmed) {
+                                    if (soporteEtapa5) {
+                                      const datos = { deuda_id: d.id };
+                                      await ejecutarOperacion('eliminar_cronograma', datos, solicitudPara('eliminar_cronograma', datos));
+                                    } else {
+                                      await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
+                                      await recargarTodo();
+                                    }
+                                    toastExito(`"${d.nombre}" y todos sus pagos fueron eliminados`);
+                                  } else if (res.isDenied) {
+                                    if (soporteEtapa5) {
+                                      const datos = { deuda_id: d.id };
+                                      await ejecutarOperacion('retirar_cronograma', datos, solicitudPara('retirar_cronograma', datos));
+                                    }
+                                    toastExito(`"${d.nombre}" retirado. Se conservaron los pagos históricos.`);
+                                  }
+                                } else {
+                                  const confirmado = await confirmarAccion({
+                                    title: '¿Eliminar cronograma?',
+                                    text: `Se retirará "${d.nombre}" y todas sus cuotas pendientes.`,
+                                    confirmButtonText: 'Sí, eliminar',
+                                  });
+                                  if (!confirmado) return;
+
+                                  if (soporteEtapa5) {
+                                    const datos = { deuda_id: d.id };
+                                    await ejecutarOperacion('eliminar_cronograma', datos, solicitudPara('eliminar_cronograma', datos));
+                                  } else {
+                                    await supabase.from('deudas').delete().eq('id', d.id).eq('user_id', user!.id);
+                                    await recargarTodo();
+                                  }
+                                  toastExito(`"${d.nombre}" eliminado`);
+                                }
     } catch (error) { reportarError(error); }
   }}
                               title="Eliminar cronograma"

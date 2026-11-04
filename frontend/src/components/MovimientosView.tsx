@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const MovimientosView: React.FC = () => {
-  const { error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
+  const { error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase, soporteEtapa5, ejecutarOperacion } = useWallet();
   const { user } = useAuth();
   const { movimientos, categorias, recargarTodo, fechaReferencia, pagosDeuda } = useWallet();
 
@@ -134,19 +134,32 @@ export const MovimientosView: React.FC = () => {
 
   const handleEliminar = async (id: number) => {
     try {
-    if (!user) return;
-    const confirmado = await confirmarAccion({
-      title: '¿Eliminar movimiento?',
-      text: 'Se retirará permanentemente de tu historial.',
-      confirmButtonText: 'Sí, eliminar',
-    });
-    if (!confirmado) return;
+      if (!user) return;
+      const pagoVinculado = pagosDeuda.find((p) => p.movimiento_id === id);
 
-    await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
-    await recargarTodo();
-    toastExito('Movimiento eliminado');
+      const confirmado = await confirmarAccion({
+        title: pagoVinculado ? '¿Eliminar abono de cronograma?' : '¿Eliminar movimiento?',
+        text: pagoVinculado
+          ? 'Se retirará este registro de tu historial y se anulará el abono de la cuota correspondiente.'
+          : 'Se retirará permanentemente de tu historial.',
+        confirmButtonText: 'Sí, eliminar',
+        isDanger: true,
+      });
+      if (!confirmado) return;
 
-    } catch (error) { reportarError(error); }
+      if (soporteEtapa5 && pagoVinculado) {
+        const datos = { pago_id: pagoVinculado.id };
+        const solicitud = crypto.randomUUID();
+        await ejecutarOperacion('anular_abono', datos, solicitud);
+        toastExito('Abono eliminado con éxito');
+      } else {
+        await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
+        await recargarTodo();
+        toastExito('Movimiento eliminado');
+      }
+    } catch (error) {
+      reportarError(error);
+    }
   };
 
   // Filtrado de movimientos
@@ -416,7 +429,7 @@ export const MovimientosView: React.FC = () => {
                         </span>
                         <span>·</span>
                         {incluido&&<span className="text-teal-700">Incluido en saldo de referencia</span>}
-                        {vinculado&&<span className="text-slate-500">Abono de cronograma · se corrige en Pagos</span>}
+                        {vinculado&&<span className="text-slate-500">Abono de cronograma</span>}
                         <button disabled={soloLectura || vinculado}
                           onClick={() => handleToggleConfirmado(m)}
                           className={`inline-flex items-center gap-1 font-semibold cursor-pointer ${
@@ -459,10 +472,10 @@ export const MovimientosView: React.FC = () => {
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button disabled={soloLectura || vinculado}
+                      <button disabled={soloLectura}
                         onClick={() => handleEliminar(m.id)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                        title="Eliminar"
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-40"
+                        title={vinculado ? 'Eliminar abono de cronograma' : 'Eliminar'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
