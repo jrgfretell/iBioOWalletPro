@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye, Trash2, HelpCircle, History } from 'lucide-react';
+import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye, Trash2, HelpCircle, History, ChevronRight } from 'lucide-react';
 import { AnimatedModal } from './AnimatedModal';
 import { OnboardingModal } from './OnboardingModal';
 import { useWallet } from '../context/WalletContext';
@@ -370,61 +370,123 @@ export function WalletSwitcher() {
                   return (
                     <div
                       key={wallet.id}
-                      className={`rounded-xl border p-3 ${
-                        isCurrent ? 'border-teal-300 bg-teal-50/40' : 'border-slate-200'
+                      className={`rounded-2xl border p-3.5 space-y-3 transition-all relative overflow-hidden ${
+                        isCurrent
+                          ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm'
+                          : 'border-slate-200 bg-white hover:border-slate-300 shadow-2xs'
                       }`}
                     >
-                      <button
-                        type="button"
-                        disabled={busy || escribiendo}
-                        onClick={() => choose(wallet)}
-                        aria-label={`${wallet.archivada ? 'Consultar' : 'Seleccionar'} ${wallet.nombre}, ${MONEDAS[wallet.moneda].nombre}`}
-                        className="flex min-h-11 w-full min-w-0 items-center gap-3 text-left disabled:opacity-50 cursor-pointer"
-                      >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-600">
-                          {MONEDAS[wallet.moneda].simbolo}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5">
-                            <span className="truncate text-sm font-semibold text-slate-900">{wallet.nombre}</span>
-                            {wallet.es_principal && (
-                              <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-teal-800">
-                                Principal
+                      {/* Indicador lateral sutil si está seleccionada */}
+                      {isCurrent && <div className="absolute left-0 top-0 bottom-0 w-1 bg-teal-500" />}
+
+                      {/* Fila 1: Identidad de la billetera + Estado / Selector */}
+                      <div className="flex items-center justify-between gap-2 pl-0.5">
+                        <button
+                          type="button"
+                          disabled={busy || escribiendo}
+                          onClick={() => choose(wallet)}
+                          aria-label={`${wallet.archivada ? 'Consultar' : 'Seleccionar'} ${wallet.nombre}, ${MONEDAS[wallet.moneda].nombre}`}
+                          className="flex min-w-0 flex-1 items-center gap-2.5 text-left cursor-pointer group disabled:opacity-50"
+                        >
+                          <span
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-black text-sm border transition-colors ${
+                              isCurrent
+                                ? 'bg-teal-50 text-teal-700 border-teal-200/80'
+                                : 'bg-slate-100 text-slate-600 border-slate-200/80 group-hover:bg-slate-200/70'
+                            }`}
+                          >
+                            {MONEDAS[wallet.moneda].simbolo}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5">
+                              <span className="truncate text-sm font-extrabold text-slate-900 group-hover:text-teal-700 transition-colors">
+                                {wallet.nombre}
                               </span>
-                            )}
+                              {wallet.es_principal && (
+                                <span className="rounded-md bg-teal-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-800 shrink-0">
+                                  Principal
+                                </span>
+                              )}
+                            </span>
+                            <span className="block text-[11px] font-medium text-slate-400">
+                              {MONEDAS[wallet.moneda].nombre} · {wallet.moneda}
+                            </span>
                           </span>
-                          <span className="block text-xs text-slate-500">
-                            {MONEDAS[wallet.moneda].nombre} ({wallet.moneda}) · Base:{' '}
-                            <strong className="text-slate-700">{formatoMonetario(wBase, wallet.moneda)}</strong>
-                            {wFecha ? ` al ${wFecha.split('-').reverse().join('/')}` : ''}
-                          </span>
-                        </span>
+                        </button>
+
+                        {/* Indicador de estado / Botón Cambiar */}
                         {isCurrent ? (
-                          <Check className="h-4 w-4 shrink-0 text-teal-600" />
+                          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-700 text-[10px] font-bold shrink-0">
+                            <Check className="h-3 w-3 text-teal-600" />
+                            <span>En uso</span>
+                          </div>
                         ) : wallet.archivada ? (
-                          <Eye className="h-4 w-4 text-slate-400" />
-                        ) : null}
-                      </button>
-                      <div className="mt-2 flex flex-wrap justify-end gap-1 border-t border-slate-100 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => choose(wallet)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 text-xs font-semibold shrink-0 cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Ver</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busy || escribiendo}
+                            onClick={() => choose(wallet)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200/60 text-teal-700 text-xs font-bold shrink-0 cursor-pointer transition-colors"
+                          >
+                            <span>Cambiar</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Fila 2: Bloque de Saldo Base Destacado */}
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block truncate">
+                            Saldo Base Inicial
+                          </span>
+                          <div className="text-base font-black text-slate-900 tracking-tight mt-0.5 whitespace-nowrap">
+                            {formatoMonetario(wBase, wallet.moneda)}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-medium text-slate-400 block">
+                            Fecha de corte
+                          </span>
+                          <span className="text-xs font-bold text-slate-600 block mt-0.5 whitespace-nowrap">
+                            {wFecha ? wFecha.split('-').reverse().join('/') : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Fila 3: Acciones Rápidas (Editar, Archivar, Eliminar) */}
+                      <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-100">
                         <button
                           type="button"
                           disabled={busy || escribiendo || wallet.archivada}
                           aria-label={`Editar ${wallet.nombre}`}
                           onClick={() => startEdit(wallet)}
-                          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                          className="flex-1 min-h-9 py-1 px-2.5 rounded-xl bg-slate-50 hover:bg-teal-50/70 border border-slate-200/80 hover:border-teal-200 text-slate-700 hover:text-teal-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Editar / Saldo base
+                          <Pencil className="h-3.5 w-3.5 text-teal-600" />
+                          <span>Editar saldo</span>
                         </button>
                         <button
                           type="button"
                           disabled={busy || escribiendo}
                           aria-label={`${wallet.archivada ? 'Reactivar' : 'Archivar'} ${wallet.nombre}`}
                           onClick={() => toggleArchive(wallet)}
-                          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-slate-500 hover:bg-slate-100 cursor-pointer"
+                          className="min-h-9 py-1 px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                         >
-                          {wallet.archivada ? <RotateCcw className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-                          {wallet.archivada ? 'Reactivar' : 'Archivar'}
+                          {wallet.archivada ? (
+                            <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
+                          ) : (
+                            <Archive className="h-3.5 w-3.5 text-slate-500" />
+                          )}
+                          <span>{wallet.archivada ? 'Reactivar' : 'Archivar'}</span>
                         </button>
                         {!wallet.es_principal && (
                           <button
@@ -432,10 +494,10 @@ export function WalletSwitcher() {
                             disabled={busy || escribiendo}
                             aria-label={`Eliminar ${wallet.nombre}`}
                             onClick={() => handleDelete(wallet)}
-                            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
+                            className="min-h-9 py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100/80 border border-rose-200/70 text-rose-600 hover:text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Eliminar
+                            <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                            <span>Eliminar</span>
                           </button>
                         )}
                       </div>
