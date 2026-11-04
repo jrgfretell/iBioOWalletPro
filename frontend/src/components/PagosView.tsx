@@ -1548,8 +1548,8 @@ export const PagosView: React.FC = () => {
                                 Recurrente
                               </span>
                             </div>
-                            <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
-                              {card.categoriaNombre} · {card.totalVencimientos} cuotas generadas
+                            <p className="text-xs text-slate-400 font-medium leading-tight mt-0.5">
+                              {card.categoriaNombre} · {card.totalVencimientos} cuotas
                             </p>
                           </div>
                         </div>
@@ -1604,20 +1604,20 @@ export const PagosView: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Próximo Vencimiento (Píldora destacada) */}
+                      {/* Próximo Vencimiento (Píldora destacada sin truncamiento) */}
                       <div className="px-4 sm:px-5 pb-3">
                         {card.proximo ? (
                           <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
                               <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 border border-amber-200">
                                 {card.proximo.fecha.split('-')[2]}
                               </div>
-                              <div className="min-w-0">
-                                <div className="text-xs font-black text-amber-950 truncate">
-                                  Próximo vencimiento (Cuota {card.proximo.numero})
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-black text-amber-950">
+                                  Próximo vencimiento
                                 </div>
-                                <div className="text-[11px] text-amber-800 font-medium mt-0.5">
-                                  {card.proximo.fecha.split('-')[2]}/{card.proximo.fecha.split('-')[1]}/{card.proximo.fecha.split('-')[0]}
+                                <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                                  Cuota {card.proximo.numero} · {card.proximo.fecha.split('-')[2]}/{card.proximo.fecha.split('-')[1]}/{card.proximo.fecha.split('-')[0]}
                                 </div>
                               </div>
                             </div>
@@ -1902,8 +1902,8 @@ export const PagosView: React.FC = () => {
                                 {cuotasD.length} cuotas
                               </span>
                             </div>
-                            <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
-                              {catDeuda?.nombre || 'General'} · Recibido: {formatearMoneda(d.monto_recibido)}
+                            <p className="text-xs text-slate-400 font-medium leading-tight mt-0.5">
+                              {catDeuda?.nombre || 'General'} · {cuotasD.length} cuotas pactadas
                             </p>
                           </div>
                         </div>
@@ -1958,20 +1958,20 @@ export const PagosView: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Próximo Vencimiento (Píldora destacada) */}
+                      {/* Próximo Vencimiento (Píldora destacada sin truncamiento) */}
                       <div className="px-4 sm:px-5 pb-3">
                         {proximaCuota ? (
                           <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
                               <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 border border-amber-200">
                                 {proximaCuota.fecha ? proximaCuota.fecha.split('-')[2] : '1'}
                               </div>
-                              <div className="min-w-0">
-                                <div className="text-xs font-black text-amber-950 truncate">
-                                  Próximo vencimiento (Cuota {proximaCuota.numero})
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-black text-amber-950">
+                                  Próximo vencimiento
                                 </div>
-                                <div className="text-[11px] text-amber-800 font-medium mt-0.5">
-                                  {proximaCuota.fecha
+                                <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                                  Cuota {proximaCuota.numero} de {cuotasD.length} · {proximaCuota.fecha
                                     ? `${proximaCuota.fecha.split('-')[2]}/${proximaCuota.fecha.split('-')[1]}/${proximaCuota.fecha.split('-')[0]}`
                                     : 'Fecha pendiente'}
                                 </div>
