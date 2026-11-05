@@ -1526,11 +1526,11 @@ export const PagosView: React.FC = () => {
                       id={card.idKey}
                       className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
-                      {/* Cabecera estilo Fintech */}
-                      <div className="p-4 sm:p-5 pb-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Cabecera estilo Fintech - Opción A: Multilínea Fluida */}
+                      <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
                           <div
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border mt-0.5"
                             style={{
                               backgroundColor: `${catColor}15`,
                               borderColor: `${catColor}30`,
@@ -1540,11 +1540,11 @@ export const PagosView: React.FC = () => {
                             <i className={`fas ${catIcon} text-base`}></i>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h2 className="text-base sm:text-lg font-black text-slate-900 truncate">
-                                {card.nombre}
-                              </h2>
-                              <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                            <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words">
+                              {card.nombre}
+                            </h2>
+                            <div className="mt-1">
+                              <span className="inline-flex px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
                                 Recurrente
                               </span>
                             </div>
@@ -1877,11 +1877,11 @@ export const PagosView: React.FC = () => {
                       id={`deuda-${d.id}`}
                       className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
                     >
-                      {/* Cabecera estilo Fintech */}
-                      <div className="p-4 sm:p-5 pb-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Cabecera estilo Fintech - Opción A: Multilínea Fluida */}
+                      <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
                           <div
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border mt-0.5"
                             style={{
                               backgroundColor: `${catColor}15`,
                               borderColor: `${catColor}30`,
@@ -1891,11 +1891,11 @@ export const PagosView: React.FC = () => {
                             <i className={`fas ${catIcon} text-base`}></i>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h2 className="text-base sm:text-lg font-black text-slate-900 truncate">
-                                {d.nombre}
-                              </h2>
-                              <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                            <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words">
+                              {d.nombre}
+                            </h2>
+                            <div className="mt-1">
+                              <span className="inline-flex px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
                                 {cuotasD.length} cuotas
                               </span>
                             </div>
