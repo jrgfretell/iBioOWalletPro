@@ -639,7 +639,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                   <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
                                     Tras quincena
                                   </div>
-                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Cobro de sueldos</div>
+                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo al día 15</div>
                                 </div>
                               </div>
                               <strong
