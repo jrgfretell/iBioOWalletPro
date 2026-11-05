@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2';
 import type { SweetAlertIcon } from 'sweetalert2';
 
-// Opciones base con estilos acordes al diseño de Mi Billetera Pro
+// Opciones base con estilos acordes al diseño de Mi Billete Pro
 const customClass = {
   popup: 'rounded-2xl border border-slate-200 shadow-2xl p-6 font-sans',
   title: 'text-slate-900 font-extrabold text-lg',

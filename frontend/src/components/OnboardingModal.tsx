@@ -60,7 +60,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide }: Onboar
   return (
     <AnimatedModal
       open={isOpen}
-      label={step === 'welcome' ? 'Bienvenido a Mi Billetera Pro' : 'Configura tu primera billetera'}
+      label={step === 'welcome' ? 'Bienvenido a Mi Billete Pro' : 'Configura tu primera billetera'}
     >
       <div className="flex w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         {/* Cabecera con gradiente */}
@@ -75,7 +75,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide }: Onboar
                   {requiresFirstWallet ? (step === 'welcome' ? 'Paso 1 de 2 · Guía Rápida' : 'Paso 2 de 2 · Configuración Inicial') : 'Guía de Funcionamiento'}
                 </span>
                 <h2 className="mt-1 text-lg sm:text-xl font-extrabold tracking-tight text-white">
-                  {step === 'welcome' ? '¡Bienvenido a Mi Billetera Pro!' : 'Crea tu primera billetera'}
+                  {step === 'welcome' ? '¡Bienvenido a Mi Billete Pro!' : 'Crea tu primera billetera'}
                 </h2>
               </div>
             </div>

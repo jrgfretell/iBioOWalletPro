@@ -90,7 +90,10 @@ export const Auth: React.FC = () => {
           >
             <Wallet className="w-8 h-8" />
           </motion.div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">iBioO Wallet</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-baseline justify-center gap-1.5">
+            <span>Mi Billete</span>
+            <span className="text-teal-400">Pro</span>
+          </h1>
           <p className="text-slate-400 text-sm mt-1">Control inteligente de tu liquidez y pagos programados</p>
         </div>
 

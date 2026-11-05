@@ -245,7 +245,7 @@ export function WalletSwitcher() {
           <button
             type="button"
             onClick={() => setShowGuide(true)}
-            title="¿Cómo funciona Mi Billetera Pro?"
+            title="¿Cómo funciona Mi Billete Pro?"
             aria-label="Ver guía de funcionamiento"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-teal-600 transition-colors cursor-pointer"
           >

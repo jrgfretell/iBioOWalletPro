@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Wallet className="w-5 h-5" />
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="font-bold text-white tracking-tight text-lg">Mi Billetera</span>
+              <span className="font-bold text-white tracking-tight text-lg">Mi Billete</span>
               <span className="font-extrabold text-teal-400 text-lg">Pro</span>
             </div>
           </button>
