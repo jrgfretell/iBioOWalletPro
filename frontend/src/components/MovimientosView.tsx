@@ -454,7 +454,7 @@ export const MovimientosView: React.FC = () => {
               const catNombre = cat ? cat.nombre : 'Otros';
               const catColor = cat ? cat.color : '#0d9488';
               const vinculado = pagosDeuda.some((p) => p.movimiento_id === m.id);
-              const incluido = !!fechaReferencia && m.pago_confirmado && fechaRealMovimiento(m) <= fechaReferencia;
+              const incluido = !!fechaReferencia && m.pago_confirmado && fechaRealMovimiento(m) < fechaReferencia;
               const [, month, d] = fechaRealMovimiento(m).split('-');
 
               return (

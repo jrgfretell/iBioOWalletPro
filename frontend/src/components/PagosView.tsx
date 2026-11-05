@@ -927,7 +927,7 @@ export const PagosView: React.FC = () => {
         <div className="max-h-80 divide-y divide-slate-100 overflow-y-auto">{[...pagosDeuda].sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.id-a.id).map(p=>{
           const c=cuotas.find(c=>c.id===p.cuota_id); const d=deudas.find(d=>d.id===c?.deuda_id);
           return <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
-            <div><strong>{d?`${d.nombre} · Cuota ${c?.numero}`:'Abono de cronograma retirado'}</strong><p className="mt-1 text-slate-500">{p.fecha.split('-').reverse().join('/')} · {formatearMoneda(p.monto)}{fechaReferencia&&p.fecha<=fechaReferencia?' · Incluido en saldo de referencia':''}</p></div>
+            <div><strong>{d?`${d.nombre} · Cuota ${c?.numero}`:'Abono de cronograma retirado'}</strong><p className="mt-1 text-slate-500">{p.fecha.split('-').reverse().join('/')} · {formatearMoneda(p.monto)}{fechaReferencia&&p.fecha<fechaReferencia?' · Incluido en saldo de referencia':''}</p></div>
             <button type="button" disabled={soloLectura||escribiendo} className="min-h-10 rounded-lg border border-slate-200 px-3 text-red-600 disabled:opacity-50" onClick={async()=>{try{
               if(!await confirmarAccion({title:'¿Anular este abono?',text:'Se retirará también su gasto vinculado. Una cuota activa volverá a quedar pendiente.',confirmButtonText:'Anular abono'}))return;
               const datos={pago_id:p.id};await ejecutarOperacion('anular_abono',datos,solicitudPara('anular_abono',datos));

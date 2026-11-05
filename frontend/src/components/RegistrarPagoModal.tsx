@@ -36,7 +36,7 @@ export function RegistrarPagoModal({objetivo,onClose}:{objetivo:ObjetivoPago;onC
         <label className="block text-xs font-semibold text-slate-700">Fecha real del pago
           <input required type="date" max={fechaHoyISO()} disabled={busy} value={fecha} onChange={e=>{setFecha(e.target.value);setSolicitud(crypto.randomUUID());}} className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 px-3 text-base" />
         </label>
-        {fechaReferencia&&fecha<=fechaReferencia&&<p className="rounded-xl bg-teal-50 p-3 text-xs leading-relaxed text-teal-800">Este registro aparecerá en el historial{objetivo.cuotaId?' y reducirá la cuota pendiente':''}. Su fecha está incluida en el saldo de referencia, por lo que no volverá a modificar el saldo proyectado.</p>}
+        {fechaReferencia&&fecha<fechaReferencia&&<p className="rounded-xl bg-teal-50 p-3 text-xs leading-relaxed text-teal-800">Este registro aparecerá en el historial{objetivo.cuotaId?' y reducirá la cuota pendiente':''}. Su fecha es anterior al saldo de referencia, por lo que no volverá a modificar el saldo proyectado.</p>}
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <button type="button" disabled={busy} onClick={onClose} className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm">Cancelar</button>
           <button disabled={busy||soloLectura} className="min-h-11 rounded-xl bg-teal-600 px-3 text-sm font-semibold text-white disabled:opacity-50">{busy?'Guardando…':'Confirmar pago'}</button>

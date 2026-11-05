@@ -60,10 +60,8 @@ export interface DatosProyeccion {
 export function calcularProyeccionBilletera(datos: DatosProyeccion): ProyeccionMesCalculada[] {
   const { billetera, montoBase } = datos;
   const referencia=datos.fechaReferencia||null;
-  const despues=(fecha:string)=>!referencia||fecha>referencia;
-  const siguiente=referencia?new Date(referencia+'T12:00:00Z'):null;
-  if(siguiente) siguiente.setUTCDate(siguiente.getUTCDate()+1);
-  const pisoPendiente=referencia&&referencia>=datos.hoy?siguiente!.toISOString().slice(0,10):datos.hoy;
+  const despues=(fecha:string)=>!referencia||fecha>=referencia;
+  const pisoPendiente=referencia&&referencia>=datos.hoy?referencia:datos.hoy;
   const fechaPendiente=(fecha:string)=>fecha<pisoPendiente?pisoPendiente:fecha;
   const [anioHoy, mesNumero] = datos.hoy.split('-').map(Number);
   const mesHoy = mesNumero - 1;
