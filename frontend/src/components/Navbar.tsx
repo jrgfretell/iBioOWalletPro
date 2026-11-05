@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useWallet } from '../context/WalletContext';
 import { supabase } from '../lib/supabase';
 import { AnimatedModal } from './AnimatedModal';
 import { toastExito } from '../lib/alerts';
+import { recurrenteAplicaEnMes } from '../types/wallet';
 import type { ActiveTab } from '../types/wallet';
 import {
   Wallet,
@@ -17,6 +20,8 @@ import {
   EyeOff,
   X,
   Lock,
+  Bell,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -29,6 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
 }) => {
   const { user, esAdmin, isPasswordRecovery, setIsPasswordRecovery, signOut } = useAuth();
+  const { cuotas, pagosDeuda, movimientos, recurrentes, formatearMoneda } = useWallet();
 
   // Estado del modal de perfil y seguridad
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -38,12 +44,125 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [guardandoPassword, setGuardandoPassword] = useState(false);
   const [errorPassword, setErrorPassword] = useState<string | null>(null);
 
+  // Estado de la campanita de avisos informativos
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
   // Apertura automática si viene desde enlace de recuperación de contraseña
   useEffect(() => {
     if (isPasswordRecovery) {
       setProfileModalOpen(true);
     }
   }, [isPasswordRecovery]);
+
+  // Cerrar popover de avisos al hacer clic fuera o con tecla Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setNotifOpen(false);
+      }
+    };
+    if (notifOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [notifOpen]);
+
+  // Cálculo consolidado de avisos (Resumen Ejecutivo sin listas ruidosas)
+  const resumenAlertas = useMemo(() => {
+    const d = new Date();
+    const hoyStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const d3 = new Date(d);
+    d3.setDate(d3.getDate() + 3);
+    const en3DiasStr = `${d3.getFullYear()}-${String(d3.getMonth() + 1).padStart(2, '0')}-${String(d3.getDate()).padStart(2, '0')}`;
+
+    const vencidos = { count: 0, total: 0 };
+    const vencenHoy = { count: 0, total: 0 };
+    const proximos = { count: 0, total: 0 };
+
+    // 1. Cuotas de deudas / préstamos
+    for (const c of cuotas) {
+      const totalAbonado = pagosDeuda
+        .filter((p) => p.cuota_id === c.id)
+        .reduce((sum, p) => sum + p.monto, 0);
+      const pendiente = Math.max(0, Math.round((c.monto - totalAbonado) * 100) / 100);
+      if (pendiente > 0.009) {
+        if (c.fecha < hoyStr) {
+          vencidos.count++;
+          vencidos.total += pendiente;
+        } else if (c.fecha === hoyStr) {
+          vencenHoy.count++;
+          vencenHoy.total += pendiente;
+        } else if (c.fecha <= en3DiasStr) {
+          proximos.count++;
+          proximos.total += pendiente;
+        }
+      }
+    }
+
+    // 2. Movimientos independientes no confirmados (que no sean recurrentes)
+    for (const m of movimientos) {
+      if (m.tipo === 'gasto' && !m.pago_confirmado && !m.es_recurrente) {
+        if (m.fecha < hoyStr) {
+          vencidos.count++;
+          vencidos.total += m.monto;
+        } else if (m.fecha === hoyStr) {
+          vencenHoy.count++;
+          vencenHoy.total += m.monto;
+        } else if (m.fecha <= en3DiasStr) {
+          proximos.count++;
+          proximos.total += m.monto;
+        }
+      }
+    }
+
+    // 3. Recurrentes continuos del mes
+    const anio = d.getFullYear();
+    const mes = d.getMonth();
+    const prefijoMes = hoyStr.slice(0, 7);
+    const ultimoDia = new Date(anio, mes + 1, 0).getDate();
+
+    for (const r of recurrentes) {
+      if (r.tipo === 'gasto' && recurrenteAplicaEnMes(r, anio, mes)) {
+        const diaReal = Math.min(r.dia_pago, ultimoDia);
+        const fechaEstimada = `${prefijoMes}-${String(diaReal).padStart(2, '0')}`;
+        const mov = movimientos.find(
+          (m) => m.recurrente_id === r.id && m.fecha.startsWith(prefijoMes)
+        );
+        const confirmado = mov ? mov.pago_confirmado : false;
+        if (!confirmado) {
+          const fecha = mov ? mov.fecha : fechaEstimada;
+          const monto = mov ? mov.monto : r.monto;
+          if (fecha < hoyStr) {
+            vencidos.count++;
+            vencidos.total += monto;
+          } else if (fecha === hoyStr) {
+            vencenHoy.count++;
+            vencenHoy.total += monto;
+          } else if (fecha <= en3DiasStr) {
+            proximos.count++;
+            proximos.total += monto;
+          }
+        }
+      }
+    }
+
+    return { vencidos, vencenHoy, proximos };
+  }, [cuotas, pagosDeuda, movimientos, recurrentes]);
+
+  const totalAlertas =
+    resumenAlertas.vencidos.count +
+    resumenAlertas.vencenHoy.count +
+    resumenAlertas.proximos.count;
 
   const handleGuardarPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +261,146 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right User Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Campanita de Avisos Informativos */}
+            <div className="relative" ref={notifRef}>
+              <button
+                type="button"
+                onClick={() => setNotifOpen(!notifOpen)}
+                title="Avisos de pagos"
+                aria-label="Avisos y vencimientos"
+                className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+                  notifOpen
+                    ? 'bg-slate-800 text-teal-400 border border-teal-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent'
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+                {totalAlertas > 0 && (
+                  <span
+                    className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-slate-900 ${
+                      resumenAlertas.vencidos.count > 0
+                        ? 'bg-rose-500'
+                        : resumenAlertas.vencenHoy.count > 0
+                        ? 'bg-amber-400'
+                        : 'bg-sky-400'
+                    }`}
+                  />
+                )}
+              </button>
+
+              {/* Popover de Avisos */}
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div
+                    role="dialog"
+                    aria-label="Resumen de compromisos"
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
+                    className="fixed sm:absolute top-16 sm:top-12 left-4 sm:left-auto right-4 sm:right-0 max-w-sm sm:max-w-none sm:w-88 mx-auto sm:mx-0 z-50 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl p-4 text-white overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center">
+                          <Bell className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-bold text-white tracking-wide">
+                          Avisos de Pagos
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNotifOpen(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Resumen de Avisos (Sin botones, consolidado) */}
+                    <div className="py-3 space-y-2.5">
+                      {resumenAlertas.vencidos.count > 0 && (
+                        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-2.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-rose-300">
+                              {resumenAlertas.vencidos.count}{' '}
+                              {resumenAlertas.vencidos.count === 1
+                                ? 'pago vencido'
+                                : 'pagos vencidos'}
+                            </p>
+                            <p className="text-xs text-rose-200/80 mt-0.5 font-medium">
+                              Total pendiente:{' '}
+                              <span className="font-bold text-rose-100">
+                                {formatearMoneda(resumenAlertas.vencidos.total)}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {resumenAlertas.vencenHoy.count > 0 && (
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-amber-300">
+                              {resumenAlertas.vencenHoy.count}{' '}
+                              {resumenAlertas.vencenHoy.count === 1
+                                ? 'pago vence hoy'
+                                : 'pagos vencen hoy'}
+                            </p>
+                            <p className="text-xs text-amber-200/80 mt-0.5 font-medium">
+                              Total a pagar hoy:{' '}
+                              <span className="font-bold text-amber-100">
+                                {formatearMoneda(resumenAlertas.vencenHoy.total)}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {resumenAlertas.proximos.count > 0 && (
+                        <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-start gap-2.5">
+                          <span className="w-2 h-2 rounded-full bg-sky-400 mt-1.5 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-sky-300">
+                              {resumenAlertas.proximos.count}{' '}
+                              {resumenAlertas.proximos.count === 1
+                                ? 'pago en los próximos 3 días'
+                                : 'pagos en los próximos 3 días'}
+                            </p>
+                            <p className="text-xs text-sky-200/80 mt-0.5 font-medium">
+                              Total estimado:{' '}
+                              <span className="font-bold text-sky-100">
+                                {formatearMoneda(resumenAlertas.proximos.total)}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {totalAlertas === 0 && (
+                        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-emerald-300">
+                          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                          <p className="text-xs font-medium">
+                            ¡Todo al día! No tienes pagos vencidos ni próximos a vencer.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer informativo */}
+                    <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 text-center">
+                      Compromisos de tu billetera activa
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Perfil & Seguridad */}
             <button
               type="button"
               onClick={() => setProfileModalOpen(true)}
