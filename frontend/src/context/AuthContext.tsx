@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   esAdmin: boolean;
+  isPasswordRecovery: boolean;
+  setIsPasswordRecovery: (value: boolean) => void;
   signOut: () => Promise<void>;
 }
 
@@ -16,6 +18,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   esAdmin: false,
+  isPasswordRecovery: false,
+  setIsPasswordRecovery: () => {},
   signOut: async () => {},
 });
 
@@ -24,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const userRef = useRef<User | null>(null);
 
   useEffect(() => {
@@ -106,10 +111,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
       void checkAdmin(currentUser);
       setLoading(false);
     });
@@ -181,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, verificarEstadoCuenta]);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, esAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, esAdmin, isPasswordRecovery, setIsPasswordRecovery, signOut }}>
       {children}
     </AuthContext.Provider>
   );
