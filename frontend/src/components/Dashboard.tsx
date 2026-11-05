@@ -12,16 +12,26 @@ import type { ActiveTab } from '../types/wallet';
 const WalletShell: React.FC = () => {
   const { billeteraActual, ready, loading, error, limpiarError, recargarTodo } = useWallet();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [pagosSubTab, setPagosSubTab] = useState<'agenda' | 'cronogramas' | 'ingresos'>('agenda');
+
+  const handleNavigate = (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'ingresos') => {
+    setActiveTab(tab);
+    if (subTab) {
+      setPagosSubTab(subTab);
+    } else if (tab === 'pagos') {
+      setPagosSubTab('agenda');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-100/80 text-slate-800 overflow-x-hidden w-full">
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => handleNavigate(tab)}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
-        {activeTab !== 'admin' && <WalletSwitcher />}
+        {activeTab !== 'admin' && <WalletSwitcher onNavigateToTab={handleNavigate} />}
         {error && (
           <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             <span>{error}</span>
@@ -49,9 +59,9 @@ const WalletShell: React.FC = () => {
           </div>
         ) : ready ? (
           <div key={`${billeteraActual.user_id}:${billeteraActual.id}:${billeteraActual.archivada}`}>
-            {activeTab === 'dashboard' && <DashboardView onNavigate={setActiveTab} />}
+            {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => handleNavigate(tab)} />}
             {activeTab === 'movimientos' && <MovimientosView />}
-            {activeTab === 'pagos' && <PagosView />}
+            {activeTab === 'pagos' && <PagosView initialSubTab={pagosSubTab} />}
             {activeTab === 'categorias' && <CategoriasView />}
           </div>
         ) : null}

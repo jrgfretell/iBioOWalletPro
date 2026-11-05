@@ -52,7 +52,11 @@ interface FilaAgenda {
   recurrenteRef?: MovimientoRecurrente;
 }
 
-export const PagosView: React.FC = () => {
+interface PagosViewProps {
+  initialSubTab?: SubTabPagos;
+}
+
+export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }) => {
   const { soporteEtapa5, fechaReferencia, ejecutarOperacion, escribiendo, error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
   const {
@@ -72,7 +76,13 @@ export const PagosView: React.FC = () => {
   const fechaHoyStr = fechaHoyISO();
 
   // Navegación entre las 3 pestañas originales
-  const [subTab, setSubTab] = useState<SubTabPagos>('agenda');
+  const [subTab, setSubTab] = useState<SubTabPagos>(initialSubTab);
+
+  React.useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   // Filtros de la Agenda Mensual
   const [agendaMes, setAgendaMes] = useState<number>(hoy.getMonth());
