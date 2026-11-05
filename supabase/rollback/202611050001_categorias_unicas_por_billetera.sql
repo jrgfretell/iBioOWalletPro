@@ -9,3 +9,4 @@ BEGIN;
 DROP INDEX IF EXISTS public.uq_categorias_billetera_nombre_ci;
 
 COMMIT;
+

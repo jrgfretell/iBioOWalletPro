@@ -11,3 +11,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_categorias_billetera_nombre_ci
 ON public.categorias (billetera_id, lower(btrim(nombre)));
 
 COMMIT;
+
