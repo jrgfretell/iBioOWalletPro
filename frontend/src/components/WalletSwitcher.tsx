@@ -688,6 +688,20 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 )}
               </div>
 
+              {view === 'edit' && (
+                <div className="rounded-xl bg-amber-50/90 border border-amber-200/90 p-3 sm:p-3.5 text-xs text-amber-950 flex items-start gap-2.5 shadow-2xs">
+                  <span className="text-base leading-none select-none shrink-0 mt-0.5">💡</span>
+                  <div className="min-w-0 leading-relaxed">
+                    <strong className="block text-amber-900 font-bold text-xs sm:text-sm">
+                      ¿Recibiste un ingreso extra o realizaste un gasto hoy?
+                    </strong>
+                    <p className="mt-1 text-amber-800 text-[11px] sm:text-xs leading-normal">
+                      <strong>No es necesario modificar este saldo base.</strong> Regístralo en la pestaña <strong className="text-slate-900 underline decoration-amber-400">Movimientos</strong> como <span className="font-bold text-emerald-700">Ingreso (+)</span> o <span className="font-bold text-rose-700">Gasto (-)</span> para conservar tu historial intacto sin descalibrar tus fechas de corte.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               </div>
 
               <div className="flex justify-end gap-2 border-t border-slate-100 p-4 bg-white shrink-0">
