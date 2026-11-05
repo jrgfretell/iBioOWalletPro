@@ -134,6 +134,7 @@ export const PagosView: React.FC = () => {
   const [ingresoMes, setIngresoMes] = useState<number>(hoy.getMonth());
   const [ingresoAnio, setIngresoAnio] = useState<number>(hoy.getFullYear());
   const [ingresoModo, setIngresoModo] = useState<'quincenal' | 'mensual'>('quincenal');
+  const [ingresoMomentoMensual, setIngresoMomentoMensual] = useState<'fin_mes' | 'quincena'>('fin_mes');
   const [ingresoS15, setIngresoS15] = useState<string>('0');
   const [ingresoS30, setIngresoS30] = useState<string>('0');
   const [ingresoAplicarAnio, setIngresoAplicarAnio] = useState<boolean>(false);
@@ -189,7 +190,16 @@ export const PagosView: React.FC = () => {
     const s30 = reg ? reg.sueldo_30 : 0;
     setIngresoS15(String(s15));
     setIngresoS30(String(s30));
-    setIngresoModo(s15 === 0 && s30 > 0 ? 'mensual' : 'quincenal');
+    if (s15 > 0 && s30 === 0) {
+      setIngresoModo('mensual');
+      setIngresoMomentoMensual('quincena');
+    } else if (s15 === 0 && s30 > 0) {
+      setIngresoModo('mensual');
+      setIngresoMomentoMensual('fin_mes');
+    } else {
+      setIngresoModo('quincenal');
+      setIngresoMomentoMensual('fin_mes');
+    }
   }, [ingresoAnio, ingresoMes, sueldos]);
 
   // FILAS DE LA AGENDA MENSUAL
@@ -696,26 +706,37 @@ export const PagosView: React.FC = () => {
   // Guardar sueldo desde la pestaña Ingresos
   const handleGuardarSueldoIngresos = async (e: React.FormEvent) => {
     try {
-    e.preventDefault();
-    const s15 = ingresoModo === 'mensual' ? 0 : Math.max(0, parseFloat(ingresoS15) || 0);
-    const s30 = Math.max(0, parseFloat(ingresoS30) || 0);
-    setGuardandoSueldo(true);
-    let ok = false;
-    if (ingresoAplicarAnio) {
-      ok = await guardarSueldoAnual(ingresoAnio, ingresoMes, s15, s30);
-    } else {
-      ok = await guardarSueldoMes(ingresoAnio, ingresoMes, s15, s30);
-    }
-    setGuardandoSueldo(false);
-    if (ok) {
-      setMensajeSueldo(
-        ingresoAplicarAnio
-          ? `Sueldo guardado de ${NOMBRES_MESES[ingresoMes]} a Diciembre ${ingresoAnio}`
-          : `Sueldo de ${NOMBRES_MESES[ingresoMes]} actualizado`
-      );
-      setTimeout(() => setMensajeSueldo(null), 3000);
-    }
-
+      e.preventDefault();
+      let s15 = 0;
+      let s30 = 0;
+      if (ingresoModo === 'quincenal') {
+        s15 = Math.max(0, parseFloat(ingresoS15) || 0);
+        s30 = Math.max(0, parseFloat(ingresoS30) || 0);
+      } else {
+        if (ingresoMomentoMensual === 'quincena') {
+          s15 = Math.max(0, parseFloat(ingresoS15 || ingresoS30) || 0);
+          s30 = 0;
+        } else {
+          s15 = 0;
+          s30 = Math.max(0, parseFloat(ingresoS30 || ingresoS15) || 0);
+        }
+      }
+      setGuardandoSueldo(true);
+      let ok = false;
+      if (ingresoAplicarAnio) {
+        ok = await guardarSueldoAnual(ingresoAnio, ingresoMes, s15, s30);
+      } else {
+        ok = await guardarSueldoMes(ingresoAnio, ingresoMes, s15, s30);
+      }
+      setGuardandoSueldo(false);
+      if (ok) {
+        setMensajeSueldo(
+          ingresoAplicarAnio
+            ? `Sueldo guardado de ${NOMBRES_MESES[ingresoMes]} a Diciembre ${ingresoAnio}`
+            : `Sueldo de ${NOMBRES_MESES[ingresoMes]} actualizado`
+        );
+        setTimeout(() => setMensajeSueldo(null), 3000);
+      }
     } catch (error) { reportarError(error); }
   };
 
@@ -761,7 +782,6 @@ export const PagosView: React.FC = () => {
   const sueldoGuardado = sueldos.find(s => s.anio === ingresoAnio && s.mes === ingresoMes);
   useWalletFormGuard(subTab === 'ingresos' && (Number(ingresoS15) !== (sueldoGuardado?.sueldo_15 || 0) || Number(ingresoS30) !== (sueldoGuardado?.sueldo_30 || 0) || ingresoAplicarAnio), 'Sueldos sin guardar');
 
-  const ultimoDiaSueldo = obtenerUltimoDiaMes(ingresoAnio, ingresoMes);
 
   // GENERAR LOS 13 VENCIMIENTOS DE CADA COMPROMISO CONTINUO (Idéntico a Image 2 de PHP)
   const cronogramasContinuos = useMemo(() => {
@@ -2280,7 +2300,11 @@ export const PagosView: React.FC = () => {
               </div>
               <div className="mt-2">
                 <span className="text-[11px] font-semibold text-slate-500 truncate block">
-                  {totalSueldoMesIngresos > 0 ? ingresoModo : 'Sin sueldo'}
+                  {totalSueldoMesIngresos > 0 ? (
+                    ingresoModo === 'mensual'
+                      ? (ingresoMomentoMensual === 'fin_mes' ? 'Mensual · Fin de mes' : 'Mensual · Quincena')
+                      : 'Quincenal (15 y Fin de mes)'
+                  ) : 'Sin sueldo'}
                 </span>
               </div>
             </div>
@@ -2380,21 +2404,21 @@ export const PagosView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIngresoModo('quincenal')}
-                      className={`py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                      className={`py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                         ingresoModo === 'quincenal'
                           ? 'bg-white text-slate-900 shadow-xs'
-                          : 'text-slate-600'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      2 Pagos (15 y Fin de Mes)
+                      2 Pagos (15 y Fin de mes)
                     </button>
                     <button
                       type="button"
                       onClick={() => setIngresoModo('mensual')}
-                      className={`py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                      className={`py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
                         ingresoModo === 'mensual'
                           ? 'bg-white text-slate-900 shadow-xs'
-                          : 'text-slate-600'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
                       1 Pago Mensual
@@ -2402,35 +2426,90 @@ export const PagosView: React.FC = () => {
                   </div>
                 </div>
 
-                {ingresoModo === 'quincenal' && (
+                {ingresoModo === 'mensual' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                      ¿Cuándo cobras tu sueldo mensual?
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setIngresoMomentoMensual('fin_mes')}
+                        className={`py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                          ingresoMomentoMensual === 'fin_mes'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Fin de mes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIngresoMomentoMensual('quincena')}
+                        className={`py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                          ingresoMomentoMensual === 'quincena'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Quincena (Día 15)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {ingresoModo === 'quincenal' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Sueldo de Quincena (Día 15) · {simboloMoneda}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={ingresoS15}
+                        onChange={(e) => setIngresoS15(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Sueldo de Fin de mes · {simboloMoneda}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={ingresoS30}
+                        onChange={(e) => setIngresoS30(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                      />
+                    </div>
+                  </div>
+                ) : (
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Sueldo de Quincena (Día 15) · {simboloMoneda}
+                      {ingresoMomentoMensual === 'fin_mes'
+                        ? `Sueldo de Fin de mes · ${simboloMoneda}`
+                        : `Sueldo de Quincena (Día 15) · ${simboloMoneda}`}
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      value={ingresoS15}
-                      onChange={(e) => setIngresoS15(e.target.value)}
+                      value={ingresoMomentoMensual === 'fin_mes' ? ingresoS30 : ingresoS15}
+                      onChange={(e) => {
+                        if (ingresoMomentoMensual === 'fin_mes') {
+                          setIngresoS30(e.target.value);
+                        } else {
+                          setIngresoS15(e.target.value);
+                        }
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
                     />
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Sueldo Fin de Mes (Día {ultimoDiaSueldo}) · {simboloMoneda}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={ingresoS30}
-                    onChange={(e) => setIngresoS30(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
-                  />
-                </div>
 
                 <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer pt-1">
                   <input

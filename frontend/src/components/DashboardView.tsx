@@ -490,8 +490,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
-                        <strong>Liquidez ajustada entre quincenas</strong> en{' '}
-                        {kpisProyeccion.alertaLiquidez.label}.
+                        <strong>
+                          {kpisProyeccion.alertaLiquidez.modalidadSueldo === 'mensual_fin'
+                            ? 'Liquidez ajustada previa al cobro'
+                            : 'Liquidez ajustada entre quincenas'}
+                        </strong>{' '}
+                        en {kpisProyeccion.alertaLiquidez.label}.
                       </span>
                     </div>
                   </div>
@@ -602,77 +606,188 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             </div>
                           </div>
 
-                          {/* Bloque 2: Timeline de Evolución por Quincenas */}
+                          {/* Bloque 2: Timeline de Evolución Adaptativo */}
                           <div className="space-y-1.5">
                             <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-between px-0.5">
                               <span>Evolución de liquidez</span>
                               <span className="font-normal lowercase">saldo proyectado</span>
                             </div>
 
-                            {/* Hito 1: Pre-quincena */}
-                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
-                                  1-14
-                                </span>
-                                <div className="min-w-0">
-                                  <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-quincena</div>
-                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 1 al 14</div>
-                                </div>
-                              </div>
-                              <strong
-                                className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
-                                  p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
-                                }`}
-                              >
-                                {p.antes15Disponible ? formatearMoneda(p.bolsilloAntes15) : '—'}
-                              </strong>
-                            </div>
-
-                            {/* Hito 2: Tras quincena */}
-                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
-                                  15
-                                </span>
-                                <div className="min-w-0">
-                                  <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
-                                    Tras quincena
+                            {p.modalidadSueldo === 'mensual_fin' ? (
+                              <>
+                                {/* Hito 1 Mensual: Mitad de mes */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      1-15
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Mitad de mes</div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Control días 1 al 15</div>
+                                    </div>
                                   </div>
-                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo al día 15</div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.balanceTras15 < 0 ? 'text-red-600' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {p.tras15Disponible ? formatearMoneda(p.balanceTras15) : '—'}
+                                  </strong>
                                 </div>
-                              </div>
-                              <strong
-                                className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
-                                  p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-700'
-                                }`}
-                              >
-                                {p.tras15Disponible ? formatearMoneda(p.balanceTras15) : '—'}
-                              </strong>
-                            </div>
 
-                            {/* Hito 3: Pre-cierre */}
-                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
-                                  16-{p.ultimoDia - 1}
-                                </span>
-                                <div className="min-w-0">
-                                  <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
-                                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
+                                {/* Hito 2 Mensual: Pre-cobro */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      16-{p.ultimoDia - 1}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
+                                  </strong>
                                 </div>
-                              </div>
-                              <strong
-                                className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
-                                  p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
-                                }`}
-                              >
-                                {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
-                              </strong>
-                            </div>
+                              </>
+                            ) : p.modalidadSueldo === 'mensual_15' ? (
+                              <>
+                                {/* Hito 1 Mensual en Quincena: Pre-cobro */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      1-14
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {p.antes15Disponible ? formatearMoneda(p.bolsilloAntes15) : '—'}
+                                  </strong>
+                                </div>
+
+                                {/* Hito 2 Mensual en Quincena: Cobro mensual */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      15
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
+                                        Cobro mensual
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo tras sueldo</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-700'
+                                    }`}
+                                  >
+                                    {p.tras15Disponible ? formatearMoneda(p.balanceTras15) : '—'}
+                                  </strong>
+                                </div>
+
+                                {/* Hito 3 Mensual en Quincena: Pre-cierre */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      16-{p.ultimoDia - 1}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
+                                  </strong>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                {/* Hito 1 Quincenal / Estándar: Pre-quincena */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      1-14
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-quincena</div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 1 al 14</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {p.antes15Disponible ? formatearMoneda(p.bolsilloAntes15) : '—'}
+                                  </strong>
+                                </div>
+
+                                {/* Hito 2 Quincenal: Tras quincena */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      15
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
+                                        Tras quincena
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo al día 15</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-700'
+                                    }`}
+                                  >
+                                    {p.tras15Disponible ? formatearMoneda(p.balanceTras15) : '—'}
+                                  </strong>
+                                </div>
+
+                                {/* Hito 3 Quincenal: Pre-cierre */}
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                      16-{p.ultimoDia - 1}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
+                                    </div>
+                                  </div>
+                                  <strong
+                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
+                                  </strong>
+                                </div>
+                              </>
+                            )}
                           </div>
 
-                          {(!p.antes15Disponible || !p.tras15Disponible || !p.antesFinDisponible) && (
+                          {((p.modalidadSueldo === 'mensual_fin' && (!p.tras15Disponible || !p.antesFinDisponible)) ||
+                            (p.modalidadSueldo !== 'mensual_fin' && (!p.antes15Disponible || !p.tras15Disponible || !p.antesFinDisponible))) && (
                             <p className="mt-1 text-[10px] text-slate-400 text-center">
                               — Tramo anterior al saldo de referencia; no se reconstruye su saldo.
                             </p>
@@ -689,8 +804,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             {p.ultimoDia}
                           </span>
                           <div className="min-w-0">
-                            <div className="text-xs font-black text-white leading-none whitespace-nowrap">Cierre de mes</div>
-                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5 whitespace-nowrap">Balance final</div>
+                            <div className="text-xs font-black text-white leading-none whitespace-nowrap">
+                              {p.modalidadSueldo === 'mensual_fin' ? 'Cierre y cobro mensual' : 'Cierre de mes'}
+                            </div>
+                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5 whitespace-nowrap">
+                              {p.modalidadSueldo === 'mensual_fin' ? 'Balance con sueldo' : 'Balance final'}
+                            </div>
                           </div>
                         </div>
                         <strong

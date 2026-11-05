@@ -38,6 +38,7 @@ export interface ProyeccionMesCalculada {
   gastosTotales: number;
   sueldo15: number;
   sueldo30: number;
+  modalidadSueldo: 'quincenal' | 'mensual_fin' | 'mensual_15' | 'sin_sueldo';
   items: ItemDetalleMes[];
 }
 
@@ -228,13 +229,22 @@ export function calcularProyeccionBilletera(datos: DatosProyeccion): ProyeccionM
       }
     });
 
+    const modalidadSueldo: 'quincenal' | 'mensual_fin' | 'mensual_15' | 'sin_sueldo' =
+      s15 > 0 && s30 > 0
+        ? 'quincenal'
+        : s15 === 0 && s30 > 0
+        ? 'mensual_fin'
+        : s15 > 0 && s30 === 0
+        ? 'mensual_15'
+        : 'sin_sueldo';
+
     // Agregar sueldos al detalle visual
     if (s15 > 0) {
       itemsMes.push({
         id: `s15-${llave}`,
         fecha: `${prefijoMes}-15`,
         dia: 15,
-        descripcion: 'Sueldo Quincena (Día 15)',
+        descripcion: modalidadSueldo === 'mensual_15' ? 'Sueldo Mensual' : 'Sueldo Quincena',
         monto: deCentavos(s15),
         tipo: 'ingreso',
         origen: 'sueldo',
@@ -247,7 +257,7 @@ export function calcularProyeccionBilletera(datos: DatosProyeccion): ProyeccionM
         id: `s30-${llave}`,
         fecha: `${prefijoMes}-${String(ultimoDia).padStart(2, '0')}`,
         dia: ultimoDia,
-        descripcion: `Sueldo Fin de Mes (Día ${ultimoDia})`,
+        descripcion: modalidadSueldo === 'mensual_fin' ? 'Sueldo Mensual' : 'Sueldo Fin de mes',
         monto: deCentavos(s30),
         tipo: 'ingreso',
         origen: 'sueldo',
@@ -292,6 +302,7 @@ export function calcularProyeccionBilletera(datos: DatosProyeccion): ProyeccionM
       gastosTotales: deCentavos(gastosTotales),
       sueldo15: deCentavos(s15),
       sueldo30: deCentavos(s30),
+      modalidadSueldo,
       items: itemsMes,
     });
 
