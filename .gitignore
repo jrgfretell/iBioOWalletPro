@@ -1,5 +1,6 @@
 /config.local.php
 /.local/
+archive/
 
 .env
 .env.*
