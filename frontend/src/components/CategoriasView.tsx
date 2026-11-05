@@ -3,8 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet, useWalletFormGuard } from '../context/WalletContext';
 import type { Categoria } from '../types/wallet';
-import { confirmarAccion, alertaInfo, toastExito } from '../lib/alerts';
-import { Plus, Edit2, Trash2, X, Check, Search } from 'lucide-react';
+import { confirmarAccion, alertaInfo, alertaError, toastExito } from '../lib/alerts';
+import { Plus, Edit2, Trash2, X, Check, Search, AlertCircle } from 'lucide-react';
 
 const PRESET_COLORS = [
   '#e74c3c', '#c0392b', '#ff7675', '#fd79a8', '#e84393', '#d63031',
@@ -95,6 +95,12 @@ export const CategoriasView: React.FC = () => {
     );
   }, [busquedaIcono]);
 
+  const nombreDuplicado = useMemo(() => {
+    if (!nombre.trim()) return false;
+    const normalizado = nombre.trim().toLowerCase();
+    return categorias.some((c) => c.nombre.trim().toLowerCase() === normalizado && c.id !== editId);
+  }, [nombre, categorias, editId]);
+
   const abrirNueva = () => {
     setEditId(null);
     setNombre('');
@@ -115,33 +121,57 @@ export const CategoriasView: React.FC = () => {
 
   const handleGuardar = async (e: React.FormEvent) => {
     try {
-    e.preventDefault();
-    if (!user || !nombre.trim()) return;
-    setGuardando(true);
-    try {
-      if (editId) {
-        await supabase
-          .from('categorias')
-          .update({ nombre: nombre.trim(), color, icono })
-          .eq('id', editId)
-          .eq('user_id', user.id);
-        toastExito('Categoría actualizada');
-      } else {
-        await supabase.from('categorias').insert({
-          user_id: user.id,
-          nombre: nombre.trim(),
-          color,
-          icono,
-        });
-        toastExito('Categoría creada');
-      }
-      await recargarTodo();
-      setModalAbierto(false);
-    } finally {
-      setGuardando(false);
-    }
+      e.preventDefault();
+      if (!user || !nombre.trim()) return;
 
-    } catch (error) { reportarError(error); }
+      if (nombreDuplicado) {
+        alertaError(
+          'Categoría duplicada',
+          `Ya existe una categoría llamada "${nombre.trim()}" en esta billetera. Por favor utiliza un nombre diferente.`
+        );
+        return;
+      }
+
+      setGuardando(true);
+      try {
+        if (editId) {
+          await supabase
+            .from('categorias')
+            .update({ nombre: nombre.trim(), color, icono })
+            .eq('id', editId)
+            .eq('user_id', user.id);
+          toastExito('Categoría actualizada');
+        } else {
+          await supabase.from('categorias').insert({
+            user_id: user.id,
+            nombre: nombre.trim(),
+            color,
+            icono,
+          });
+          toastExito('Categoría creada');
+        }
+        await recargarTodo();
+        setModalAbierto(false);
+      } finally {
+        setGuardando(false);
+      }
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        (('code' in error && (error as { code: string }).code === '23505') ||
+          ('message' in error &&
+            typeof (error as { message: string }).message === 'string' &&
+            (error as { message: string }).message.includes('uq_categorias_billetera_nombre_ci')))
+      ) {
+        alertaError(
+          'Categoría duplicada',
+          `Ya existe una categoría llamada "${nombre.trim()}" en esta billetera.`
+        );
+      } else {
+        reportarError(error);
+      }
+    }
   };
 
   const handleEliminar = async (c: Categoria) => {
@@ -309,8 +339,18 @@ export const CategoriasView: React.FC = () => {
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej: Comida, Servicios, Ocio"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-teal-500 font-medium"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-medium focus:outline-none transition-colors ${
+                    nombreDuplicado
+                      ? 'border-rose-400 focus:border-rose-500 bg-rose-50/40 text-rose-900'
+                      : 'border-slate-200 focus:border-teal-500'
+                  }`}
                 />
+                {nombreDuplicado && (
+                  <p className="mt-1.5 text-xs text-rose-600 font-medium flex items-center gap-1.5 animate-fadeIn">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Ya existe una categoría llamada &quot;{nombre.trim()}&quot; en esta billetera.</span>
+                  </p>
+                )}
               </div>
 
               {/* Color */}
@@ -393,8 +433,8 @@ export const CategoriasView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={soloLectura || (guardando)}
-                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
+                  disabled={soloLectura || guardando || !nombre.trim() || nombreDuplicado}
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
                 >
                   {guardando ? 'Guardando...' : 'Guardar Categoría'}
                 </button>
