@@ -122,7 +122,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
           : await editarBilletera(editing!.id, nombreGuardado, montoFinal, fechaFinal);
 
       if (ok) {
-        await toastExito(view === 'create' ? 'Billetera creada' : 'Billetera actualizada');
+        toastExito(view === 'create' ? 'Billetera creada' : 'Billetera actualizada');
         setView('list');
         if (view === 'create') {
           setOpen(false);
@@ -193,7 +193,14 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
 
   return (
     <>
-      <OnboardingModal forceOpenGuide={showGuide} onCloseGuide={() => setShowGuide(false)} />
+      <OnboardingModal
+        forceOpenGuide={showGuide}
+        onCloseGuide={() => setShowGuide(false)}
+        onCreated={(createdName) => {
+          setCreatedWalletName(createdName);
+          setShowPostCreatePrompt(true);
+        }}
+      />
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 shadow-2xs">
         <button

@@ -12,9 +12,10 @@ const SUGERENCIAS_NOMBRE = ['Personal', 'Principal', 'Ahorros', 'Mi Negocio', 'C
 interface OnboardingModalProps {
   forceOpenGuide?: boolean;
   onCloseGuide?: () => void;
+  onCreated?: (nombre: string) => void;
 }
 
-export function OnboardingModal({ forceOpenGuide = false, onCloseGuide }: OnboardingModalProps) {
+export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreated }: OnboardingModalProps) {
   const { billeteras, modoLegacy, loading, escribiendo, error, limpiarError, crearBilletera } = useWallet();
 
   // Es obligatorio cuando el usuario ya cargó y no tiene ninguna billetera creada
@@ -22,6 +23,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide }: Onboar
   const isOpen = requiresFirstWallet || forceOpenGuide;
 
   const [step, setStep] = useState<'welcome' | 'create'>('welcome');
+  const [submitted, setSubmitted] = useState(false);
   const [nombre, setNombre] = useState('Personal');
   const [moneda, setMoneda] = useState<Moneda>('PEN');
   const [modoSaldo, setModoSaldo] = useState<'hoy' | 'pasado'>('hoy');
@@ -30,7 +32,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide }: Onboar
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen || submitted) return null;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,11 +44,13 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide }: Onboar
       const parsedMonto = parseFloat(montoBase);
       const montoFinal = Number.isFinite(parsedMonto) ? parsedMonto : 0;
       const fechaFinal = modoSaldo === 'hoy' ? fechaHoyISO() : (fechaRef || fechaHoyISO());
-      const ok = await crearBilletera(nombre.trim(), moneda, montoFinal, fechaFinal);
+      const nombreFinal = nombre.trim();
+      const ok = await crearBilletera(nombreFinal, moneda, montoFinal, fechaFinal);
       if (ok) {
-        await toastExito(`¡Billetera "${nombre.trim()}" creada con éxito!`);
-        setStep('welcome');
+        setSubmitted(true);
+        toastExito(`¡Billetera "${nombreFinal}" creada con éxito!`);
         onCloseGuide?.();
+        onCreated?.(nombreFinal);
       } else {
         setFailure(true);
       }
