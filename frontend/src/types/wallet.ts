@@ -96,7 +96,7 @@ export interface DeudaPago {
   solicitud?: string | null;
 }
 
-export type ActiveTab = 'dashboard' | 'movimientos' | 'pagos' | 'categorias' | 'admin';
+export type ActiveTab = 'dashboard' | 'billeteras' | 'ingresos' | 'movimientos' | 'pagos' | 'categorias' | 'admin';
 
 export interface AdminStats {
   total_usuarios: number;

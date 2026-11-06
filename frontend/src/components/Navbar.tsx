@@ -23,7 +23,10 @@ import {
   Lock,
   Bell,
   CheckCircle2,
+  WalletCards,
+  TrendingUp,
 } from 'lucide-react';
+import { WalletQuickSwitcher } from './WalletQuickSwitcher';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -212,8 +215,19 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'categorias' as ActiveTab, label: 'Categorías', desktopLabel: 'Categorías', icon: <Tags className="w-4 h-4" /> },
   ];
 
+  const fullNavItems = [
+    { id: 'dashboard' as ActiveTab, label: 'Inicio', desktopLabel: 'Inicio', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'billeteras' as ActiveTab, label: 'Billeteras', desktopLabel: 'Mis Billeteras', icon: <WalletCards className="w-4 h-4" /> },
+    { id: 'ingresos' as ActiveTab, label: 'Ingresos', desktopLabel: 'Sueldos e Ingresos', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'movimientos' as ActiveTab, label: 'Movimientos', desktopLabel: 'Movimientos', icon: <History className="w-4 h-4" /> },
+    { id: 'pagos' as ActiveTab, label: 'Pagos', desktopLabel: 'Pagos programados', icon: <CalendarClock className="w-4 h-4" /> },
+    { id: 'categorias' as ActiveTab, label: 'Categorías', desktopLabel: 'Categorías', icon: <Tags className="w-4 h-4" /> },
+  ];
+
   const tabTitles: Record<ActiveTab, string> = {
     dashboard: 'Dashboard',
+    billeteras: 'Gestión de Billeteras',
+    ingresos: 'Sueldos e Ingresos',
     movimientos: 'Historial de Movimientos',
     pagos: 'Pagos programados',
     categorias: 'Categorías',
@@ -235,6 +249,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
+        {/* Quick Switcher de Billetera en el Sidebar */}
+        <div className="p-3 border-b border-slate-800/80 shrink-0">
+          <WalletQuickSwitcher
+            onNavigateToBilleteras={() => setActiveTab('billeteras')}
+          />
+        </div>
+
         {/* Lista de Navegación con Scroll Vertical */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           <div>
@@ -242,7 +263,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               Menú Principal
             </span>
             <nav className="space-y-1">
-              {coreNavItems.map((item) => {
+              {fullNavItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
                   <button
@@ -346,8 +367,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-          {/* Right User Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Right User Controls */}
+            <div className="flex items-center gap-2 sm:gap-3">
             {/* Campanita de Avisos Informativos */}
             <div className="relative" ref={notifRef}>
               <button
@@ -570,6 +591,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Panel Deslizante Lateral */}
             <motion.aside
+              data-drawer="mobile"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -597,6 +619,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               </div>
 
+              {/* Quick Switcher de Billetera en el Drawer Móvil */}
+              <div className="p-3 border-b border-slate-800 bg-slate-900/60 shrink-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1 block mb-1.5">
+                  Billetera Activa
+                </span>
+                <WalletQuickSwitcher
+                  onNavigateToBilleteras={() => {
+                    setMobileDrawerOpen(false);
+                    setActiveTab('billeteras');
+                  }}
+                />
+              </div>
+
               {/* Contenido con Scroll Independiente */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
                 {/* Sección: Menú Principal */}
@@ -605,7 +640,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     Menú Principal
                   </span>
                   <nav className="space-y-1">
-                    {coreNavItems.map((item) => {
+                    {fullNavItems.map((item) => {
                       const isActive = activeTab === item.id;
                       return (
                         <button
