@@ -1,4 +1,15 @@
-export type Moneda = 'PEN' | 'USD' | 'EUR';
+export type Moneda = string;
+
+export interface MonedaConfig {
+  codigo: string;
+  nombre: string;
+  simbolo: string;
+  activo?: boolean;
+  orden?: number;
+  creado_el?: string;
+  actualizado_el?: string;
+  total_billeteras?: number;
+}
 export interface Billetera {
   id: number;
   user_id: string;
@@ -11,10 +22,15 @@ export interface Billetera {
   creado_el?: string;
   actualizado_el?: string;
 }
-export const MONEDAS: Record<Moneda, { nombre: string; simbolo: string }> = {
+export const MONEDAS: Record<string, { nombre: string; simbolo: string }> = {
   PEN: { nombre: 'Soles', simbolo: 'S/' },
   USD: { nombre: 'Dólares', simbolo: 'US$' },
   EUR: { nombre: 'Euros', simbolo: '€' },
+  GBP: { nombre: 'Libras Esterlinas', simbolo: '£' },
+  MXN: { nombre: 'Pesos Mexicanos', simbolo: 'MX$' },
+  COP: { nombre: 'Pesos Colombianos', simbolo: 'COL$' },
+  CLP: { nombre: 'Pesos Chilenos', simbolo: 'CLP$' },
+  BRL: { nombre: 'Reales Brasileños', simbolo: 'R$' },
 };
 
 export interface Categoria {
@@ -137,7 +153,8 @@ export const MESES_CORTOS = [
 export function formatearMoneda(monto: number, moneda: Moneda): string {
   if (!Number.isFinite(monto)) return '—';
   const normalizado = Math.abs(monto) < 0.005 ? 0 : monto;
-  return `${normalizado < 0 ? '-' : ''}${MONEDAS[moneda].simbolo} ${Math.abs(normalizado).toLocaleString('es-PE', {
+  const simbolo = MONEDAS[moneda]?.simbolo || `${moneda} `;
+  return `${normalizado < 0 ? '-' : ''}${simbolo} ${Math.abs(normalizado).toLocaleString('es-PE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

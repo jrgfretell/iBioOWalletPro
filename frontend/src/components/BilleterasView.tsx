@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Banknote,
   DollarSign,
+  Euro,
   Layers,
   ArrowRight,
   Sparkles,
@@ -35,6 +36,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
     fechaReferencia: fechaRefActual,
     loading,
     escribiendo,
+    monedasDisponibles,
     seleccionarBilletera,
     crearBilletera,
     editarBilletera,
@@ -43,7 +45,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
   } = useWallet();
 
   // Estados de navegación interna
-  const [tabFiltro, setTabFiltro] = useState<'todas' | 'PEN' | 'USD' | 'archivadas'>('todas');
+  const [tabFiltro, setTabFiltro] = useState<string>('todas');
   const [searchTerm, setSearchTerm] = useState('');
   const [showGuide, setShowGuide] = useState(false);
 
@@ -63,18 +65,24 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
   const [showPostCreatePrompt, setShowPostCreatePrompt] = useState(false);
   const [createdWalletName, setCreatedWalletName] = useState<string | null>(null);
 
-  // Totales consolidados por moneda
+  // Monedas presentes en billeteras activas (para evitar ruido visual de ceros)
+  const monedasEnUso = useMemo(() => {
+    const activas = billeteras.filter((w) => !w.archivada);
+    const set = new Set<string>();
+    for (const w of activas) set.add(w.moneda);
+    return Array.from(set);
+  }, [billeteras]);
+
+  // Totales consolidados por moneda activa
   const patrimonioConsolidado = useMemo(() => {
     const activas = billeteras.filter((w) => !w.archivada);
-    const totalPEN = activas
-      .filter((w) => w.moneda === 'PEN')
-      .reduce((acc, w) => acc + (w.id === billeteraActual?.id ? montoBaseActual : (w.monto_base || 0)), 0);
-    const totalUSD = activas
-      .filter((w) => w.moneda === 'USD')
-      .reduce((acc, w) => acc + (w.id === billeteraActual?.id ? montoBaseActual : (w.monto_base || 0)), 0);
+    const totales: Record<string, number> = {};
+    for (const w of activas) {
+      const base = w.id === billeteraActual?.id ? montoBaseActual : (w.monto_base || 0);
+      totales[w.moneda] = (totales[w.moneda] || 0) + base;
+    }
     return {
-      totalPEN,
-      totalUSD,
+      totales,
       totalActivas: activas.length,
       totalArchivadas: billeteras.filter((w) => w.archivada).length,
     };
@@ -87,8 +95,9 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
       list = list.filter((w) => w.archivada);
     } else {
       list = list.filter((w) => !w.archivada);
-      if (tabFiltro === 'PEN') list = list.filter((w) => w.moneda === 'PEN');
-      if (tabFiltro === 'USD') list = list.filter((w) => w.moneda === 'USD');
+      if (tabFiltro !== 'todas') {
+        list = list.filter((w) => w.moneda === tabFiltro);
+      }
     }
 
     if (searchTerm.trim()) {
@@ -261,39 +270,66 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
       </div>
 
       {/* 2. KPIs de Patrimonio Consolidado */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
-        {/* Soles */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center shrink-0">
-            <Banknote className="w-5 h-5" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        {/* Si no hay billeteras activas, mostramos tarjeta por defecto en Soles */}
+        {Object.keys(patrimonioConsolidado.totales).length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+              <Banknote className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Saldo base
+              </span>
+              <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight block mt-0.5">
+                S/ 0.00
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Patrimonio Base en Soles
-            </span>
-            <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight block mt-0.5">
-              S/ {patrimonioConsolidado.totalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        </div>
+        )}
 
-        {/* Dólares */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Patrimonio Base en Dólares
-            </span>
-            <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight block mt-0.5">
-              US$ {patrimonioConsolidado.totalUSD.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        </div>
+        {/* Tarjetas dinámicas para cada moneda con fondos activos */}
+        {Object.entries(patrimonioConsolidado.totales).map(([codigo, total]) => {
+          const info = MONEDAS[codigo] || { nombre: codigo, simbolo: codigo };
+          const isUSD = codigo === 'USD';
+          const isEUR = codigo === 'EUR';
+          const isPEN = codigo === 'PEN';
+
+          return (
+            <div key={codigo} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4 min-w-0">
+              <div
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border ${
+                  isUSD
+                    ? 'bg-blue-50 border-blue-100 text-blue-600'
+                    : isEUR
+                    ? 'bg-amber-50 border-amber-100 text-amber-600'
+                    : 'bg-teal-50 border-teal-100 text-teal-600'
+                }`}
+              >
+                {isUSD ? (
+                  <DollarSign className="w-5 h-5" />
+                ) : isEUR ? (
+                  <Euro className="w-5 h-5" />
+                ) : isPEN ? (
+                  <Banknote className="w-5 h-5" />
+                ) : (
+                  <span className="font-black text-sm">{info.simbolo}</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                  Saldo base
+                </span>
+                <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight block mt-0.5 truncate">
+                  {info.simbolo} {total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          );
+        })}
 
         {/* Total Billeteras */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4 min-w-0">
           <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center shrink-0">
             <Layers className="w-5 h-5" />
           </div>
@@ -317,8 +353,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
 
       {/* 3. Barra de Filtros y Búsqueda */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Tabs de filtro */}
-        <div className="inline-flex p-1 bg-slate-200/60 rounded-xl gap-1">
+        {/* Tabs de filtro dinámicas */}
+        <div className="inline-flex flex-wrap p-1 bg-slate-200/60 rounded-xl gap-1">
           <button
             type="button"
             onClick={() => setTabFiltro('todas')}
@@ -330,28 +366,27 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           >
             Todas ({billeteras.filter((w) => !w.archivada).length})
           </button>
-          <button
-            type="button"
-            onClick={() => setTabFiltro('PEN')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              tabFiltro === 'PEN'
-                ? 'bg-white text-teal-800 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Soles PEN
-          </button>
-          <button
-            type="button"
-            onClick={() => setTabFiltro('USD')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              tabFiltro === 'USD'
-                ? 'bg-white text-blue-800 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Dólares USD
-          </button>
+
+          {monedasEnUso.map((codigo) => {
+            const info = MONEDAS[codigo] || { nombre: codigo, simbolo: codigo };
+            const count = billeteras.filter((w) => !w.archivada && w.moneda === codigo).length;
+            const isSelected = tabFiltro === codigo;
+            return (
+              <button
+                key={codigo}
+                type="button"
+                onClick={() => setTabFiltro(codigo)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {info.nombre} {codigo} ({count})
+              </button>
+            );
+          })}
+
           <button
             type="button"
             onClick={() => setTabFiltro('archivadas')}
@@ -405,7 +440,11 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                       className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-black tracking-wider ${
                         wallet.moneda === 'USD'
                           ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-teal-50 text-teal-700 border border-teal-200'
+                          : wallet.moneda === 'EUR'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : wallet.moneda === 'PEN'
+                          ? 'bg-teal-50 text-teal-700 border border-teal-200'
+                          : 'bg-purple-50 text-purple-700 border border-purple-200'
                       }`}
                     >
                       {wallet.moneda}
@@ -581,29 +620,32 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Moneda
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInputMoneda('PEN')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      inputMoneda === 'PEN'
-                        ? 'bg-teal-50 border-teal-500 text-teal-800'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>Soles (S/ · PEN)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInputMoneda('USD')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      inputMoneda === 'USD'
-                        ? 'bg-blue-50 border-blue-500 text-blue-800'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>Dólares ($ · USD)</span>
-                  </button>
+                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-0.5">
+                  {monedasDisponibles.filter((m) => m.activo !== false).map((m) => {
+                    const isSelected = inputMoneda === m.codigo;
+                    const isUSD = m.codigo === 'USD';
+                    const isEUR = m.codigo === 'EUR';
+
+                    return (
+                      <button
+                        key={m.codigo}
+                        type="button"
+                        onClick={() => setInputMoneda(m.codigo)}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 cursor-pointer transition-all ${
+                          isSelected
+                            ? isUSD
+                              ? 'bg-blue-50 border-blue-500 text-blue-800 shadow-2xs'
+                              : isEUR
+                              ? 'bg-amber-50 border-amber-500 text-amber-800 shadow-2xs'
+                              : 'bg-teal-50 border-teal-500 text-teal-800 shadow-2xs'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="font-black text-sm">{m.simbolo}</span>
+                        <span className="text-[11px] truncate max-w-[80px]">{m.codigo}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

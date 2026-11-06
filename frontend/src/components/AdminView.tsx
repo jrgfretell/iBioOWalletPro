@@ -16,10 +16,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   Trash2,
+  Coins,
+  Plus,
+  Pencil,
+  X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { AdminStats, AdminUser } from '../types/wallet';
-import { confirmarAccion, alertaExito, alertaError, toastExito } from '../lib/alerts';
+import type { AdminStats, AdminUser, MonedaConfig } from '../types/wallet';
+import { MONEDAS } from '../types/wallet';
+import { confirmarAccion, alertaExito, alertaError, alertaInfo, toastExito } from '../lib/alerts';
 import { AnimatedModal } from './AnimatedModal';
 
 export const AdminView: React.FC = () => {
@@ -28,7 +33,7 @@ export const AdminView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState('');
-  const [subTab, setSubTab] = useState<'usuarios' | 'metricas' | 'migraciones'>('usuarios');
+  const [subTab, setSubTab] = useState<'usuarios' | 'monedas' | 'metricas' | 'migraciones'>('usuarios');
 
   // Modal para cambio de contraseña
   const [modalPasswordOpen, setModalPasswordOpen] = useState(false);
@@ -37,9 +42,61 @@ export const AdminView: React.FC = () => {
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [guardandoPassword, setGuardandoPassword] = useState(false);
 
+  // Mantenimiento de Monedas
+  const [monedasAdmin, setMonedasAdmin] = useState<MonedaConfig[]>([]);
+  const [cargandoMonedas, setCargandoMonedas] = useState(false);
+  const [filtroMonedas, setFiltroMonedas] = useState('');
+  const [modalMonedaOpen, setModalMonedaOpen] = useState(false);
+  const [modalMonedaModo, setModalMonedaModo] = useState<'create' | 'edit'>('create');
+  const [inputCodMoneda, setInputCodMoneda] = useState('');
+  const [inputNomMoneda, setInputNomMoneda] = useState('');
+  const [inputSimMoneda, setInputSimMoneda] = useState('');
+  const [inputActivoMoneda, setInputActivoMoneda] = useState(true);
+  const [inputOrdenMoneda, setInputOrdenMoneda] = useState('0');
+  const [guardandoMoneda, setGuardandoMoneda] = useState(false);
+  const [errorModalMoneda, setErrorModalMoneda] = useState<string | null>(null);
+
+  const cargarMonedasAdmin = useCallback(async () => {
+    setCargandoMonedas(true);
+    try {
+      const resRpc = await supabase.rpc('admin_listar_monedas');
+      if (!resRpc.error && Array.isArray(resRpc.data) && resRpc.data.length > 0) {
+        setMonedasAdmin(resRpc.data as MonedaConfig[]);
+        return;
+      }
+      const resDirect = await supabase.from('monedas').select('*').order('orden');
+      if (!resDirect.error && resDirect.data && resDirect.data.length > 0) {
+        setMonedasAdmin(resDirect.data as MonedaConfig[]);
+        return;
+      }
+      setMonedasAdmin(
+        Object.entries(MONEDAS).map(([codigo, m], i) => ({
+          codigo,
+          nombre: m.nombre,
+          simbolo: m.simbolo,
+          activo: true,
+          orden: i + 1,
+        }))
+      );
+    } catch {
+      setMonedasAdmin(
+        Object.entries(MONEDAS).map(([codigo, m], i) => ({
+          codigo,
+          nombre: m.nombre,
+          simbolo: m.simbolo,
+          activo: true,
+          orden: i + 1,
+        }))
+      );
+    } finally {
+      setCargandoMonedas(false);
+    }
+  }, []);
+
   const cargarDatosAdmin = useCallback(async () => {
     setLoading(true);
     setError(null);
+    void cargarMonedasAdmin();
     try {
       const [resStats, resUsers] = await Promise.all([
         supabase.rpc('admin_obtener_estadisticas'),
@@ -235,6 +292,138 @@ export const AdminView: React.FC = () => {
     }
   };
 
+  const monedasFiltradas = useMemo(() => {
+    if (!filtroMonedas.trim()) return monedasAdmin;
+    const q = filtroMonedas.toLowerCase().trim();
+    return monedasAdmin.filter(
+      (m) =>
+        m.codigo.toLowerCase().includes(q) ||
+        m.nombre.toLowerCase().includes(q) ||
+        m.simbolo.toLowerCase().includes(q)
+    );
+  }, [monedasAdmin, filtroMonedas]);
+
+  const abrirCrearMoneda = () => {
+    setModalMonedaModo('create');
+    setInputCodMoneda('');
+    setInputNomMoneda('');
+    setInputSimMoneda('');
+    setInputActivoMoneda(true);
+    setInputOrdenMoneda(String(monedasAdmin.length + 1));
+    setErrorModalMoneda(null);
+    setModalMonedaOpen(true);
+  };
+
+  const abrirEditarMoneda = (m: MonedaConfig) => {
+    setModalMonedaModo('edit');
+    setInputCodMoneda(m.codigo);
+    setInputNomMoneda(m.nombre);
+    setInputSimMoneda(m.simbolo);
+    setInputActivoMoneda(m.activo !== false);
+    setInputOrdenMoneda(String(m.orden || 0));
+    setErrorModalMoneda(null);
+    setModalMonedaOpen(true);
+  };
+
+  const handleGuardarMoneda = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cod = inputCodMoneda.trim().toUpperCase();
+    const nom = inputNomMoneda.trim();
+    const sim = inputSimMoneda.trim();
+
+    if (!cod || cod.length < 2 || cod.length > 5) {
+      setErrorModalMoneda('El código de moneda debe tener de 2 a 5 letras (ej: USD, PEN, EUR, GBP).');
+      return;
+    }
+    if (!nom) {
+      setErrorModalMoneda('El nombre de la moneda es requerido.');
+      return;
+    }
+    if (!sim) {
+      setErrorModalMoneda('El símbolo de la moneda es requerido (ej: S/, $, €, £).');
+      return;
+    }
+
+    setGuardandoMoneda(true);
+    setErrorModalMoneda(null);
+    try {
+      const rpcRes = await supabase.rpc('admin_guardar_moneda', {
+        p_codigo: cod,
+        p_nombre: nom,
+        p_simbolo: sim,
+        p_activo: inputActivoMoneda,
+        p_orden: parseInt(inputOrdenMoneda, 10) || 0,
+      });
+
+      if (rpcRes.error) {
+        // Fallback: direct table upsert
+        const { error: upsertErr } = await supabase.from('monedas').upsert({
+          codigo: cod,
+          nombre: nom,
+          simbolo: sim,
+          activo: inputActivoMoneda,
+          orden: parseInt(inputOrdenMoneda, 10) || 0,
+          actualizado_el: new Date().toISOString(),
+        });
+        if (upsertErr) throw upsertErr;
+      }
+
+      MONEDAS[cod] = { nombre: nom, simbolo: sim };
+      await toastExito(`Moneda ${cod} guardada con éxito`);
+      setModalMonedaOpen(false);
+      await cargarMonedasAdmin();
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'No se pudo guardar la moneda.';
+      setErrorModalMoneda(msg);
+    } finally {
+      setGuardandoMoneda(false);
+    }
+  };
+
+  const handleToggleActivoMoneda = async (m: MonedaConfig) => {
+    try {
+      const nuevoEstado = !(m.activo !== false);
+      const { error: errUp } = await supabase
+        .from('monedas')
+        .update({ activo: nuevoEstado, actualizado_el: new Date().toISOString() })
+        .eq('codigo', m.codigo);
+      if (errUp) throw errUp;
+      await toastExito(`Moneda ${m.codigo} ${nuevoEstado ? 'activada' : 'desactivada'}`);
+      await cargarMonedasAdmin();
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Error al cambiar estado';
+      await alertaError('Error', msg);
+    }
+  };
+
+  const handleEliminarMoneda = async (m: MonedaConfig) => {
+    if (['PEN', 'USD'].includes(m.codigo)) {
+      await alertaInfo('Moneda protegida', 'Las monedas base del sistema no pueden ser eliminadas.');
+      return;
+    }
+    const confirmado = await confirmarAccion({
+      title: `¿Eliminar moneda ${m.codigo}?`,
+      text: `Se eliminará "${m.nombre}". Solo procederá si ninguna billetera está registrada en esta moneda.`,
+      confirmButtonText: 'Sí, eliminar',
+      isDanger: true,
+      icon: 'warning',
+    });
+    if (!confirmado) return;
+
+    try {
+      const { error: errRpc } = await supabase.rpc('admin_eliminar_moneda', { p_codigo: m.codigo });
+      if (errRpc) {
+        const { error: errDel } = await supabase.from('monedas').delete().eq('codigo', m.codigo);
+        if (errDel) throw errDel;
+      }
+      await toastExito(`Moneda ${m.codigo} eliminada`);
+      await cargarMonedasAdmin();
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'No se pudo eliminar.';
+      await alertaError('No se pudo eliminar', msg);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       {/* Banner Principal del Panel */}
@@ -346,6 +535,19 @@ export const AdminView: React.FC = () => {
           >
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
             <span className="truncate">Directorio ({usuarios.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab('monedas')}
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold transition-all cursor-pointer min-w-0 ${
+              subTab === 'monedas'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+            }`}
+          >
+            <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-amber-500" />
+            <span className="truncate">Monedas ({monedasAdmin.length})</span>
           </button>
 
           <button
@@ -531,7 +733,146 @@ export const AdminView: React.FC = () => {
         </div>
       )}
 
-      {/* VISTA 2: Versiones y Migraciones de Base de Datos */}
+      {/* VISTA 2: Mantenimiento de Monedas y Divisas */}
+      {subTab === 'monedas' && (
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+          {/* Header con Búsqueda y Botón Nueva Moneda */}
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={filtroMonedas}
+                onChange={(e) => setFiltroMonedas(e.target.value)}
+                placeholder="Buscar por código, nombre o símbolo…"
+                className="min-h-10 w-full rounded-xl border border-slate-200 pl-10 pr-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <span className="text-xs text-slate-500">
+                Mostrando <strong>{monedasFiltradas.length}</strong> de <strong>{monedasAdmin.length}</strong> monedas
+              </span>
+              <button
+                type="button"
+                onClick={abrirCrearMoneda}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Nueva Moneda</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tabla de Monedas */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                <tr>
+                  <th className="py-3 px-4">Código ISO</th>
+                  <th className="py-3 px-4">Símbolo</th>
+                  <th className="py-3 px-4">Nombre de la Divisa</th>
+                  <th className="py-3 px-4 text-center">Billeteras</th>
+                  <th className="py-3 px-4 text-center">Orden</th>
+                  <th className="py-3 px-4">Estado</th>
+                  <th className="py-3 px-4 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {monedasFiltradas.map((m) => {
+                  const estaActiva = m.activo !== false;
+                  const totalUso = m.total_billeteras ?? (stats ? (m.codigo === 'PEN' ? stats.billeteras_pen : m.codigo === 'USD' ? stats.billeteras_usd : m.codigo === 'EUR' ? stats.billeteras_eur : 0) : 0);
+
+                  return (
+                    <tr key={m.codigo} className="hover:bg-slate-50/70 transition-colors">
+                      {/* Código */}
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black tracking-wider bg-slate-900 text-amber-300 font-mono shadow-2xs">
+                          {m.codigo}
+                        </span>
+                      </td>
+
+                      {/* Símbolo */}
+                      <td className="py-3.5 px-4 font-black text-sm text-slate-900">
+                        {m.simbolo}
+                      </td>
+
+                      {/* Nombre */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-800 text-xs sm:text-sm">
+                          {m.nombre}
+                        </div>
+                      </td>
+
+                      {/* Billeteras que la usan */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block rounded-lg bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-800 border border-teal-100">
+                          {totalUso} billetera(s)
+                        </span>
+                      </td>
+
+                      {/* Orden */}
+                      <td className="py-3.5 px-4 text-center font-semibold text-slate-500">
+                        {m.orden ?? 0}
+                      </td>
+
+                      {/* Estado */}
+                      <td className="py-3.5 px-4">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActivoMoneda(m)}
+                          title={estaActiva ? 'Desactivar para nuevas billeteras' : 'Activar para nuevas billeteras'}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-colors ${
+                            estaActiva
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${estaActiva ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                          <span>{estaActiva ? 'Activa' : 'Inactiva'}</span>
+                        </button>
+                      </td>
+
+                      {/* Acciones */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            title="Editar divisa"
+                            onClick={() => abrirEditarMoneda(m)}
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-teal-700 transition-colors cursor-pointer"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+
+                          {!['PEN', 'USD'].includes(m.codigo) && (
+                            <button
+                              type="button"
+                              title="Eliminar divisa"
+                              disabled={totalUso > 0}
+                              onClick={() => handleEliminarMoneda(m)}
+                              className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {monedasFiltradas.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-xs">
+              {cargandoMonedas ? 'Cargando catálogo de divisas…' : 'No se encontraron monedas para el filtro ingresado.'}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VISTA 3: Versiones y Migraciones de Base de Datos */}
       {subTab === 'migraciones' && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs space-y-4 overflow-hidden">
           <div className="flex items-start sm:items-center gap-3">
@@ -639,6 +980,140 @@ export const AdminView: React.FC = () => {
                 className="rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700 disabled:opacity-50 cursor-pointer shadow-sm"
               >
                 {guardandoPassword ? 'Actualizando…' : 'Establecer Contraseña'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </AnimatedModal>
+
+      {/* Modal: Crear / Editar Moneda */}
+      <AnimatedModal
+        open={modalMonedaOpen}
+        label={modalMonedaModo === 'create' ? 'Nueva Moneda' : 'Editar Moneda'}
+      >
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl relative">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                <Coins className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {modalMonedaModo === 'create' ? 'Agregar Nueva Moneda' : 'Editar Moneda'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {modalMonedaModo === 'create'
+                    ? 'Habilita una nueva divisa para todos los usuarios de la plataforma.'
+                    : 'Modifica el nombre o símbolo de la divisa.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalMonedaOpen(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <form onSubmit={handleGuardarMoneda} className="mt-4 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Código ISO (2-5 letras)
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={5}
+                  disabled={modalMonedaModo === 'edit'}
+                  value={inputCodMoneda}
+                  onChange={(e) => setInputCodMoneda(e.target.value.toUpperCase())}
+                  placeholder="Ej: GBP, MXN, COP"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 uppercase font-mono focus:bg-white focus:outline-none focus:border-teal-500 disabled:opacity-60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Símbolo Monetario
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  value={inputSimMoneda}
+                  onChange={(e) => setInputSimMoneda(e.target.value)}
+                  placeholder="Ej: £, MX$, COL$"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Nombre de la Moneda
+              </label>
+              <input
+                type="text"
+                required
+                value={inputNomMoneda}
+                onChange={(e) => setInputNomMoneda(e.target.value)}
+                placeholder="Ej: Libras Esterlinas, Pesos Mexicanos..."
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 items-center pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Orden de Aparición
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={999}
+                  value={inputOrdenMoneda}
+                  onChange={(e) => setInputOrdenMoneda(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-5">
+                <input
+                  type="checkbox"
+                  id="chk-moneda-activa"
+                  checked={inputActivoMoneda}
+                  onChange={(e) => setInputActivoMoneda(e.target.checked)}
+                  className="h-4 w-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
+                />
+                <label htmlFor="chk-moneda-activa" className="text-xs font-bold text-slate-700 cursor-pointer">
+                  Moneda Activa
+                </label>
+              </div>
+            </div>
+
+            {errorModalMoneda && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                {errorModalMoneda}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setModalMonedaOpen(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={guardandoMoneda}
+                className="rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700 disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
+              >
+                {guardandoMoneda ? 'Guardando…' : modalMonedaModo === 'create' ? 'Crear Moneda' : 'Guardar Cambios'}
               </button>
             </div>
           </form>
