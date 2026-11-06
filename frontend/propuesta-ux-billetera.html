@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101a2d" />
+  <title>Propuesta UX · Mi Billete Pro</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #101a2d;
+      --navy-soft: #19263d;
+      --teal: #009b91;
+      --teal-dark: #007c75;
+      --teal-pale: #e9f8f6;
+      --ink: #18243b;
+      --muted: #687a98;
+      --line: #dce5ef;
+      --paper: #ffffff;
+      --canvas: #f2f5f9;
+      --shadow: 0 24px 70px rgba(16, 26, 45, .2);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); color: var(--ink); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+    .sidebar { background: var(--navy); color: #d6e1f2; display: flex; flex-direction: column; min-height: 100vh; padding: 18px 12px 14px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 7px 24px; color: white; font-size: 14px; font-weight: 850; letter-spacing: -.02em; }
+    .brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; background: rgba(0, 195, 178, .15); border: 1px solid rgba(0, 195, 178, .5); color: #55e2d4; }
+    .side-wallet { border: 1px solid #293954; background: #19263d; border-radius: 13px; padding: 11px; margin-bottom: 23px; display: flex; align-items: center; gap: 9px; font-size: 11px; color: white; }
+    .side-wallet .mini { width: 26px; height: 26px; border-radius: 9px; display: grid; place-items: center; color: #43d8ca; border: 1px solid #255f67; }
+    .side-wallet small { display: block; color: #9bb0ce; font-size: 9px; margin-top: 3px; }
+    .side-label { color: #7790b5; font-size: 9px; text-transform: uppercase; font-weight: 800; letter-spacing: .1em; padding: 0 8px 8px; }
+    .nav { display: grid; gap: 4px; }
+    .nav button { border: 0; background: transparent; color: #9eb1ce; text-align: left; border-radius: 10px; padding: 10px 9px; font-size: 11px; font-weight: 650; }
+    .nav button.active { color: #45e0d1; background: rgba(0, 180, 166, .16); box-shadow: inset 2px 0 #16cab9; }
+    .profile { margin-top: auto; display: flex; gap: 9px; align-items: center; border-top: 1px solid #26334b; padding: 14px 6px 0; font-size: 10px; color: white; }
+    .avatar { background: #00bfae; color: #073c41; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; }
+    .profile small { display: block; color: #8fa5c6; font-size: 9px; margin-top: 2px; }
+    .main { min-width: 0; }
+    .topbar { height: 54px; background: var(--navy); color: #a8b6cc; display: flex; align-items: center; padding: 0 28px; font-size: 11px; font-weight: 650; }
+    .topbar strong { color: white; margin-left: 8px; }
+    .content { max-width: 1260px; margin: auto; padding: 28px clamp(16px, 4vw, 42px) 60px; }
+    .prototype-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #e8edf4; border: 1px solid #dce4ee; border-radius: 13px; padding: 10px 12px; margin-bottom: 23px; }
+    .prototype-caption { color: #637692; font-size: 10px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+    .mode-switch { display: flex; padding: 3px; gap: 3px; border-radius: 10px; background: #dce4ee; }
+    .mode-switch button { border: 0; color: #61738e; background: transparent; padding: 7px 10px; border-radius: 8px; font-size: 10px; font-weight: 750; }
+    .mode-switch button[aria-pressed="true"] { color: #14223a; background: white; box-shadow: 0 1px 3px #1b2b441c; }
+    .page-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 22px; }
+    .title-wrap { display: flex; align-items: flex-start; gap: 12px; }
+    .title-icon { width: 40px; height: 40px; border-radius: 13px; background: #def5f2; color: var(--teal); display: grid; place-items: center; flex: none; }
+    h1 { margin: 0; font-size: clamp(22px, 2.6vw, 29px); line-height: 1.13; letter-spacing: -.04em; }
+    .page-heading p { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+    .new-button, .primary { border: 0; color: white; background: var(--teal); border-radius: 11px; padding: 11px 15px; font-size: 11px; font-weight: 800; box-shadow: 0 4px 10px #009b9125; }
+    .new-button:hover, .primary:hover { background: var(--teal-dark); }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-bottom: 20px; }
+    .stat, .wallet-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 2px 5px #16233c08; }
+    .stat { min-height: 86px; display: flex; align-items: center; gap: 12px; padding: 16px; }
+    .stat-icon { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: #ecfbf8; color: var(--teal); }
+    .stat label { display: block; color: #8da0bd; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .stat strong { display: block; color: var(--ink); font-size: 17px; letter-spacing: -.03em; margin-top: 3px; }
+    .filters { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 15px; }
+    .tabs { display: flex; gap: 4px; padding: 4px; border-radius: 11px; background: #e7ecf3; }
+    .tabs button { border: 0; background: transparent; color: #63748d; padding: 7px 10px; border-radius: 8px; font-size: 10px; font-weight: 750; }
+    .tabs button:first-child { background: white; color: var(--ink); box-shadow: 0 1px 3px #16233c15; }
+    .search { background: white; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; color: #94a5bd; font-size: 10px; min-width: 190px; }
+    .wallet-card { max-width: 355px; padding: 17px; border-color: #20cabb; background: linear-gradient(180deg, white, #f5fcfb); }
+    .wallet-top { display: flex; align-items: center; justify-content: space-between; }
+    .tag { color: #007b73; background: #e8f8f6; border: 1px solid #b9eeea; font-size: 9px; font-weight: 850; border-radius: 7px; padding: 4px 7px; }
+    .wallet-card h3 { margin: 12px 0; font-size: 15px; }
+    .balance { background: #f7f9fc; border: 1px solid #edf1f6; border-radius: 12px; padding: 12px; }
+    .balance small { display: block; color: #8da0bd; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+    .balance strong { display: block; margin-top: 6px; font-size: 19px; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: rgba(12, 21, 38, .55); backdrop-filter: blur(5px); }
+    .modal-backdrop[hidden] { display: none; }
+    .modal { width: min(100%, 790px); max-height: min(92vh, 850px); overflow: auto; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(225px, .8fr); background: white; border-radius: 22px; box-shadow: var(--shadow); animation: appear .18s ease-out; }
+    @keyframes appear { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+    .form-column { padding: 24px 25px 22px; }
+    .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 17px; border-bottom: 1px solid #edf1f6; }
+    .eyebrow { color: #087e78; background: #e4f8f5; border-radius: 99px; padding: 4px 8px; display: inline-flex; font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+    .modal-head h2 { margin: 9px 0 4px; font-size: 20px; letter-spacing: -.035em; }
+    .modal-head p { color: var(--muted); font-size: 11px; line-height: 1.5; margin: 0; max-width: 430px; }
+    .close { border: 0; background: #f2f5f8; color: #7586a0; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; font-size: 18px; }
+    .first-note { display: none; padding: 10px 11px; border-radius: 10px; margin-top: 14px; background: #f5fbfa; border: 1px solid #e1f3f0; color: #547078; font-size: 10px; line-height: 1.5; }
+    .first-mode .first-note { display: block; }
+    .form { display: grid; gap: 17px; padding-top: 17px; }
+    .field-label { color: #34445e; font-weight: 800; font-size: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .field-label .optional { color: #9babc0; font-size: 9px; font-weight: 650; }
+    .text-input, .date-input { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; color: var(--ink); font-size: 12px; outline: none; }
+    .text-input:focus, .date-input:focus { border-color: #39bdb3; box-shadow: 0 0 0 3px #22b9ac19; background: white; }
+    .name-row { display: flex; gap: 8px; }
+    .suggestions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+    .suggestions span { font-size: 9px; color: #8091aa; margin: auto 2px auto 0; }
+    .suggestions button { border: 0; border-radius: 7px; padding: 5px 8px; color: #60728c; background: #f0f3f7; font-size: 9px; font-weight: 700; }
+    .currencies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .currency { min-height: 57px; border: 1px solid var(--line); background: white; color: #667792; border-radius: 11px; display: flex; align-items: center; gap: 9px; padding: 8px 9px; text-align: left; }
+    .currency:hover { border-color: #9fded8; background: #fbfefd; }
+    .currency[aria-pressed="true"] { border-color: var(--teal); background: var(--teal-pale); box-shadow: 0 0 0 2px #009b9114; color: #056d68; }
+    .currency-symbol { min-width: 27px; text-align: center; font-size: 13px; font-weight: 900; }
+    .currency-name { display: block; font-size: 10px; font-weight: 800; line-height: 1.25; }
+    .currency-code { display: block; font-size: 8px; color: #8da0bd; margin-top: 2px; }
+    .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mode-card { border: 1px solid var(--line); border-radius: 11px; background: white; padding: 10px; text-align: left; color: #61738d; display: flex; gap: 8px; align-items: flex-start; min-height: 66px; }
+    .mode-card[aria-pressed="true"] { border-color: var(--teal); background: #f2fbfa; color: #165e5b; box-shadow: 0 0 0 2px #009b9110; }
+    .radio { width: 15px; height: 15px; border: 1.5px solid #b6c3d3; border-radius: 50%; flex: none; margin-top: 1px; display: grid; place-items: center; }
+    .mode-card[aria-pressed="true"] .radio { border-color: var(--teal); }
+    .mode-card[aria-pressed="true"] .radio::after { content: ""; width: 7px; height: 7px; background: var(--teal); border-radius: 50%; }
+    .mode-card strong { display: block; font-size: 10px; color: var(--ink); }
+    .mode-card small { display: block; font-size: 9px; line-height: 1.4; margin-top: 3px; color: #8494ab; }
+    .mode-title-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .mode-badge { color: #08766f; background: #d8f7f1; border-radius: 5px; padding: 2px 5px; font-size: 8px; font-weight: 850; }
+    .mode-guide { border: 1px solid #a9e9df; background: #effbf9; color: #426b69; border-radius: 11px; padding: 10px 11px; font-size: 10px; line-height: 1.5; }
+    .mode-guide strong { color: #165e5b; }
+    .mode-guide.past { border-color: #f2d58a; background: #fff9e9; color: #80551e; }
+    .mode-guide.past strong { color: #8a4716; }
+    .amount-wrap { position: relative; }
+    .amount-prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6a7d97; font-weight: 800; font-size: 11px; pointer-events: none; }
+    .amount { padding-left: 43px; font-weight: 800; font-size: 14px; }
+    .date-block { display: none; }
+    .date-block.visible { display: block; }
+    .helper { color: #8393aa; font-size: 9px; line-height: 1.5; margin: 6px 0 0; }
+    .footer { display: flex; justify-content: flex-end; align-items: center; gap: 9px; padding-top: 15px; margin-top: 1px; border-top: 1px solid #edf1f6; }
+    .secondary { border: 0; background: transparent; color: #65758e; font-size: 10px; font-weight: 750; border-radius: 9px; padding: 10px 13px; }
+    .primary { min-width: 145px; }
+    .preview { background: #f7f9fc; border-left: 1px solid #ecf0f5; padding: 25px 19px; display: flex; flex-direction: column; }
+    .preview-title { color: #7c8da5; text-transform: uppercase; font-size: 9px; font-weight: 850; letter-spacing: .08em; }
+    .preview-card { margin-top: 13px; border: 1px solid #e5ebf2; border-radius: 15px; background: white; padding: 15px; }
+    .preview-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .preview-icon { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: #e8f8f6; color: var(--teal); }
+    .preview-code { background: #f1f4f8; color: #657891; padding: 4px 7px; border-radius: 7px; font-size: 9px; font-weight: 850; }
+    .preview-card h3 { margin: 15px 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+    .preview-card p { color: #8b9ab0; margin: 0; font-size: 9px; }
+    .preview-separator { height: 1px; background: #edf1f6; margin: 15px 0; }
+    .preview-caption { color: #91a0b6; text-transform: uppercase; font-size: 8px; font-weight: 800; letter-spacing: .06em; }
+    .preview-amount { margin-top: 5px; font-size: 21px; letter-spacing: -.04em; font-weight: 900; }
+    .preview-date { display: none; color: #647790; font-size: 9px; margin-top: 6px; }
+    .preview-date.visible { display: block; }
+    .preview-tip { margin-top: auto; padding: 11px; border: 1px solid #e4ebf3; background: #fff; border-radius: 11px; color: #74859d; font-size: 9px; line-height: 1.5; }
+    .preview-tip strong { color: #33445f; }
+    .success { position: fixed; z-index: 7; right: 22px; bottom: 22px; padding: 13px 16px; border-radius: 12px; background: #123e3b; color: white; box-shadow: var(--shadow); display: none; font-size: 11px; font-weight: 750; }
+    .success.show { display: block; animation: appear .18s ease-out; }
+    .success small { display: block; color: #b9e9e4; font-weight: 550; margin-top: 4px; }
+    .empty-state { display: none; }
+    .first-mode .empty-state { display: flex; }
+    .first-mode .wallet-card, .first-mode .stats { display: none; }
+    .first-mode .filters { display: none; }
+    .empty-state { min-height: 190px; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px dashed #cbd8e7; border-radius: 18px; background: rgba(255,255,255,.6); padding: 22px; }
+    .empty-state .title-icon { margin-bottom: 11px; }
+    .empty-state h2 { font-size: 16px; }
+    .empty-state p { color: var(--muted); font-size: 11px; margin: 6px 0 15px; }
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 62px minmax(0, 1fr); }
+      .sidebar { padding: 13px 7px; align-items: center; }
+      .brand { padding: 0 0 19px; }
+      .brand-name, .side-wallet > div:not(.mini), .side-label, .nav button span, .profile > div:not(.avatar) { display: none; }
+      .side-wallet { padding: 8px; margin-bottom: 17px; }
+      .nav { width: 100%; }
+      .nav button { text-align: center; padding: 10px 4px; font-size: 15px; }
+      .profile { width: 100%; justify-content: center; padding-inline: 0; }
+      .topbar { height: 49px; padding: 0 16px; font-size: 10px; }
+      .content { padding: 18px 13px 38px; }
+      .prototype-bar { align-items: flex-start; flex-direction: column; }
+      .page-heading { align-items: center; }
+      .page-heading p { max-width: 280px; line-height: 1.45; }
+      .new-button { padding: 10px; white-space: nowrap; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat { min-height: 72px; padding: 11px; gap: 8px; }
+      .stat:last-child { grid-column: span 2; }
+      .stat-icon { width: 30px; height: 30px; }
+      .stat strong { font-size: 14px; }
+      .filters { align-items: stretch; flex-direction: column; }
+      .tabs { overflow-x: auto; width: fit-content; max-width: 100%; }
+      .search { width: 100%; }
+      .wallet-card { max-width: none; }
+      .modal-backdrop { padding: 9px; align-items: end; }
+      .modal { width: 100%; max-height: 96dvh; border-radius: 20px 20px 12px 12px; display: flex; flex-direction: column; overflow: hidden; }
+      .form-column { min-height: 0; overflow-y: auto; padding: 19px 16px 14px; }
+      .modal-head { padding-bottom: 13px; }
+      .modal-head h2 { font-size: 18px; }
+      .form { gap: 14px; padding-top: 14px; }
+      .preview { display: none; }
+      .currencies { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .currency { min-height: 52px; }
+      .footer { position: sticky; bottom: 0; z-index: 2; background: #fff; padding: 12px 0 5px; box-shadow: 0 -8px 16px #ffffffdd; }
+      .primary { min-width: 138px; }
+    }
+    @media (max-width: 390px) {
+      .mode-card { padding: 8px 7px; min-height: 75px; }
+      .mode-card strong { font-size: 9px; }
+      .mode-card small { font-size: 8px; }
+      .title-icon { width: 34px; height: 34px; }
+      .page-heading p { font-size: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand"><span class="brand-mark">▣</span><span class="brand-name">Mi Billete <b style="color:#3ad9ca">Pro</b></span></div>
+      <div class="side-wallet"><span class="mini">▣</span><div><b id="sideName">Personal</b><small id="sideBase">Base: S/ 3,956.84</small></div></div>
+      <div class="side-label">Menú principal</div>
+      <nav class="nav">
+        <button>⌂ <span>Inicio</span></button>
+        <button class="active">▣ <span>Mis Billeteras</span></button>
+        <button>↗ <span>Sueldos e Ingresos</span></button>
+        <button>◷ <span>Movimientos</span></button>
+        <button>▦ <span>Pagos programados</span></button>
+        <button>◇ <span>Categorías</span></button>
+      </nav>
+      <div class="profile"><span class="avatar">J</span><div><b>Jorge Fretell</b><small>jrgfretell@gmail.com</small></div></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">Sección activa <span style="color:#596b87;margin:0 9px">/</span><strong>Gestión de Billeteras</strong></header>
+      <section class="content">
+        <div class="prototype-bar">
+          <span class="prototype-caption">Prototipo interactivo · cambia el tipo de flujo</span>
+          <div class="mode-switch" role="group" aria-label="Tipo de flujo a simular">
+            <button id="firstMode" aria-pressed="false">Primera billetera</button>
+            <button id="regularMode" aria-pressed="true">Otra billetera</button>
+          </div>
+        </div>
+        <div class="page-heading">
+          <div class="title-wrap"><span class="title-icon">▣</span><div><h1>Mis Billeteras</h1><p>Administra tus saldos y perfiles financieros.</p></div></div>
+          <button class="new-button" id="openCreate">＋ <span id="createAction">Nueva Billetera</span></button>
+        </div>
+        <div class="stats">
+          <article class="stat"><span class="stat-icon">▣</span><div><label>Saldo base en soles</label><strong>S/ 3,956.84</strong></div></article>
+          <article class="stat"><span class="stat-icon" style="background:#eef4ff;color:#4774d6">＄</span><div><label>Billeteras registradas</label><strong>2 activas</strong></div></article>
+          <article class="stat"><span class="stat-icon" style="background:#f2f5f9;color:#536782">▱</span><div><label>Perfiles financieros</label><strong>Personal y ahorro</strong></div></article>
+        </div>
+        <div class="filters"><div class="tabs"><button>Todas (2)</button><button>Soles PEN (1)</button><button>Dólares USD (1)</button></div><div class="search">⌕ &nbsp; Buscar por nombre o moneda…</div></div>
+        <article class="wallet-card"><div class="wallet-top"><span class="tag">PEN · Principal</span><span class="tag" style="color:#07835c;background:#ecfbf4;border-color:#c9f1df">Activa</span></div><h3>Personal</h3><div class="balance"><small>Saldo base</small><strong>S/ 3,956.84</strong></div></article>
+        <section class="empty-state"><span class="title-icon">▣</span><h2>Tu primera billetera empieza aquí</h2><p>Define la moneda y el saldo desde donde comenzarán tus proyecciones.</p><button class="new-button" id="openFirst">Crear mi primera billetera</button></section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="backdrop" hidden>
+    <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="form-column">
+        <header class="modal-head">
+          <div><span class="eyebrow" id="flowEyebrow">Nueva billetera</span><h2 id="modalTitle">Crea un perfil para tu dinero</h2><p id="modalDescription">Elige la moneda y define desde qué saldo quieres comenzar.</p></div>
+          <button class="close" id="closeModal" aria-label="Cerrar">×</button>
+        </header>
+        <div class="first-note">Esta será tu billetera principal. Luego podrás registrar tus ingresos para completar tus proyecciones.</div>
+        <form class="form" id="walletForm">
+          <div>
+            <label class="field-label" for="walletName">Nombre de la billetera</label>
+            <div class="name-row"><input class="text-input" id="walletName" maxlength="80" placeholder="Ej. Personal, Ahorros o Viajes" autocomplete="off" required /></div>
+            <div class="suggestions"><span>Ideas:</span><button type="button" data-name="Personal">Personal</button><button type="button" data-name="Ahorros">Ahorros</button><button type="button" data-name="Negocio">Negocio</button></div>
+          </div>
+          <div>
+            <div class="field-label"><span>Moneda</span><span class="optional">Según el catálogo activo</span></div>
+            <div class="currencies" id="currencies" role="group" aria-label="Selecciona una moneda"></div>
+          </div>
+          <div>
+            <div class="field-label"><span>¿Desde cuándo tienes este saldo?</span></div>
+            <div class="mode-row" role="group" aria-label="Punto de partida del saldo">
+              <button type="button" class="mode-card" id="todayMode" aria-pressed="true"><span class="radio"></span><span><span class="mode-title-row"><strong>Dinero disponible HOY</strong><span class="mode-badge">Recomendado</span></span><small>Lo que tienes en mano o cuenta ahora mismo.</small></span></button>
+              <button type="button" class="mode-card" id="pastMode" aria-pressed="false"><span class="radio"></span><span><span class="mode-title-row"><strong>Capital inicial en el PASADO</strong></span><small>Reconstruye tu saldo descontando pagos históricos.</small></span></button>
+            </div>
+          </div>
+          <div class="mode-guide" id="modeGuide" aria-live="polite"></div>
+          <div>
+            <label class="field-label" for="amount"><span id="amountLabel">Saldo disponible</span></label>
+            <div class="amount-wrap"><span class="amount-prefix" id="amountPrefix">S/</span><input class="text-input amount" id="amount" type="number" min="0" step="0.01" value="0.00" required /></div>
+            <p class="helper" id="amountHint">Este será el saldo inicial para tus proyecciones.</p>
+          </div>
+          <div class="date-block" id="dateBlock"><label class="field-label" for="referenceDate">¿En qué fecha tenías este capital?</label><input class="date-input" id="referenceDate" type="date" required /><p class="helper">Esta fecha marca desde cuándo reconstruiremos tu saldo.</p></div>
+          <footer class="footer"><button type="button" class="secondary" id="cancel">Cancelar</button><button type="submit" class="primary" id="submitButton">Crear billetera</button></footer>
+        </form>
+      </div>
+      <aside class="preview" aria-live="polite">
+        <div class="preview-title">Así se verá tu billetera</div>
+        <div class="preview-card"><div class="preview-top"><span class="preview-icon">▣</span><span class="preview-code" id="previewCode">PEN</span></div><h3 id="previewName">Nombre de billetera</h3><p id="previewCurrency">Soles peruanos</p><div class="preview-separator"></div><span class="preview-caption" id="previewBalanceLabel">Saldo inicial · Hoy</span><div class="preview-amount" id="previewAmount">S/ 0.00</div><div class="preview-date" id="previewDate"></div></div>
+        <div class="preview-tip"><strong>Tu saldo es el punto de partida.</strong> Puedes completar tus ingresos después para obtener proyecciones más precisas.</div>
+      </aside>
+    </section>
+  </div>
+  <div class="success" id="success" role="status">Billetera creada <small id="successDetails"></small></div>
+
+  <script>
+    // Datos de demostración. En la app real, estas opciones salen del catálogo activo de Supabase.
+    const catalog = [
+      { code: 'PEN', name: 'Soles peruanos', symbol: 'S/' },
+      { code: 'USD', name: 'Dólares estadounidenses', symbol: 'US$' },
+      { code: 'EUR', name: 'Euros', symbol: '€' },
+      { code: 'OK', name: 'Moneda de ejemplo', symbol: 'OKK' },
+    ];
+    const state = { first: false, currency: catalog[0], mode: 'today' };
+    const $ = (id) => document.getElementById(id);
+    const backdrop = $('backdrop');
+    const form = $('walletForm');
+    const amount = $('amount');
+    const date = $('referenceDate');
+    const amountFmt = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const todayIso = new Date().toISOString().slice(0, 10);
+    date.max = todayIso;
+    date.value = todayIso;
+
+    function renderCatalog() {
+      $('currencies').innerHTML = catalog.map((currency) => `
+        <button type="button" class="currency" data-code="${currency.code}" aria-pressed="${state.currency.code === currency.code}">
+          <span class="currency-symbol">${currency.symbol}</span><span><span class="currency-name">${currency.name}</span><span class="currency-code">${currency.code}</span></span>
+        </button>`).join('');
+      $('currencies').querySelectorAll('.currency').forEach((button) => button.addEventListener('click', () => {
+        state.currency = catalog.find((item) => item.code === button.dataset.code);
+        renderCatalog(); renderPreview();
+      }));
+    }
+    function formatDate(value) {
+      if (!value) return '';
+      const [year, month, day] = value.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    function renderPreview() {
+      const name = $('walletName').value.trim();
+      const value = Math.max(0, Number(amount.value) || 0);
+      $('amountPrefix').textContent = state.currency.symbol;
+      $('amountLabel').textContent = state.mode === 'past' ? `Capital inicial (${state.currency.symbol})` : `Saldo disponible (${state.currency.symbol})`;
+      $('amountHint').textContent = state.mode === 'past' ? 'Monto que tenías en la fecha indicada.' : 'Dinero que tienes disponible ahora mismo.';
+      const guide = $('modeGuide');
+      guide.classList.toggle('past', state.mode === 'past');
+      guide.innerHTML = state.mode === 'past'
+        ? `<strong>ⓘ Reconstrucción histórica:</strong> Los abonos de cuotas y gastos posteriores a <strong>${formatDate(date.value)}</strong> se irán restando mes a mes hasta calcular cuánto dinero te queda actualmente.`
+        : `<strong>✓ Punto de partida: Hoy (${formatDate(todayIso)}).</strong> Si registras compromisos o cuotas que pagaste meses atrás, <strong>no se descontarán</strong> de este dinero. Solo se descontarán pagos desde hoy en adelante.`;
+      $('dateBlock').classList.toggle('visible', state.mode === 'past');
+      date.required = state.mode === 'past';
+      $('previewName').textContent = name || 'Nombre de billetera';
+      $('previewCode').textContent = state.currency.code;
+      $('previewCurrency').textContent = state.currency.name;
+      $('previewAmount').textContent = `${state.currency.symbol} ${amountFmt.format(value)}`;
+      $('previewBalanceLabel').textContent = state.mode === 'past' ? 'Saldo inicial · Fecha pasada' : 'Saldo inicial · Hoy';
+      $('previewDate').textContent = state.mode === 'past' ? `Fecha de referencia: ${formatDate(date.value)}` : '';
+      $('previewDate').classList.toggle('visible', state.mode === 'past');
+    }
+    function setMode(mode) {
+      state.mode = mode;
+      $('todayMode').setAttribute('aria-pressed', String(mode === 'today'));
+      $('pastMode').setAttribute('aria-pressed', String(mode === 'past'));
+      renderPreview();
+    }
+    function setFlowMode(first) {
+      state.first = first;
+      $('firstMode').setAttribute('aria-pressed', String(first));
+      $('regularMode').setAttribute('aria-pressed', String(!first));
+      $('app').classList.toggle('first-mode', first);
+      $('createAction').textContent = first ? 'Primera billetera' : 'Nueva Billetera';
+      $('sideName').textContent = first ? 'Elige billetera' : 'Personal';
+      $('sideBase').textContent = first ? 'Crea tu primera cuenta' : 'Base: S/ 3,956.84';
+    }
+    function openModal(first = false) {
+      setFlowMode(first);
+      $('modal').classList.toggle('first-mode', first);
+      $('flowEyebrow').textContent = first ? 'Primera billetera · configuración inicial' : 'Nueva billetera';
+      $('modalTitle').textContent = first ? 'Crea tu primera billetera' : 'Crea un perfil para tu dinero';
+      $('modalDescription').textContent = first
+        ? 'Elige la moneda y define el saldo desde donde comenzarán tus proyecciones.'
+        : 'Elige la moneda y define desde qué saldo quieres comenzar.';
+      $('submitButton').textContent = first ? 'Crear mi billetera' : 'Crear billetera';
+      $('createAction').textContent = first ? 'Primera billetera' : 'Nueva Billetera';
+      form.reset();
+      amount.value = '0.00';
+      date.value = todayIso;
+      state.currency = catalog[0];
+      setMode('today');
+      renderCatalog(); renderPreview();
+      backdrop.hidden = false;
+      document.body.style.overflow = 'hidden';
+      $('walletName').focus();
+    }
+    function closeModal() { backdrop.hidden = true; document.body.style.overflow = ''; }
+
+    $('openCreate').addEventListener('click', () => openModal(state.first));
+    $('openFirst').addEventListener('click', () => openModal(true));
+    $('firstMode').addEventListener('click', () => {
+      setFlowMode(true);
+    });
+    $('regularMode').addEventListener('click', () => {
+      setFlowMode(false);
+    });
+    $('todayMode').addEventListener('click', () => setMode('today'));
+    $('pastMode').addEventListener('click', () => setMode('past'));
+    $('walletName').addEventListener('input', renderPreview);
+    amount.addEventListener('input', renderPreview);
+    date.addEventListener('input', renderPreview);
+    document.querySelectorAll('[data-name]').forEach((button) => button.addEventListener('click', () => {
+      $('walletName').value = button.dataset.name; renderPreview(); $('walletName').focus();
+    }));
+    $('closeModal').addEventListener('click', closeModal);
+    $('cancel').addEventListener('click', closeModal);
+    backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeModal(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !backdrop.hidden) closeModal(); });
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const walletName = $('walletName').value.trim() || 'Mi billetera';
+      closeModal();
+      $('successDetails').textContent = `${walletName} · ${state.currency.code} · ${state.currency.symbol} ${amountFmt.format(Number(amount.value) || 0)}${state.mode === 'past' ? ` · ${formatDate(date.value)}` : ''} (vista de demostración)`;
+      $('success').classList.add('show');
+      window.setTimeout(() => $('success').classList.remove('show'), 4800);
+    });
+    renderCatalog();
+  </script>
+</body>
+</html>

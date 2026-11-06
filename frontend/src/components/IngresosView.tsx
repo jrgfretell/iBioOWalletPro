@@ -22,7 +22,6 @@ import {
   fechaHoyISO,
   recurrenteAplicaEnMes,
   obtenerMesInicioRecurrente,
-  MONEDAS,
 } from '../types/wallet';
 import type { MovimientoRecurrente } from '../types/wallet';
 import { confirmarAccion, toastExito } from '../lib/alerts';
@@ -445,7 +444,7 @@ export const IngresosView: React.FC = () => {
                     <Wallet className="w-3 h-3 text-teal-600" />
                     <span>{billeteraActual.nombre}</span>
                     <span className="text-teal-400">·</span>
-                    <span>{MONEDAS[billeteraActual.moneda]?.simbolo || 'S/'}</span>
+                    <span>{simboloMoneda}</span>
                   </span>
                 )}
               </div>

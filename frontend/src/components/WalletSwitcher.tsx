@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Wallet, ChevronDown, Plus, Pencil, Archive, RotateCcw, Check, X, ArrowLeft, Eye, Trash2, HelpCircle, History, ChevronRight, Sparkles } from 'lucide-react';
 import { AnimatedModal } from './AnimatedModal';
 import { OnboardingModal } from './OnboardingModal';
 import { useWallet } from '../context/WalletContext';
-import { MONEDAS, fechaHoyISO, formatearMoneda as formatoMonetario } from '../types/wallet';
+import { fechaHoyISO, formatearMoneda as formatoMonetario } from '../types/wallet';
 import type { Billetera, Moneda, ActiveTab } from '../types/wallet';
 import { confirmarAccion, alertaInfo, alertaError, toastExito } from '../lib/alerts';
 
@@ -29,6 +29,8 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
     archivarBilletera,
     eliminarBilletera,
     formatearMoneda,
+    monedasDisponibles,
+    monedasCargadas,
   } = useWallet();
 
   const [open, setOpen] = useState(false);
@@ -36,7 +38,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [editing, setEditing] = useState<Billetera | null>(null);
   const [nombre, setNombre] = useState('');
-  const [moneda, setMoneda] = useState<Moneda>('PEN');
+  const [moneda, setMoneda] = useState<Moneda>('');
   const [modoSaldo, setModoSaldo] = useState<'hoy' | 'pasado'>('hoy');
   const [inputMontoBase, setInputMontoBase] = useState('0');
   const [inputFechaRef, setInputFechaRef] = useState(() => fechaHoyISO());
@@ -45,6 +47,12 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
   const [failure, setFailure] = useState(false);
   const [showPostCreatePrompt, setShowPostCreatePrompt] = useState(false);
   const [createdWalletName, setCreatedWalletName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (view === 'create' && monedasCargadas && !monedasDisponibles.some(m => m.codigo === moneda)) {
+      setMoneda(monedasDisponibles[0]?.codigo || '');
+    }
+  }, [view, monedasCargadas, monedasDisponibles, moneda]);
 
   const wallets = billeteras.filter((w) => w.archivada === archived);
 
@@ -60,7 +68,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
   const startCreate = () => {
     setEditing(null);
     setNombre('');
-    setMoneda('PEN');
+    setMoneda(monedasDisponibles[0]?.codigo || '');
     setModoSaldo('hoy');
     setInputMontoBase('0');
     setInputFechaRef(fechaHoyISO());
@@ -194,6 +202,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
   return (
     <>
       <OnboardingModal
+        autoOpenFirstWallet={false}
         forceOpenGuide={showGuide}
         onCloseGuide={() => setShowGuide(false)}
         onCreated={(createdName) => {
@@ -401,7 +410,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                           type="button"
                           disabled={busy || escribiendo}
                           onClick={() => choose(wallet)}
-                          aria-label={`${wallet.archivada ? 'Consultar' : 'Seleccionar'} ${wallet.nombre}, ${MONEDAS[wallet.moneda].nombre}`}
+                          aria-label={`${wallet.archivada ? 'Consultar' : 'Seleccionar'} ${wallet.nombre}, ${monedasDisponibles.find(m => m.codigo === wallet.moneda)?.nombre || wallet.moneda}`}
                           className="flex min-w-0 flex-1 items-center gap-2.5 text-left cursor-pointer group disabled:opacity-50"
                         >
                           <span
@@ -411,7 +420,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                                 : 'bg-slate-100 text-slate-600 border-slate-200/80 group-hover:bg-slate-200/70'
                             }`}
                           >
-                            {MONEDAS[wallet.moneda].simbolo}
+                            {monedasDisponibles.find(m => m.codigo === wallet.moneda)?.simbolo || wallet.moneda}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center gap-1.5">
@@ -425,7 +434,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                               )}
                             </span>
                             <span className="block text-[11px] font-medium text-slate-400">
-                              {MONEDAS[wallet.moneda].nombre} · {wallet.moneda}
+                              {monedasDisponibles.find(m => m.codigo === wallet.moneda)?.nombre || wallet.moneda} · {wallet.moneda}
                             </span>
                           </span>
                         </button>
@@ -465,7 +474,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                             Saldo Base Inicial
                           </span>
                           <div className="text-base font-black text-slate-900 tracking-tight mt-0.5 whitespace-nowrap">
-                            {formatoMonetario(wBase, wallet.moneda)}
+                            {formatoMonetario(wBase, wallet.moneda, monedasDisponibles.find(m => m.codigo === wallet.moneda)?.simbolo || wallet.moneda)}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
@@ -551,12 +560,13 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                   onChange={(e) => setMoneda(e.target.value as Moneda)}
                   className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base disabled:bg-slate-50 disabled:text-slate-500"
                 >
-                  {Object.entries(MONEDAS).map(([code, currency]) => (
-                    <option key={code} value={code}>
-                      {currency.nombre} ({code})
+                  {monedasDisponibles.map((currency) => (
+                    <option key={currency.codigo} value={currency.codigo}>
+                      {currency.nombre} ({currency.codigo})
                     </option>
                   ))}
                 </select>
+                {monedasCargadas && monedasDisponibles.length === 0 && <p className="mt-1 text-xs text-rose-700">No hay monedas activas en el catálogo.</p>}
               </div>
 
               {/* Parámetros consolidados de Saldo Inicial de Referencia */}
@@ -633,7 +643,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 {modoSaldo === 'hoy' ? (
                   <div>
                     <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">
-                      Saldo disponible ({MONEDAS[moneda].simbolo})
+                      Saldo disponible ({monedasDisponibles.find(m => m.codigo === moneda)?.simbolo || moneda})
                     </label>
                     <input
                       id="wallet-base-amount"
@@ -653,7 +663,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">
-                          Capital inicial ({MONEDAS[moneda].simbolo})
+                          Capital inicial ({monedasDisponibles.find(m => m.codigo === moneda)?.simbolo || moneda})
                         </label>
                         <input
                           id="wallet-base-amount"
@@ -719,7 +729,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 </button>
                 <button
                   type="submit"
-                  disabled={busy || !nombre.trim()}
+                  disabled={busy || !nombre.trim() || (view === 'create' && (!monedasCargadas || !monedasDisponibles.some(m => m.codigo === moneda)))}
                   className="min-h-11 rounded-xl bg-teal-600 px-5 text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
                 >
                   {busy ? 'Guardando…' : view === 'create' ? 'Crear billetera' : 'Guardar cambios'}

@@ -8,12 +8,16 @@ import { MovimientosView } from './MovimientosView';
 import { PagosView } from './PagosView';
 import { CategoriasView } from './CategoriasView';
 import { AdminView } from './AdminView';
+import { OnboardingModal } from './OnboardingModal';
+import { WalletCreatedPrompt } from './WalletCreatedPrompt';
 import type { ActiveTab } from '../types/wallet';
 
 const WalletShell: React.FC = () => {
   const { billeteraActual, ready, loading, error, limpiarError, recargarTodo } = useWallet();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [pagosSubTab, setPagosSubTab] = useState<'agenda' | 'cronogramas'>('agenda');
+  const [createdWalletName, setCreatedWalletName] = useState<string | null>(null);
+  const [showPostCreatePrompt, setShowPostCreatePrompt] = useState(false);
 
   const handleNavigate = (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas') => {
     setActiveTab(tab);
@@ -26,6 +30,25 @@ const WalletShell: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100/80 text-slate-800">
+      <OnboardingModal
+        onCreated={(name) => {
+          setCreatedWalletName(name);
+          setShowPostCreatePrompt(true);
+        }}
+      />
+      <WalletCreatedPrompt
+        open={showPostCreatePrompt}
+        walletName={createdWalletName}
+        onDismiss={() => {
+          setShowPostCreatePrompt(false);
+          setCreatedWalletName(null);
+        }}
+        onConfigureIncome={() => {
+          setShowPostCreatePrompt(false);
+          setCreatedWalletName(null);
+          handleNavigate('ingresos');
+        }}
+      />
       <Navbar
         activeTab={activeTab}
         setActiveTab={(tab) => handleNavigate(tab)}

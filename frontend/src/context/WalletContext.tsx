@@ -6,7 +6,7 @@ import { prepararOperacion } from '../lib/pendingOperation';
 import type { WalletTable } from '../lib/walletClient';
 import { confirmarAccion } from '../lib/alerts';
 import { useAuth } from './AuthContext';
-import { MONEDAS, formatearMoneda as formatoMonetario, fechaHoyISO } from '../types/wallet';
+import { formatearMoneda as formatoMonetario, fechaHoyISO } from '../types/wallet';
 import type { Billetera, Moneda, Categoria, SueldoMes, MovimientoRecurrente, MovimientoAgenda, Deuda, DeudaCuota, DeudaPago, MonedaConfig } from '../types/wallet';
 
 interface WalletData {
@@ -48,6 +48,7 @@ interface WalletContextType extends WalletData {
   formatearMoneda: (monto: number) => string;
   simboloMoneda: string;
   monedasDisponibles: MonedaConfig[];
+  monedasCargadas: boolean;
   recargarMonedas: () => Promise<void>;
 }
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -87,15 +88,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [escribiendo, setEscribiendo] = useState(false);
   const [error, setError] = useState(null as string | null);
   const [retryBootstrap, setRetryBootstrap] = useState(0);
-  const [monedasDisponibles, setMonedasDisponibles] = useState<MonedaConfig[]>(() =>
-    Object.entries(MONEDAS).map(([codigo, m], i) => ({
-      codigo,
-      nombre: m.nombre,
-      simbolo: m.simbolo,
-      activo: true,
-      orden: i + 1,
-    }))
-  );
+  const [monedasDisponibles, setMonedasDisponibles] = useState<MonedaConfig[]>([]);
+  const [monedasCargadas, setMonedasCargadas] = useState(false);
 
   const recargarMonedas = useCallback(async () => {
     try {
@@ -104,14 +98,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('activo', true)
         .order('orden', { ascending: true });
-      if (!err && dbMonedas && dbMonedas.length > 0) {
-        setMonedasDisponibles(dbMonedas as MonedaConfig[]);
-        for (const m of dbMonedas) {
-          MONEDAS[m.codigo] = { nombre: m.nombre, simbolo: m.simbolo };
-        }
-      }
+      if (err) throw err;
+      setMonedasDisponibles((dbMonedas || []) as MonedaConfig[]);
     } catch {
-      // Graceful fallback to default MONEDAS
+      setMonedasDisponibles([]);
+    } finally {
+      setMonedasCargadas(true);
     }
   }, []);
 
@@ -430,8 +422,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   };
   const currency=billeteraActual?.moneda||'PEN';
   const belongsToSession=!!user&&billeteraActual?.user_id===user.id;
-  const formatearMoneda=useCallback((amount:number)=>formatoMonetario(amount,currency),[currency]);
-  return <WalletContext.Provider value={{...(belongsToSession?data:emptyData()),billeteras:billeteras.filter(w=>w.user_id===user?.id),billeteraActual:belongsToSession?billeteraActual:null,modoLegacy,soloLectura:!belongsToSession||!billeteraActual||billeteraActual.archivada,loading,ready:belongsToSession&&ready,escribiendo,error,limpiarError:()=>setError(null),reportarError,clienteBilletera,seleccionarBilletera,crearBilletera,editarBilletera,archivarBilletera,eliminarBilletera,registrarFormulario,recargarTodo,ejecutarOperacion,actualizarMontoBase,guardarSueldoMes:(a,m,s15,s30)=>saveSalaries(a,[m],s15,s30),guardarSueldoAnual:(a,m,s15,s30)=>saveSalaries(a,Array.from({length:12-m},(_,i)=>m+i),s15,s30),formatearMoneda,simboloMoneda:MONEDAS[currency]?.simbolo||currency,monedasDisponibles,recargarMonedas}}>{children}</WalletContext.Provider>;
+  const simboloActual=monedasDisponibles.find(m=>m.codigo===currency)?.simbolo||currency;
+  const formatearMoneda=useCallback((amount:number)=>formatoMonetario(amount,currency,simboloActual),[currency,simboloActual]);
+  return <WalletContext.Provider value={{...(belongsToSession?data:emptyData()),billeteras:billeteras.filter(w=>w.user_id===user?.id),billeteraActual:belongsToSession?billeteraActual:null,modoLegacy,soloLectura:!belongsToSession||!billeteraActual||billeteraActual.archivada,loading,ready:belongsToSession&&ready,escribiendo,error,limpiarError:()=>setError(null),reportarError,clienteBilletera,seleccionarBilletera,crearBilletera,editarBilletera,archivarBilletera,eliminarBilletera,registrarFormulario,recargarTodo,ejecutarOperacion,actualizarMontoBase,guardarSueldoMes:(a,m,s15,s30)=>saveSalaries(a,[m],s15,s30),guardarSueldoAnual:(a,m,s15,s30)=>saveSalaries(a,Array.from({length:12-m},(_,i)=>m+i),s15,s30),formatearMoneda,simboloMoneda:simboloActual,monedasDisponibles,monedasCargadas,recargarMonedas}}>{children}</WalletContext.Provider>;
 }
 export function useWallet(): WalletContextType {
   const value=useContext(WalletContext);

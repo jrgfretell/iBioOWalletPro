@@ -1,42 +1,49 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Wallet, CalendarCheck, TrendingUp, ArrowRight, ArrowLeft, CheckCircle2, Sparkles, X, History } from 'lucide-react';
 import { AnimatedModal } from './AnimatedModal';
 import { useWallet } from '../context/WalletContext';
-import { MONEDAS, fechaHoyISO } from '../types/wallet';
+import { fechaHoyISO } from '../types/wallet';
 import type { Moneda } from '../types/wallet';
 import { toastExito } from '../lib/alerts';
 
 const SUGERENCIAS_NOMBRE = ['Personal', 'Principal', 'Ahorros', 'Mi Negocio', 'Casa'];
 
 interface OnboardingModalProps {
+  autoOpenFirstWallet?: boolean;
   forceOpenGuide?: boolean;
   onCloseGuide?: () => void;
   onCreated?: (nombre: string) => void;
 }
 
-export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreated }: OnboardingModalProps) {
-  const { billeteras, modoLegacy, loading, escribiendo, error, limpiarError, crearBilletera } = useWallet();
+export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = false, onCloseGuide, onCreated }: OnboardingModalProps) {
+  const { billeteras, modoLegacy, loading, escribiendo, error, limpiarError, crearBilletera, monedasDisponibles, monedasCargadas } = useWallet();
 
   // Es obligatorio cuando el usuario ya cargó y no tiene ninguna billetera creada
-  const requiresFirstWallet = !loading && !modoLegacy && billeteras.length === 0;
+  const requiresFirstWallet = autoOpenFirstWallet && !loading && !modoLegacy && billeteras.length === 0;
   const isOpen = requiresFirstWallet || forceOpenGuide;
 
   const [step, setStep] = useState<'welcome' | 'create'>('welcome');
   const [submitted, setSubmitted] = useState(false);
   const [nombre, setNombre] = useState('Personal');
-  const [moneda, setMoneda] = useState<Moneda>('PEN');
+  const [moneda, setMoneda] = useState<Moneda>('');
   const [modoSaldo, setModoSaldo] = useState<'hoy' | 'pasado'>('hoy');
   const [montoBase, setMontoBase] = useState('0');
   const [fechaRef, setFechaRef] = useState(() => fechaHoyISO());
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState(false);
 
+  useEffect(() => {
+    if (monedasCargadas && !monedasDisponibles.some(m => m.codigo === moneda)) {
+      setMoneda(monedasDisponibles[0]?.codigo || '');
+    }
+  }, [monedasCargadas, monedasDisponibles, moneda]);
+
   if (!isOpen || submitted) return null;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim() || busy || escribiendo) return;
+    if (!nombre.trim() || !moneda || busy || escribiendo) return;
     setBusy(true);
     setFailure(false);
     limpiarError();
@@ -112,7 +119,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreate
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">1. Billeteras como Perfiles Independientes</h3>
                   <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                    Cada billetera tiene su propia moneda (<strong>Soles PEN</strong>, <strong>Dólares USD</strong> o <strong>Euros EUR</strong>), su <strong>Saldo Inicial de Referencia</strong> y sus propios registros. Puedes crear perfiles separados para tus cuentas personales, ahorros o negocio.
+                    Cada billetera tiene una moneda del catálogo activo, su <strong>Saldo Inicial de Referencia</strong> y sus propios registros. Puedes crear perfiles separados para tus cuentas personales, ahorros o negocio.
                   </p>
                 </div>
               </div>
@@ -215,23 +222,26 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreate
                 Moneda de la billetera
               </label>
               <div className="grid grid-cols-3 gap-2.5">
-                {(Object.entries(MONEDAS) as [Moneda, { nombre: string; simbolo: string }][]).map(([code, info]) => (
+                {monedasDisponibles.map((info) => (
                   <button
-                    key={code}
+                    key={info.codigo}
                     type="button"
-                    onClick={() => setMoneda(code)}
+                    onClick={() => setMoneda(info.codigo)}
                     className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-all cursor-pointer ${
-                      moneda === code
+                      moneda === info.codigo
                         ? 'border-teal-600 bg-teal-50/70 text-teal-900 ring-2 ring-teal-500/20'
                         : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     <span className="text-lg font-black">{info.simbolo}</span>
                     <span className="text-xs font-bold mt-0.5">{info.nombre}</span>
-                    <span className="text-[10px] text-slate-400">{code}</span>
+                    <span className="text-[10px] text-slate-400">{info.codigo}</span>
                   </button>
                 ))}
               </div>
+              {monedasCargadas && monedasDisponibles.length === 0 && (
+                <p className="mt-2 text-sm text-rose-700">No se pudieron cargar monedas activas desde el catálogo. Actualiza la página o inténtalo más tarde.</p>
+              )}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3.5">
@@ -309,7 +319,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreate
               {modoSaldo === 'hoy' ? (
                 <div>
                   <label htmlFor="onb-wallet-balance" className="block text-xs font-semibold text-slate-600 mb-1">
-                    Saldo disponible ({MONEDAS[moneda].simbolo})
+                    Saldo disponible ({monedasDisponibles.find(m => m.codigo === moneda)?.simbolo || moneda})
                   </label>
                   <input
                     id="onb-wallet-balance"
@@ -329,7 +339,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreate
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="onb-wallet-balance" className="block text-xs font-semibold text-slate-600 mb-1">
-                        Capital inicial ({MONEDAS[moneda].simbolo})
+                        Capital inicial ({monedasDisponibles.find(m => m.codigo === moneda)?.simbolo || moneda})
                       </label>
                       <input
                         id="onb-wallet-balance"
@@ -377,7 +387,7 @@ export function OnboardingModal({ forceOpenGuide = false, onCloseGuide, onCreate
 
               <button
                 type="submit"
-                disabled={busy || !nombre.trim()}
+                disabled={busy || !nombre.trim() || (step === 'create' && (!monedasCargadas || !monedasDisponibles.some(m => m.codigo === moneda && m.activo !== false)))}
                 className="inline-flex min-h-11 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 transition-all cursor-pointer"
               >
                 <CheckCircle2 className="h-4 w-4" />

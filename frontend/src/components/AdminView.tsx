@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { AdminStats, AdminUser, MonedaConfig } from '../types/wallet';
-import { MONEDAS } from '../types/wallet';
 import { confirmarAccion, alertaExito, alertaError, alertaInfo, toastExito } from '../lib/alerts';
 import { AnimatedModal } from './AnimatedModal';
 
@@ -69,25 +68,9 @@ export const AdminView: React.FC = () => {
         setMonedasAdmin(resDirect.data as MonedaConfig[]);
         return;
       }
-      setMonedasAdmin(
-        Object.entries(MONEDAS).map(([codigo, m], i) => ({
-          codigo,
-          nombre: m.nombre,
-          simbolo: m.simbolo,
-          activo: true,
-          orden: i + 1,
-        }))
-      );
+      setMonedasAdmin([]);
     } catch {
-      setMonedasAdmin(
-        Object.entries(MONEDAS).map(([codigo, m], i) => ({
-          codigo,
-          nombre: m.nombre,
-          simbolo: m.simbolo,
-          activo: true,
-          orden: i + 1,
-        }))
-      );
+      setMonedasAdmin([]);
     } finally {
       setCargandoMonedas(false);
     }
@@ -368,7 +351,6 @@ export const AdminView: React.FC = () => {
         if (upsertErr) throw upsertErr;
       }
 
-      MONEDAS[cod] = { nombre: nom, simbolo: sim };
       await toastExito(`Moneda ${cod} guardada con éxito`);
       setModalMonedaOpen(false);
       await cargarMonedasAdmin();

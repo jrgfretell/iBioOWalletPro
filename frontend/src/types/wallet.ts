@@ -22,17 +22,6 @@ export interface Billetera {
   creado_el?: string;
   actualizado_el?: string;
 }
-export const MONEDAS: Record<string, { nombre: string; simbolo: string }> = {
-  PEN: { nombre: 'Soles', simbolo: 'S/' },
-  USD: { nombre: 'Dólares', simbolo: 'US$' },
-  EUR: { nombre: 'Euros', simbolo: '€' },
-  GBP: { nombre: 'Libras Esterlinas', simbolo: '£' },
-  MXN: { nombre: 'Pesos Mexicanos', simbolo: 'MX$' },
-  COP: { nombre: 'Pesos Colombianos', simbolo: 'COL$' },
-  CLP: { nombre: 'Pesos Chilenos', simbolo: 'CLP$' },
-  BRL: { nombre: 'Reales Brasileños', simbolo: 'R$' },
-};
-
 export interface Categoria {
   id: number;
   user_id?: string;
@@ -150,10 +139,9 @@ export const MESES_CORTOS = [
   'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
 ];
 
-export function formatearMoneda(monto: number, moneda: Moneda): string {
+export function formatearMoneda(monto: number, moneda: Moneda, simbolo = moneda): string {
   if (!Number.isFinite(monto)) return '—';
   const normalizado = Math.abs(monto) < 0.005 ? 0 : monto;
-  const simbolo = MONEDAS[moneda]?.simbolo || `${moneda} `;
   return `${normalizado < 0 ? '-' : ''}${simbolo} ${Math.abs(normalizado).toLocaleString('es-PE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

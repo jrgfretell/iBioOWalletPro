@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Wallet,
   Plus,
@@ -13,14 +13,13 @@ import {
   DollarSign,
   Euro,
   Layers,
-  ArrowRight,
-  Sparkles,
-  X,
+  History,
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { AnimatedModal } from './AnimatedModal';
 import { OnboardingModal } from './OnboardingModal';
-import { MONEDAS, fechaHoyISO } from '../types/wallet';
+import { WalletCreatedPrompt } from './WalletCreatedPrompt';
+import { fechaHoyISO } from '../types/wallet';
 import type { Billetera, Moneda, ActiveTab } from '../types/wallet';
 import { confirmarAccion, alertaInfo, alertaError, toastExito } from '../lib/alerts';
 
@@ -37,6 +36,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
     loading,
     escribiendo,
     monedasDisponibles,
+    monedasCargadas,
     seleccionarBilletera,
     crearBilletera,
     editarBilletera,
@@ -54,10 +54,16 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingWallet, setEditingWallet] = useState<Billetera | null>(null);
   const [inputNombre, setInputNombre] = useState('');
-  const [inputMoneda, setInputMoneda] = useState<Moneda>('PEN');
+  const [inputMoneda, setInputMoneda] = useState<Moneda>('');
   const [inputMontoBase, setInputMontoBase] = useState('0');
   const [inputFechaRef, setInputFechaRef] = useState(() => fechaHoyISO());
   const [modoSaldo, setModoSaldo] = useState<'hoy' | 'pasado'>('hoy');
+
+  useEffect(() => {
+    if (modalOpen && modalMode === 'create' && monedasCargadas && !monedasDisponibles.some(m => m.codigo === inputMoneda)) {
+      setInputMoneda(monedasDisponibles[0]?.codigo || '');
+    }
+  }, [modalOpen, modalMode, monedasCargadas, monedasDisponibles, inputMoneda]);
   const [guardando, setGuardando] = useState(false);
   const [errorModal, setErrorModal] = useState<string | null>(null);
 
@@ -116,7 +122,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
     setModalMode('create');
     setEditingWallet(null);
     setInputNombre('');
-    setInputMoneda('PEN');
+    setInputMoneda(monedasDisponibles[0]?.codigo || '');
     setInputMontoBase('0');
     setInputFechaRef(fechaHoyISO());
     setModoSaldo('hoy');
@@ -282,7 +288,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 Saldo base
               </span>
               <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight block mt-0.5">
-                S/ 0.00
+                —
               </span>
             </div>
           </div>
@@ -290,7 +296,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
 
         {/* Tarjetas dinámicas para cada moneda con fondos activos */}
         {Object.entries(patrimonioConsolidado.totales).map(([codigo, total]) => {
-          const info = MONEDAS[codigo] || { nombre: codigo, simbolo: codigo };
+          const info = monedasDisponibles.find(m => m.codigo === codigo) || { nombre: codigo, simbolo: codigo };
           const isUSD = codigo === 'USD';
           const isEUR = codigo === 'EUR';
           const isPEN = codigo === 'PEN';
@@ -368,7 +374,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           </button>
 
           {monedasEnUso.map((codigo) => {
-            const info = MONEDAS[codigo] || { nombre: codigo, simbolo: codigo };
+            const info = monedasDisponibles.find(m => m.codigo === codigo) || { nombre: codigo, simbolo: codigo };
             const count = billeteras.filter((w) => !w.archivada && w.moneda === codigo).length;
             const isSelected = tabFiltro === codigo;
             return (
@@ -419,7 +425,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           const isCurrent = wallet.id === billeteraActual?.id;
           const displayBase = isCurrent ? montoBaseActual : (wallet.monto_base || 0);
           const displayFechaRef = isCurrent ? fechaRefActual : wallet.fecha_referencia;
-          const infoMoneda = MONEDAS[wallet.moneda] || MONEDAS.PEN;
+          const infoMoneda = monedasDisponibles.find(m => m.codigo === wallet.moneda) || { nombre: wallet.moneda, simbolo: wallet.moneda };
 
           return (
             <div
@@ -574,7 +580,9 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
         open={modalOpen}
         label={modalMode === 'create' ? 'Nueva Billetera' : 'Editar Billetera'}
       >
-        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl relative">
+        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden">
+          <div className="grid md:grid-cols-[minmax(0,1.35fr)_minmax(230px,.8fr)]">
+          <div className="p-5 sm:p-6">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center">
@@ -582,11 +590,11 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               </div>
               <div>
                 <h3 className="font-bold text-base text-slate-900">
-                  {modalMode === 'create' ? 'Crear Nueva Billetera' : 'Editar Billetera'}
+                  {modalMode === 'create' ? 'Crea un perfil para tu dinero' : 'Editar Billetera'}
                 </h3>
                 <p className="text-xs text-slate-500">
                   {modalMode === 'create'
-                    ? 'Organiza tus finanzas en una cuenta separada.'
+                    ? 'Elige la moneda y define desde qué saldo quieres comenzar.'
                     : 'Ajusta el nombre o el saldo base de inicio.'}
                 </p>
               </div>
@@ -603,111 +611,102 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           <form onSubmit={handleGuardarBilletera} className="mt-4 space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Nombre de la Billetera
+                Nombre de la billetera
               </label>
               <input
                 type="text"
                 required
                 value={inputNombre}
                 onChange={(e) => setInputNombre(e.target.value)}
-                placeholder="Ej. BCP Sueldo, Ahorros, Negocio..."
+                placeholder="Ej. Personal, Ahorros o Viajes"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
               />
+              {modalMode === 'create' && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="mr-1 text-[11px] text-slate-400">Ideas:</span>
+                  {['Personal', 'Ahorros', 'Negocio'].map((suggestion) => (
+                    <button key={suggestion} type="button" onClick={() => setInputNombre(suggestion)} className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 cursor-pointer">
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {modalMode === 'create' && (
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Moneda
-                </label>
-                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-0.5">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Moneda</label>
+                  <span className="text-[10px] font-semibold text-slate-400">Según el catálogo activo</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-0.5 sm:grid-cols-3">
                   {monedasDisponibles.filter((m) => m.activo !== false).map((m) => {
                     const isSelected = inputMoneda === m.codigo;
-                    const isUSD = m.codigo === 'USD';
-                    const isEUR = m.codigo === 'EUR';
 
                     return (
                       <button
                         key={m.codigo}
                         type="button"
                         onClick={() => setInputMoneda(m.codigo)}
-                        className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 cursor-pointer transition-all ${
+                        aria-pressed={isSelected}
+                        className={`min-h-[58px] rounded-xl border px-3 py-2 text-left flex items-center gap-2.5 cursor-pointer transition-all ${
                           isSelected
-                            ? isUSD
-                              ? 'bg-blue-50 border-blue-500 text-blue-800 shadow-2xs'
-                              : isEUR
-                              ? 'bg-amber-50 border-amber-500 text-amber-800 shadow-2xs'
-                              : 'bg-teal-50 border-teal-500 text-teal-800 shadow-2xs'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            ? 'bg-teal-50 border-teal-500 text-teal-800 ring-2 ring-teal-500/10'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
-                        <span className="font-black text-sm">{m.simbolo}</span>
-                        <span className="text-[11px] truncate max-w-[80px]">{m.codigo}</span>
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-sm font-black">{m.simbolo}</span>
+                        <span className="min-w-0"><span className="block truncate text-[11px] font-bold">{m.nombre}</span><span className="mt-0.5 block text-[9px] text-slate-400">{m.codigo}</span></span>
                       </button>
                     );
                   })}
                 </div>
+                {monedasCargadas && monedasDisponibles.filter(m => m.activo !== false).length === 0 && (
+                  <p className="mt-2 text-sm text-rose-700">No hay monedas activas en el catálogo de la aplicación.</p>
+                )}
               </div>
             )}
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Saldo Base Inicial
-                </label>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModoSaldo('hoy');
-                      setInputFechaRef(fechaHoyISO());
-                    }}
-                    className={`font-semibold cursor-pointer ${
-                      modoSaldo === 'hoy' ? 'text-teal-600 underline' : 'text-slate-400'
-                    }`}
-                  >
-                    Desde Hoy
+            {modalMode === 'create' ? (
+              <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Saldo inicial de referencia</span>
+                  <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">Base de proyección</span>
+                </div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">¿Cómo deseas definir tu saldo inicial?</label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button type="button" aria-pressed={modoSaldo === 'hoy'} onClick={() => { setModoSaldo('hoy'); setInputFechaRef(fechaHoyISO()); }} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'hoy' ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 bg-white/70 hover:bg-white'}`}>
+                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}><Wallet className="h-4 w-4" /></span>
+                    <span className="min-w-0"><span className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-900">Dinero disponible HOY <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">Recomendado</span></span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500">Lo que tienes en mano o cuenta ahora mismo.</span></span>
                   </button>
-                  <span className="text-slate-300">|</span>
-                  <button
-                    type="button"
-                    onClick={() => setModoSaldo('pasado')}
-                    className={`font-semibold cursor-pointer ${
-                      modoSaldo === 'pasado' ? 'text-teal-600 underline' : 'text-slate-400'
-                    }`}
-                  >
-                    Fecha pasada
+                  <button type="button" aria-pressed={modoSaldo === 'pasado'} onClick={() => setModoSaldo('pasado')} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'pasado' ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 bg-white/70 hover:bg-white'}`}>
+                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'pasado' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}><History className="h-4 w-4" /></span>
+                    <span className="min-w-0"><span className="block text-xs font-bold text-slate-900">Capital inicial en el PASADO</span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500">Reconstruye tu saldo descontando pagos históricos.</span></span>
                   </button>
                 </div>
-              </div>
-
-              <input
-                type="number"
-                step="any"
-                required
-                value={inputMontoBase}
-                onChange={(e) => setInputMontoBase(e.target.value)}
-                placeholder="0.00"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-              />
-              <p className="mt-1 text-[11px] text-slate-400">
-                Tu saldo de arranque a partir del cual se calculan los movimientos.
-              </p>
-            </div>
-
-            {modoSaldo === 'pasado' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Fecha de Saldo Inicial
-                </label>
-                <input
-                  type="date"
-                  max={fechaHoyISO()}
-                  value={inputFechaRef}
-                  onChange={(e) => setInputFechaRef(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
-                />
-              </div>
+                {modoSaldo === 'hoy' ? (
+                  <>
+                    <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">Saldo disponible ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label>
+                    <input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" />
+                    <div className="rounded-xl border border-teal-200/80 bg-teal-50 p-2.5 text-xs leading-relaxed text-teal-900"><strong>✓ Punto de partida: Hoy ({new Intl.DateTimeFormat('es-PE').format(new Date(`${fechaHoyISO()}T12:00:00`))}).</strong> Si registras compromisos o cuotas que pagaste meses atrás, <strong>no se descontarán</strong> de este dinero. Solo se descontarán pagos desde hoy en adelante.</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div><label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">Capital inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label><input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
+                      <div><label htmlFor="wallet-base-date" className="mb-1 block text-xs font-semibold text-slate-600">¿En qué fecha tenías este capital?</label><input id="wallet-base-date" type="date" required max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => setInputFechaRef(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
+                    </div>
+                    <div className="rounded-xl border border-amber-200/80 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900"><strong>ℹ Reconstrucción histórica:</strong> Los abonos de cuotas y gastos posteriores a <strong>{inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : 'la fecha elegida'}</strong> se irán restando mes a mes hasta calcular cuánto dinero te queda actualmente.</div>
+                  </>
+                )}
+              </section>
+            ) : (
+              <section className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5">
+                <label htmlFor="wallet-base-amount" className="block text-xs font-bold uppercase tracking-wider text-slate-700">Saldo base inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label>
+                <input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" />
+                <div className="flex gap-3 text-xs"><button type="button" onClick={() => { setModoSaldo('hoy'); setInputFechaRef(fechaHoyISO()); }} className={`font-semibold ${modoSaldo === 'hoy' ? 'text-teal-700 underline' : 'text-slate-500'}`}>Dinero disponible HOY</button><button type="button" onClick={() => setModoSaldo('pasado')} className={`font-semibold ${modoSaldo === 'pasado' ? 'text-teal-700 underline' : 'text-slate-500'}`}>Capital inicial en el PASADO</button></div>
+                {modoSaldo === 'pasado' && <input aria-label="Fecha de referencia del saldo" type="date" max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => setInputFechaRef(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm" />}
+              </section>
             )}
 
             {errorModal && (
@@ -716,7 +715,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t border-slate-100 bg-white/95 pt-3 pb-1 backdrop-blur">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
@@ -726,76 +725,45 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               </button>
               <button
                 type="submit"
-                disabled={guardando}
+                disabled={guardando || (modalMode === 'create' && (!monedasCargadas || !monedasDisponibles.some(m => m.codigo === inputMoneda && m.activo !== false)))}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white shadow-xs transition-colors cursor-pointer"
               >
                 {guardando ? 'Guardando…' : modalMode === 'create' ? 'Crear Billetera' : 'Guardar Cambios'}
               </button>
             </div>
           </form>
+          </div>
+          <aside className="hidden flex-col border-l border-slate-100 bg-slate-50 p-5 md:flex">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Así se verá tu billetera</span>
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between"><span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700"><Wallet className="h-4 w-4" /></span><span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-extrabold text-slate-600">{inputMoneda || '—'}</span></div>
+              <p className="mt-4 break-words text-sm font-extrabold text-slate-900">{inputNombre.trim() || 'Nombre de billetera'}</p>
+              <p className="mt-1 text-[11px] text-slate-400">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.nombre || 'Moneda'}</p>
+              <div className="my-4 h-px bg-slate-100" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wide text-slate-400">Saldo inicial · {modoSaldo === 'pasado' ? 'Fecha pasada' : 'Hoy'}</span>
+              <p className="mt-1 text-xl font-black tracking-tight text-slate-900">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || ''} {new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(inputMontoBase) || 0)}</p>
+              {modoSaldo === 'pasado' && <p className="mt-1 text-[10px] text-slate-500">Fecha de referencia: {inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : '—'}</p>}
+            </div>
+            <div className="mt-auto rounded-xl border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-500"><strong className="text-slate-700">Tu saldo es el punto de partida.</strong> Puedes completar tus ingresos después para obtener proyecciones más precisas.</div>
+          </aside>
+          </div>
         </div>
       </AnimatedModal>
 
       {/* 6. Modal Informativo Post-Creación de Billetera */}
-      <AnimatedModal open={showPostCreatePrompt} label="Configuración de ingresos de la billetera">
-        <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden text-center p-6 sm:p-7 relative">
-          <button
-            type="button"
-            onClick={() => {
-              setShowPostCreatePrompt(false);
-              setCreatedWalletName(null);
-            }}
-            aria-label="Cerrar aviso"
-            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div className="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 ring-8 ring-teal-50/50 shadow-xs">
-            <Sparkles className="h-7 w-7 text-teal-600" />
-          </div>
-
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">
-            ¡Billetera creada con éxito!
-          </h3>
-
-          <p className="mt-2.5 text-sm text-slate-600 leading-relaxed">
-            Has creado <strong className="text-slate-900 font-bold">{createdWalletName}</strong>. ¿Deseas registrar los ingresos programados o sueldo fijo de esta billetera ahora?
-          </p>
-
-          <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-slate-600 text-left flex items-start gap-2.5">
-            <span className="text-base leading-none select-none">💡</span>
-            <span className="leading-relaxed">
-              Configurar tus ingresos te permitirá proyectar con exactitud tu flujo de liquidez quincena a quincena o mes a mes en el panel de control.
-            </span>
-          </div>
-
-          <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                setShowPostCreatePrompt(false);
-                setCreatedWalletName(null);
-              }}
-              className="min-h-11 flex-1 rounded-xl border border-slate-200 px-4 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
-            >
-              Hacerlo más tarde
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowPostCreatePrompt(false);
-                setCreatedWalletName(null);
-                onNavigate?.('ingresos');
-              }}
-              className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 cursor-pointer transition-all flex items-center justify-center gap-2"
-            >
-              <span>Configurar ingresos</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </AnimatedModal>
+      <WalletCreatedPrompt
+        open={showPostCreatePrompt}
+        walletName={createdWalletName}
+        onDismiss={() => {
+          setShowPostCreatePrompt(false);
+          setCreatedWalletName(null);
+        }}
+        onConfigureIncome={() => {
+          setShowPostCreatePrompt(false);
+          setCreatedWalletName(null);
+          onNavigate?.('ingresos');
+        }}
+      />
     </div>
   );
 };
