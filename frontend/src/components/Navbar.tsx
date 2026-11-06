@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   KeyRound,
   Eye,
+  Menu,
   EyeOff,
   X,
   Lock,
@@ -27,11 +28,13 @@ import {
 interface NavbarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  children?: React.ReactNode;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
+  children,
 }) => {
   const { user, esAdmin, isPasswordRecovery, setIsPasswordRecovery, signOut } = useAuth();
   const { cuotas, pagosDeuda, movimientos, recurrentes, formatearMoneda } = useWallet();
@@ -47,6 +50,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Estado de la campanita de avisos informativos
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // Estado del drawer lateral en móvil
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Apertura automática si viene desde enlace de recuperación de contraseña
   useEffect(() => {
@@ -199,65 +205,146 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navItems: { id: ActiveTab; label: string; mobileLabel?: string; icon: React.ReactNode; isAdmin?: boolean }[] = [
-    { id: 'dashboard', label: 'Dashboard', mobileLabel: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'movimientos', label: 'Movimientos', mobileLabel: 'Movimientos', icon: <History className="w-4 h-4" /> },
-    { id: 'pagos', label: 'Pagos programados', mobileLabel: 'Pagos', icon: <CalendarClock className="w-4 h-4" /> },
-    { id: 'categorias', label: 'Categorías', mobileLabel: 'Categorías', icon: <Tags className="w-4 h-4" /> },
+  const coreNavItems = [
+    { id: 'dashboard' as ActiveTab, label: 'Inicio', desktopLabel: 'Inicio', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'movimientos' as ActiveTab, label: 'Movimientos', desktopLabel: 'Movimientos', icon: <History className="w-4 h-4" /> },
+    { id: 'pagos' as ActiveTab, label: 'Pagos', desktopLabel: 'Pagos programados', icon: <CalendarClock className="w-4 h-4" /> },
+    { id: 'categorias' as ActiveTab, label: 'Categorías', desktopLabel: 'Categorías', icon: <Tags className="w-4 h-4" /> },
   ];
 
-  if (esAdmin) {
-    navItems.push({
-      id: 'admin',
-      label: 'Admin',
-      mobileLabel: 'Admin',
-      icon: <ShieldCheck className="w-4 h-4 text-amber-400" />,
-      isAdmin: true,
-    });
-  }
+  const tabTitles: Record<ActiveTab, string> = {
+    dashboard: 'Dashboard',
+    movimientos: 'Historial de Movimientos',
+    pagos: 'Pagos programados',
+    categorias: 'Categorías',
+    admin: 'Panel de Administración',
+  };
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-slate-900 text-white shadow-lg border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Brand Logo */}
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className="flex items-center gap-2.5 cursor-pointer group focus:outline-none"
-          >
-            <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-400/30 text-teal-400 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-              <Wallet className="w-5 h-5" />
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-bold text-white tracking-tight text-lg">Mi Billete</span>
-              <span className="font-extrabold text-teal-400 text-lg">Pro</span>
-            </div>
-          </button>
+      {/* 1. Desktop Sidebar (Barra Lateral Izquierda con Scroll Independiente) */}
+      <aside className="hidden md:flex flex-col w-64 shrink-0 bg-slate-900 border-r border-slate-800 sticky top-0 h-screen z-30 select-none">
+        {/* Header del Sidebar */}
+        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-slate-800 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-400/30 text-teal-400 flex items-center justify-center shadow-xs">
+            <Wallet className="w-4 h-4" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-bold text-white tracking-tight text-base">Mi Billete</span>
+            <span className="font-extrabold text-teal-400 text-base">Pro</span>
+          </div>
+        </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-800/70 p-1 rounded-xl border border-slate-700/60">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    isActive
-                      ? item.isAdmin
-                        ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                        : 'bg-teal-500 text-white shadow-sm'
-                      : item.isAdmin
-                      ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-500/10'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+        {/* Lista de Navegación con Scroll Vertical */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
+              Menú Principal
+            </span>
+            <nav className="space-y-1">
+              {coreNavItems.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                      isActive
+                        ? 'bg-teal-500/15 text-teal-300 font-bold border-l-2 border-teal-400 shadow-xs'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    {item.icon}
+                    <span>{item.desktopLabel}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {esAdmin && (
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
+                Administración
+              </span>
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                  activeTab === 'admin'
+                    ? 'bg-amber-500/15 text-amber-300 font-bold border-l-2 border-amber-400 shadow-xs'
+                    : 'text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/10'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <span>Panel Admin</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer del Sidebar: Usuario */}
+        <div className="p-3 border-t border-slate-800 bg-slate-900/60 shrink-0">
+          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/40 border border-slate-800">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">
+                  {user?.user_metadata?.full_name || 'Mi Cuenta'}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate">
+                  {user?.email}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setProfileModalOpen(true)}
+              title="Seguridad y Perfil"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-teal-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* 2. Columna Principal de Contenido */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Topbar Superior */}
+        <header className="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 h-16 shrink-0">
+          <div className="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+            {/* Izquierda: Hamburguesa en Móvil / Breadcrumb en Escritorio */}
+            <div className="flex items-center gap-3">
+              {/* Botón Hamburguesa en Móvil */}
+              <button
+                type="button"
+                onClick={() => setMobileDrawerOpen(true)}
+                className="md:hidden p-2 -ml-1 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Abrir menú de navegación"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              {/* Logo en Móvil */}
+              <div className="flex items-center gap-2 md:hidden">
+                <div className="w-7 h-7 rounded-lg bg-teal-500/20 border border-teal-400/30 text-teal-400 flex items-center justify-center">
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <span className="font-extrabold text-white text-base tracking-tight">
+                  Mi Billete <span className="text-teal-400">Pro</span>
+                </span>
+              </div>
+
+              {/* Título en Escritorio */}
+              <div className="hidden md:flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400">Sección activa</span>
+                <span className="text-slate-600">/</span>
+                <span className="text-sm font-extrabold text-white tracking-wide">
+                  {tabTitles[activeTab] || 'Dashboard'}
+                </span>
+              </div>
+            </div>
 
           {/* Right User Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -435,30 +522,185 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-1 py-1.5 flex items-center justify-between gap-0.5 shadow-2xl safe-area-bottom">
-        {navItems.map((item) => {
+      {/* Contenido Principal (Children) */}
+      <div className="flex-1 min-w-0">
+        {children}
+      </div>
+    </div>
+
+      {/* 3. Mobile Bottom Navigation Bar (Exactamente 4 accesos principales) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
+        {coreNavItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
                 isActive
-                  ? item.isAdmin
-                    ? 'text-amber-400 bg-amber-500/15'
-                    : 'text-teal-400 bg-teal-500/10'
+                  ? 'text-teal-400 bg-teal-500/15'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {item.icon}
-              <span className="mt-0.5 text-[9px] sm:text-[10px] font-bold tracking-tight text-center w-full block truncate">
-                {item.mobileLabel || item.label.split(' ')[0]}
+              <span className={`mt-1 text-[10px] tracking-tight text-center w-full block truncate ${
+                isActive ? 'font-bold text-teal-300' : 'font-medium'
+              }`}>
+                {item.label}
               </span>
             </button>
           );
         })}
       </nav>
+
+      {/* 4. Mobile Lateral Drawer (Menú Desplegable) */}
+      <AnimatePresence>
+        {mobileDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop oscuro con blur */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMobileDrawerOpen(false)}
+              className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs cursor-pointer"
+              aria-hidden="true"
+            />
+
+            {/* Panel Deslizante Lateral */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+              className="relative w-72 max-w-[85vw] h-full bg-slate-900 border-r border-slate-800 text-white flex flex-col shadow-2xl z-10 select-none"
+            >
+              {/* Header del Drawer */}
+              <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-400/30 text-teal-400 flex items-center justify-center shadow-xs">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-bold text-white tracking-tight text-base">Mi Billete</span>
+                    <span className="font-extrabold text-teal-400 text-base">Pro</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                  aria-label="Cerrar menú"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Contenido con Scroll Independiente */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+                {/* Sección: Menú Principal */}
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
+                    Menú Principal
+                  </span>
+                  <nav className="space-y-1">
+                    {coreNavItems.map((item) => {
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setMobileDrawerOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                            isActive
+                              ? 'bg-teal-500/15 text-teal-300 font-bold border-l-2 border-teal-400 shadow-xs'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          }`}
+                        >
+                          {item.icon}
+                          <span>{item.desktopLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Sección: Administración (si es admin) */}
+                {esAdmin && (
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
+                      Administración
+                    </span>
+                    <button
+                      onClick={() => {
+                        setActiveTab('admin');
+                        setMobileDrawerOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                        activeTab === 'admin'
+                          ? 'bg-amber-500/15 text-amber-300 font-bold border-l-2 border-amber-400 shadow-xs'
+                          : 'text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-amber-400" />
+                      <span>Panel Admin</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Sección: Accesos de Configuración y Seguridad */}
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
+                    Ajustes
+                  </span>
+                  <button
+                    onClick={() => {
+                      setMobileDrawerOpen(false);
+                      setProfileModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all cursor-pointer text-left"
+                  >
+                    <KeyRound className="w-4 h-4 text-teal-400" />
+                    <span>Perfil y Seguridad</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Footer del Drawer: Usuario & Cerrar sesión */}
+              <div className="p-4 border-t border-slate-800 bg-slate-900/80 shrink-0 space-y-3">
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/60">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                    {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-white truncate">
+                      {user?.user_metadata?.full_name || 'Mi Cuenta'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    signOut();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-500/10 active:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modal Mi Perfil y Seguridad */}
       <AnimatedModal open={profileModalOpen} label="Mi Perfil y Seguridad">
