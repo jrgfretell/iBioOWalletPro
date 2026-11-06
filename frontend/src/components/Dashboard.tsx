@@ -24,7 +24,7 @@ const WalletShell: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/80 text-slate-800 flex overflow-x-hidden w-full">
+    <div className="min-h-screen bg-slate-100/80 text-slate-800">
       <Navbar
         activeTab={activeTab}
         setActiveTab={(tab) => handleNavigate(tab)}

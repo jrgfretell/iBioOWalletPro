@@ -222,8 +222,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      {/* 1. Desktop Sidebar (Barra Lateral Izquierda con Scroll Independiente) */}
-      <aside className="hidden md:flex flex-col w-64 shrink-0 bg-slate-900 border-r border-slate-800 sticky top-0 h-screen z-30 select-none">
+      {/* 1. Desktop Sidebar (Barra Lateral Izquierda Fija en Pantalla Completa con Scroll Independiente) */}
+      <aside className="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 fixed inset-y-0 left-0 z-30 select-none">
         {/* Header del Sidebar */}
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-slate-800 shrink-0">
           <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-400/30 text-teal-400 flex items-center justify-center shadow-xs">
@@ -309,8 +309,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </aside>
 
-      {/* 2. Columna Principal de Contenido */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      {/* 2. Columna Principal de Contenido (con padding izquierdo en md para no solaparse con el sidebar fijo) */}
+      <div className="md:pl-64 flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Topbar Superior */}
         <header className="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 h-16 shrink-0">
           <div className="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
