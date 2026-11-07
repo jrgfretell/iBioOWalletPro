@@ -4,6 +4,7 @@ import { AnimatedModal } from './AnimatedModal';
 import React, { useState, useMemo } from 'react';
 import { AnimatedDisclosure } from './AnimatedDisclosure';
 import { useWallet } from '../context/WalletContext';
+import { useAuth } from '../context/AuthContext';
 import {
   NOMBRES_MESES,
   MESES_CORTOS,
@@ -31,6 +32,7 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const { billeteraActual, modoLegacy, fechaReferencia, formatearMoneda } = useWallet();
+  const { user } = useAuth();
   const {
     montoBase,
     categorias,
@@ -43,6 +45,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   } = useWallet();
 
   const hoy = new Date();
+  const hora = hoy.getHours();
+  const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const nombreCompleto = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const nombreSaludo = typeof nombreCompleto === 'string'
+    ? nombreCompleto.trim().split(/\s+/)[0]
+    : '';
   const anioHoy = hoy.getFullYear();
   const mesHoy = hoy.getMonth();
   const fechaHoyStr = fechaHoyISO();
@@ -196,6 +204,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
+      <header className="space-y-0.5">
+        <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
+          {nombreSaludo ? `${saludo}, ${nombreSaludo}` : '¡Hola!'}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500">Aquí tienes el resumen de tus finanzas.</p>
+      </header>
       {/* FILA SUPERIOR: Columna Izquierda (Saldo + Próximos Pagos + Gastos Categoría) y Columna Derecha (Proyecciones) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* COLUMNA IZQUIERDA (4 cols en desktop) */}

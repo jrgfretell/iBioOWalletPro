@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 
 type SubTabPagos = 'agenda' | 'cronogramas';
+type PagosScope = 'programados' | 'recurrentes';
 
 interface FilaAgenda {
   id: string;
@@ -55,9 +56,10 @@ interface FilaAgenda {
 
 interface PagosViewProps {
   initialSubTab?: SubTabPagos;
+  scope?: PagosScope;
 }
 
-export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }) => {
+export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', scope = 'programados' }) => {
   const { soporteEtapa5, fechaReferencia, ejecutarOperacion, escribiendo, error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
   const {
@@ -224,7 +226,8 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
 
     // 2. Compromisos recurrentes continuos (como Suno, alquiler, luz, internet, etc.)
     recurrentes
-      .filter((r) => r.tipo === 'gasto' && recurrenteAplicaEnMes(r, agendaAnio, agendaMes))
+      .filter((r) => scope === 'recurrentes' ? r.tipo === 'gasto' : r.tipo === 'ingreso')
+      .filter((r) => recurrenteAplicaEnMes(r, agendaAnio, agendaMes))
       .forEach((rec) => {
         const diaReal = Math.min(rec.dia_pago, ultimoDia);
         const fechaEstimada = `${prefijo}-${String(diaReal).padStart(2, '0')}`;
@@ -259,7 +262,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
       });
 
     return resultado.sort((a, b) => a.fecha.localeCompare(b.fecha));
-  }, [agendaAnio, agendaMes, cuotas, deudas, pagosDeuda, recurrentes, movimientos, fechaHoyStr]);
+  }, [agendaAnio, agendaMes, cuotas, deudas, pagosDeuda, recurrentes, movimientos, fechaHoyStr, scope]);
 
   // Aplicar filtros de la barra sobre las filas
   const filasFiltradas = useMemo(() => {
@@ -652,21 +655,31 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
   // GENERAR LOS 13 VENCIMIENTOS DE CADA COMPROMISO CONTINUO (Idéntico a Image 2 de PHP)
   const cronogramasContinuos = useMemo(() => {
     return recurrentes
-      .filter((r) => r.tipo === 'gasto')
+      .filter((r) => scope === 'recurrentes' && r.tipo === 'gasto')
       .map((rec) => {
         const cat = categorias.find((c) => c.id === rec.categoria_id);
         const vencimientos = [];
         let pagosRealizados = 0;
         let totalAbonado = 0;
+        const movimientosHistoricos = movimientos.filter(
+          (mov) => mov.recurrente_id === rec.id && mov.tipo === 'gasto' && mov.pago_confirmado
+        );
+        const totalHistoricoAbonado = movimientosHistoricos.reduce(
+          (total, mov) => total + Number(mov.monto || 0),
+          0
+        );
 
         const { anio: anioInicio, mes: mesInicio } = obtenerMesInicioRecurrente(
           rec,
           hoy.getFullYear(),
           hoy.getMonth()
         );
+        const inicioConfigurado = new Date(anioInicio, mesInicio, 1);
+        const inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const primerMesVisible = inicioConfigurado < inicioMesActual ? inicioMesActual : inicioConfigurado;
 
         for (let i = 0; i < 13; i++) {
-          const target = new Date(anioInicio, mesInicio + i, 1);
+          const target = new Date(primerMesVisible.getFullYear(), primerMesVisible.getMonth() + i, 1);
           const anioT = target.getFullYear();
           const mesT = target.getMonth();
           const ultimoDia = obtenerUltimoDiaMes(anioT, mesT);
@@ -718,6 +731,8 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
           montoRecibido: 0,
           importePeriodo,
           pendientePeriodo,
+          totalHistoricoAbonado,
+          pagosHistoricos: movimientosHistoricos.length,
           pagosRealizados,
           totalVencimientos: 13,
           pct,
@@ -725,7 +740,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
           vencimientos,
         };
       });
-  }, [recurrentes, categorias, movimientos, hoy, fechaHoyStr]);
+  }, [recurrentes, categorias, movimientos, hoy, fechaHoyStr, scope]);
 
   const normalizarBusqueda = (texto: string) =>
     texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
@@ -735,12 +750,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
       normalizarBusqueda(`${nombre} ${categoria}`).includes(palabra)
     );
   const continuosVisibles = cronogramasContinuos.filter((item) => {
+    if (scope !== 'recurrentes') return false;
     if (!coincideBusqueda(item.nombre, item.categoriaNombre)) return false;
-    if (filtroCronogramas === 'pagadas') return item.pendientePeriodo === 0;
-    if (filtroCronogramas === 'activas') return item.pendientePeriodo > 0;
     return true;
   });
   const deudasVisibles = deudas.filter((d) => {
+    if (scope !== 'programados') return false;
     const categoria = categorias.find((c) => c.id === d.categoria_id)?.nombre || 'Otros';
     if (!coincideBusqueda(d.nombre, categoria)) return false;
     const cuotasD = cuotas.filter((c) => c.deuda_id === d.id);
@@ -757,7 +772,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
     ...continuosVisibles.map((c) => c.idKey),
     ...deudasVisibles.map((d) => `deuda-${d.id}`),
   ];
-  const totalCronogramas = deudas.length + cronogramasContinuos.length;
+  const totalCronogramas = scope === 'recurrentes' ? cronogramasContinuos.length : deudas.length;
   const hayAbiertos = clavesVisibles.some((k) => cronogramasExpandidos[k]);
 
   return (
@@ -767,28 +782,32 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-black uppercase tracking-wider text-teal-600 mb-0.5">
-            TU AGENDA FINANCIERA
+            {scope === 'recurrentes' ? 'GASTOS QUE SE REPITEN' : 'TU AGENDA FINANCIERA'}
           </p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Pagos programados</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            {scope === 'recurrentes' ? 'Pagos recurrentes' : 'Pagos programados'}
+          </h1>
           <p className="text-xs text-slate-500">
-            Todos tus compromisos con su propio cronograma. Anticipa tu saldo y sigue cada pago.
+            {scope === 'recurrentes'
+              ? 'Gastos mensuales que continúan hasta que los retires.'
+              : 'Sigue tus cuotas e ingresos mensuales previstos en una sola agenda.'}
           </p>
         </div>
 
         <button disabled={soloLectura}
           onClick={() => {
-            setModalTipoCrear('continuo');
+            setModalTipoCrear(scope === 'recurrentes' ? 'continuo' : 'cuotas');
             setModalNuevoProgramado(true);
           }}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start sm:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>Nuevo pago programado</span>
+          <span>{scope === 'recurrentes' ? 'Nuevo pago recurrente' : 'Nuevo compromiso'}</span>
         </button>
       </div>
 
       {/* Navegación de pagos: dos opciones completas también en móvil. */}
-      <nav aria-label="Secciones de pagos programados"
+      {scope === 'programados' && <nav aria-label="Secciones de pagos programados"
         className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1 sm:inline-flex sm:gap-1.5">
         {([
           { id: 'agenda', label: 'Agenda', desktopLabel: 'Agenda mensual', icon: CalendarCheck },
@@ -805,7 +824,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
             <span className="hidden sm:inline">{desktopLabel}</span>
           </button>
         ))}
-      </nav>
+      </nav>}
 
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* PESTAÑA 1: AGENDA MENSUAL                                                */}
@@ -945,9 +964,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                   }
                   className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
-                  <option value="todos">Todos los pagos</option>
-                  <option value="continuo">Continuos o fijos</option>
-                  <option value="cuotas">Cantidad definida (Cuotas)</option>
+                  <option value="todos">Todos los compromisos</option>
+                  <option value="continuo">Ingresos fijos</option>
+                  <option value="cuotas">Cuotas definidas</option>
                 </select>
               </div>
 
@@ -1301,6 +1320,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(180px,1fr)_auto] md:items-center">
             {/* Filtros de cronogramas */}
+            {scope === 'programados' ? (
             <div className="inline-flex justify-center bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
                 type="button"
@@ -1333,6 +1353,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                 Pagados
               </button>
             </div>
+            ) : (
+              <p className="text-xs font-semibold text-slate-600">
+                {totalCronogramas} {totalCronogramas === 1 ? 'pago recurrente activo' : 'pagos recurrentes activos'}
+              </p>
+            )}
 
             <div className="relative min-w-0">
               <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -1354,12 +1379,15 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
             </button>}
             </div>
             <p role="status" aria-live="polite" aria-atomic="true" className="text-xs text-slate-500">
-              {clavesVisibles.length} de {totalCronogramas} cronogramas{consultaCronogramas && ' · Por nombre o categoría'}
+              {scope === 'recurrentes'
+                ? `${clavesVisibles.length} de ${totalCronogramas} pagos recurrentes`
+                : `${clavesVisibles.length} de ${totalCronogramas} cronogramas en cuotas`}
+              {consultaCronogramas && ' · Filtrado'}
             </p>
           </div>
 
           {/* Historial de abonos registrados (Auditoría discreta y elegante) */}
-          {soporteEtapa5 && pagosDeuda.length > 0 && (
+          {scope === 'programados' && soporteEtapa5 && pagosDeuda.length > 0 && (
             <details className="group rounded-2xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden transition-all">
               <summary className="flex items-center justify-between gap-3 p-3 sm:p-3.5 cursor-pointer select-none bg-slate-50/50 hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -1438,28 +1466,28 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
             </details>
           )}
 
-          {deudas.length === 0 && cronogramasContinuos.length === 0 ? (
+          {(scope === 'recurrentes' ? cronogramasContinuos.length === 0 : deudas.length === 0) ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
               <p className="text-sm font-semibold text-slate-600">
-                No tienes cronogramas registrados.
+                {scope === 'recurrentes' ? 'Aún no tienes pagos recurrentes.' : 'Aún no tienes pagos en cuotas.'}
               </p>
               <button disabled={soloLectura}
                 onClick={() => {
-                  setModalTipoCrear('continuo');
+                  setModalTipoCrear(scope === 'recurrentes' ? 'continuo' : 'cuotas');
                   setModalNuevoProgramado(true);
                 }}
                 className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:underline cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Crear tu primer cronograma de pagos</span>
+                <span>{scope === 'recurrentes' ? 'Agregar primer pago recurrente' : 'Crear primer cronograma en cuotas'}</span>
               </button>
             </div>
           ) : (
             <div className="space-y-6">
               {clavesVisibles.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
                 <Search aria-hidden="true" className="w-6 h-6 text-slate-400 mx-auto mb-3" />
-                <h2 className="text-sm font-bold text-slate-800">No encontramos cronogramas</h2>
-                <p className="text-xs text-slate-500 mt-2">Prueba otro nombre, categoría o estado.</p>
+                <h2 className="text-sm font-bold text-slate-800">No encontramos {scope === 'recurrentes' ? 'pagos recurrentes' : 'cronogramas en cuotas'}</h2>
+                <p className="text-xs text-slate-500 mt-2">Prueba con otro nombre o categoría.</p>
                 <button type="button" onClick={() => { setBusquedaCronogramas(''); setFiltroCronogramas('todos'); }}
                   className="min-h-11 mt-3 px-4 text-sm font-semibold text-teal-700 hover:bg-teal-50 rounded-xl cursor-pointer">Restablecer filtros</button>
               </div>}
@@ -1502,52 +1530,37 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                           </div>
                         </div>
 
-                        {/* Pendiente Total */}
+                        {/* Monto fijo por cada repetición mensual */}
                         <div className="text-right shrink-0">
                           <span className="block text-[10px] text-slate-400 font-black uppercase tracking-wider">
-                            Pendiente
+                            Cada mes
                           </span>
                           <strong className="block text-base sm:text-xl font-black text-slate-900 mt-0.5">
-                            {formatearMoneda(card.pendientePeriodo)}
+                            {formatearMoneda(card.rec.monto)}
                           </strong>
                         </div>
                       </div>
 
-                      {/* Progreso Visual */}
+                      {/* La ventana proyectada y el acumulado histórico son métricas distintas. */}
                       <div className="px-4 sm:px-5 pb-3">
-                        <div className="p-3 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-[11px] font-bold text-slate-500">
-                              Progreso de pagos
-                            </span>
-                            <span className="text-xs font-black text-teal-700">
-                              {card.pct}%{' '}
-                              <span className="text-[10px] font-medium text-slate-400">
-                                ({card.pagosRealizados} de {card.totalVencimientos})
-                              </span>
-                            </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100">
+                            <div className="min-w-0">
+                              <span className="block text-[11px] font-bold text-slate-500">Próximos 13 meses</span>
+                              <span className="block mt-0.5 text-[11px] text-slate-400">Proyección, sin límite de pagos</span>
+                            </div>
+                            <strong className="shrink-0 text-sm font-black text-slate-800">
+                              {formatearMoneda(card.importePeriodo)}
+                            </strong>
                           </div>
-
-                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-teal-500 rounded-full transition-all duration-300"
-                              style={{ width: `${card.pct}%` }}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-0.5">
-                            <span>
-                              Abonado:{' '}
-                              <strong className="text-slate-600 font-black">
-                                {formatearMoneda(card.importePeriodo - card.pendientePeriodo)}
-                              </strong>
-                            </span>
-                            <span>
-                              Total:{' '}
-                              <strong className="text-slate-700 font-black">
-                                {formatearMoneda(card.importePeriodo)}
-                              </strong>
-                            </span>
+                          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100">
+                            <div className="min-w-0">
+                              <span className="block text-[11px] font-bold text-emerald-800">Abonado históricamente</span>
+                              <span className="block mt-0.5 text-[11px] text-emerald-700">{card.pagosHistoricos} {card.pagosHistoricos === 1 ? 'pago registrado' : 'pagos registrados'}</span>
+                            </div>
+                            <strong className="shrink-0 text-sm font-black text-emerald-900">
+                              {formatearMoneda(card.totalHistoricoAbonado)}
+                            </strong>
                           </div>
                         </div>
                       </div>
@@ -1562,10 +1575,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="text-xs font-black text-amber-950">
-                                  Próximo vencimiento
+                                  Próximo pago
                                 </div>
                                 <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
-                                  Cuota {card.proximo.numero} · {card.proximo.fecha.split('-')[2]}/{card.proximo.fecha.split('-')[1]}/{card.proximo.fecha.split('-')[0]}
+                                  {new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(new Date(`${card.proximo.fecha}T12:00:00`))}
                                 </div>
                               </div>
                             </div>
@@ -1576,12 +1589,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                         ) : (
                           <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>Al día: sin pagos pendientes en el período generado</span>
+                            <span>Sin pagos pendientes en los próximos 13 meses</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Barra de Acciones y Toggle de Cuotas al pie */}
+                      {/* Barra de acciones y detalle de ocurrencias */}
                       <div className="px-4 sm:px-5 py-2.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs">
                         <button
                           type="button"
@@ -1595,7 +1608,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                           }
                           className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
                         >
-                          <span>{expandida ? 'Ocultar cuotas' : `Ver ${card.totalVencimientos} cuotas`}</span>
+                          <span>{expandida ? 'Ocultar pagos' : 'Ver próximos 13 meses'}</span>
                           <ChevronDown
                             className={`w-3.5 h-3.5 transition-transform duration-200 motion-reduce:transition-none ${
                               expandida ? 'rotate-180' : ''
@@ -1608,7 +1621,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                             disabled={soloLectura}
                             type="button"
                             onClick={() => abrirModalEdicionRecurrente(card.rec)}
-                            title="Editar cronograma"
+                            title="Editar pago recurrente"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -1619,16 +1632,16 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                             onClick={async () => {
                               try {
                                 const confirmado = await confirmarAccion({
-                                  title: '¿Eliminar cronograma?',
-                                  text: `Se retirará "${card.nombre}". Los pagos realizados permanecerán en el historial.`,
-                                  confirmButtonText: 'Sí, eliminar',
+                                  title: '¿Retirar pago recurrente?',
+                                  text: `"${card.nombre}" dejará de repetirse. Los pagos ya realizados permanecerán en Movimientos.`,
+                                  confirmButtonText: 'Sí, retirar',
                                 });
                                 if (!confirmado) return;
 
                                 if (soporteEtapa5) {
                                   const datos = { recurrente_id: card.rec.id };
                                   await ejecutarOperacion('retirar_recurrente', datos, solicitudPara('retirar_recurrente', datos));
-                                  toastExito('Cronograma retirado. Sus pagos se conservan.');
+                                   toastExito('Pago recurrente retirado. Sus movimientos se conservan.');
                                   return;
                                 }
                                 await supabase
@@ -1647,7 +1660,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                                 reportarError(error);
                               }
                             }}
-                            title="Eliminar cronograma"
+                            title="Retirar pago recurrente"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1655,17 +1668,74 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                         </div>
                       </div>
 
-                      {/* Tabla de los 13 Vencimientos (Idéntica a la Foto 2) */}
+                      {/* Pagos mensuales de la ventana proyectada */}
                       <AnimatedDisclosure open={expandida} id={`vencimientos-${card.idKey}`}>
-                        <div className="border-t border-slate-200 overflow-x-auto w-full">
-                          <table className="w-full text-left text-xs min-w-[550px]">
+                        <div className="border-t border-slate-200 w-full">
+                          <div className="sm:hidden p-3 space-y-2">
+                            {card.vencimientos.map((v) => {
+                              const isPaid = v.estado === 'pagado';
+                              const [y, m, d] = v.fecha.split('-');
+                              const fechaVencimiento = new Date(`${v.fecha}T12:00:00`);
+                              const mesVencimiento = new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric' }).format(fechaVencimiento);
+                              return (
+                                <div key={v.numero} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-black text-slate-800 capitalize">{mesVencimiento}</p>
+                                      <p className="mt-0.5 text-[11px] text-slate-500">Vence {d}/{m}/{y}</p>
+                                    </div>
+                                    <strong className="shrink-0 text-sm font-black text-slate-900">{formatearMoneda(v.importe)}</strong>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    {isPaid ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Pagado
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Pendiente
+                                      </span>
+                                    )}
+                                    {!isPaid ? (
+                                      <button disabled={soloLectura} type="button"
+                                        onClick={async () => {
+                                          try {
+                                            if (soporteEtapa5) { abrirPago({ nombre: card.nombre, monto: v.importe, vencimiento: v.fecha, recurrenteId: card.rec.id }); return; }
+                                            await supabase.from('movimientos_agenda').insert({
+                                              user_id: user!.id, tipo: 'gasto', descripcion: card.nombre, monto: v.importe,
+                                              fecha: v.fecha, categoria_id: card.rec.categoria_id, es_recurrente: true,
+                                              recurrente_id: card.rec.id, pago_confirmado: true, fecha_pago: fechaHoyStr,
+                                            });
+                                            await recargarTodo();
+                                          } catch (error) { reportarError(error); }
+                                        }}
+                                        className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs">
+                                        Registrar pago
+                                      </button>
+                                    ) : v.movimientoId ? (
+                                      <button disabled={soloLectura} type="button"
+                                        onClick={async () => {
+                                          try {
+                                            await supabase.from('movimientos_agenda').delete().eq('id', v.movimientoId!).eq('user_id', user!.id);
+                                            await recargarTodo();
+                                          } catch (error) { reportarError(error); }
+                                        }}
+                                        className="px-2 py-1 text-slate-400 hover:text-red-600 text-[11px] font-semibold cursor-pointer">
+                                        Anular
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="hidden sm:block overflow-x-auto">
+                          <table className="w-full text-left text-xs min-w-[560px]">
                             <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
                               <tr>
-                                <th className="py-2.5 px-4">N.°</th>
+                                <th className="py-2.5 px-4">Mes</th>
                                 <th className="py-2.5 px-4">Vencimiento</th>
-                                <th className="py-2.5 px-4">Importe</th>
-                                <th className="py-2.5 px-4">Abonado</th>
-                                <th className="py-2.5 px-4">Pendiente</th>
+                                <th className="py-2.5 px-4">Monto</th>
                                 <th className="py-2.5 px-4">Estado</th>
                                 <th className="py-2.5 px-4 text-right">Acciones</th>
                               </tr>
@@ -1674,29 +1744,18 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                               {card.vencimientos.map((v) => {
                                 const isPaid = v.estado === 'pagado';
                                 const [y, m, d] = v.fecha.split('-');
+                                const fechaVencimiento = new Date(`${v.fecha}T12:00:00`);
 
                                 return (
                                   <tr key={v.numero} className="hover:bg-slate-50/70">
-                                    <td className="py-3 px-4 font-mono text-slate-400">{v.numero}</td>
+                                    <td className="py-3 px-4 font-semibold text-slate-700 capitalize">
+                                      {new Intl.DateTimeFormat('es-PE', { month: 'short', year: 'numeric' }).format(fechaVencimiento)}
+                                    </td>
                                     <td className="py-3 px-4 font-medium text-slate-800">
                                       {d}/{m}/{y}
                                     </td>
                                     <td className="py-3 px-4 font-bold text-slate-900">
                                       {formatearMoneda(v.importe)}
-                                    </td>
-                                    <td
-                                      className={`py-3 px-4 ${
-                                        v.abonado > 0 ? 'text-emerald-600 font-bold' : 'text-slate-400'
-                                      }`}
-                                    >
-                                      {formatearMoneda(v.abonado)}
-                                    </td>
-                                    <td
-                                      className={`py-3 px-4 font-black ${
-                                        v.pendiente > 0 ? 'text-slate-900' : 'text-slate-400'
-                                      }`}
-                                    >
-                                      {formatearMoneda(v.pendiente)}
                                     </td>
                                     <td className="py-3 px-4">
                                       {isPaid ? (
@@ -1767,6 +1826,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                               })}
                             </tbody>
                           </table>
+                          </div>
                         </div>
                       </AnimatedDisclosure>
                     </article>
@@ -2217,7 +2277,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                 {editTipo === 'recurrente'
                   ? editTipoMovimiento === 'ingreso'
                     ? 'Editar Ingreso Programado'
-                    : 'Editar Compromiso Continuo'
+                    : scope === 'recurrentes' ? 'Editar pago recurrente' : 'Editar Compromiso Continuo'
                   : 'Editar Cronograma'}
               </h3>
               <button disabled={soloLectura}
@@ -2229,7 +2289,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
             </div>
 
             <form onSubmit={handleGuardarEdicion} className="p-5 space-y-4">
-              {editTipo === 'recurrente' && (
+              {editTipo === 'recurrente' && scope !== 'recurrentes' && (
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Tipo de programación
@@ -2387,12 +2447,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
       {/* MODAL: NUEVO PAGO PROGRAMADO                                              */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {pagoObjetivo&&<RegistrarPagoModal key={pagoObjetivo.solicitud} objetivo={pagoObjetivo} onClose={()=>setPagoObjetivo(null)} />}
-      <AnimatedModal open={Boolean(modalNuevoProgramado)} label="Nuevo pago programado">
+      <AnimatedModal open={Boolean(modalNuevoProgramado)} label={scope === 'recurrentes' ? 'Nuevo pago recurrente' : 'Nuevo compromiso'}>
       {modalNuevoProgramado && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
             {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="text-base font-bold">Nuevo Pago Programado</h3>
+              <h3 className="text-base font-bold">{scope === 'recurrentes' ? 'Nuevo pago recurrente' : 'Nuevo compromiso'}</h3>
               <button disabled={soloLectura||creando}
                 onClick={() => setModalNuevoProgramado(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
@@ -2403,35 +2463,31 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
 
             <form onSubmit={handleCrearNuevoProgramado} className="p-5 space-y-4">
               <fieldset disabled={creando||soloLectura} className="space-y-4">
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setModalTipoCrear('continuo')}
-                  className={`py-2 rounded-lg cursor-pointer transition-all ${
-                    modalTipoCrear === 'continuo' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  Hasta Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalTipoCrear('cuotas')}
-                  className={`py-2 rounded-lg cursor-pointer transition-all ${
-                    modalTipoCrear === 'cuotas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  En Cuotas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalTipoCrear('ingreso')}
-                  className={`py-2 rounded-lg cursor-pointer transition-all ${
-                    modalTipoCrear === 'ingreso' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  Ingreso Fijo
-                </button>
-              </div>
+              {scope === 'recurrentes' ? (
+                <div className="rounded-xl border border-teal-100 bg-teal-50/70 px-3 py-2 text-xs text-teal-900">
+                  <strong>Gasto mensual continuo</strong>
+                  <p className="mt-0.5 text-teal-800">Se repetirá cada mes hasta que lo retires.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+                  <button type="button" onClick={() => setModalTipoCrear('cuotas')}
+                    className={`py-2 rounded-lg cursor-pointer transition-all ${modalTipoCrear === 'cuotas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>
+                    Cronograma en cuotas
+                  </button>
+                  <button type="button" onClick={() => setModalTipoCrear('ingreso')}
+                    className={`py-2 rounded-lg cursor-pointer transition-all ${modalTipoCrear === 'ingreso' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>
+                    Ingreso fijo
+                  </button>
+                </div>
+              )}
+
+              {scope === 'programados' && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  {modalTipoCrear === 'ingreso'
+                    ? <><strong>Ingreso mensual fijo</strong><p className="mt-0.5">Se añadirá a la agenda cada mes desde el periodo que indiques.</p></>
+                    : <><strong>Cronograma con cuotas definidas</strong><p className="mt-0.5">Define cuántas cuotas tendrá y cuándo vence la primera.</p></>}
+                </div>
+              )}
 
               {modalTipoCrear === 'cuotas' ? (
                 <>

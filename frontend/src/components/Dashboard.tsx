@@ -23,6 +23,8 @@ const WalletShell: React.FC = () => {
     setActiveTab(tab);
     if (subTab) {
       setPagosSubTab(subTab);
+    } else if (tab === 'recurrentes') {
+      setPagosSubTab('cronogramas');
     } else if (tab === 'pagos') {
       setPagosSubTab('agenda');
     }
@@ -86,7 +88,8 @@ const WalletShell: React.FC = () => {
               {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => handleNavigate(tab)} />}
               {activeTab === 'ingresos' && <IngresosView />}
               {activeTab === 'movimientos' && <MovimientosView />}
-              {activeTab === 'pagos' && <PagosView initialSubTab={pagosSubTab} />}
+              {activeTab === 'pagos' && <PagosView scope="programados" initialSubTab={pagosSubTab} />}
+              {activeTab === 'recurrentes' && <PagosView scope="recurrentes" initialSubTab="cronogramas" />}
               {activeTab === 'categorias' && <CategoriasView />}
             </div>
           ) : null}
