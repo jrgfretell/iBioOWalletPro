@@ -287,7 +287,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {esAdmin && (
-            <div>
+            <div className="border-t border-slate-700/70 pt-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
                 Administración
               </span>
@@ -675,7 +675,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Sección: Administración (si es admin) */}
                 {esAdmin && (
-                  <div>
+                  <div className="border-t border-slate-700/70 pt-4">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
                       Administración
                     </span>
@@ -697,7 +697,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
 
                 {/* Sección: Accesos de Configuración y Seguridad */}
-                <div>
+                <div className="border-t border-slate-700/70 pt-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
                     Ajustes
                   </span>
