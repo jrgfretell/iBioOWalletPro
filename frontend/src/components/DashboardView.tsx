@@ -212,7 +212,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <h2 className="text-sm font-bold text-slate-900">Próximos pagos</h2>
                   <p className="text-xs text-slate-500">
                     {proximosPagos.length > 0
-                      ? `${proximosPagos.length} compromiso(s) pendiente(s)`
+                      ? `${proximosPagos.length} ${proximosPagos.length === 1 ? 'pendiente' : 'pendientes'}`
                       : 'Todo al día'}
                   </p>
                 </div>
@@ -322,7 +322,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center mb-4">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Total Gastado en {NOMBRES_MESES[catMes]}
+                Gasto total · {NOMBRES_MESES[catMes]}
               </span>
               <div className="text-2xl font-black text-slate-900 mt-0.5">
                 {formatearMoneda(reporteGastosCategoria.total)}
@@ -385,11 +385,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
                 <div>
                   <h2 className="flex flex-wrap items-center gap-2 text-base font-bold text-slate-900">
-                    Proyección Mensual Estimada
+                    Proyección mensual
                     <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{billeteraActual?.moneda}</span>
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Cálculo acumulado aplicando sueldos, movimientos realizados y pagos programados pendientes
+                    Incluye sueldos, movimientos y pagos pendientes
                   </p>
                 </div>
               </div>
@@ -503,7 +503,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <div className="flex items-center gap-2 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>
-                      <strong>Proyección saludable.</strong> Sin saldos negativos en los próximos 12 meses.
+                      Sin saldos negativos en los próximos 12 meses.
                     </span>
                   </div>
                 )}
@@ -798,22 +798,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                     {/* Pie siempre visible: Balance final del mes + Botón detalle */}
                     <div className="mt-3 pt-3 border-t border-slate-100">
-                      <div className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-slate-900 text-white shadow-xs">
+                      <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-slate-900 text-white shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center text-[10px] font-black shrink-0 border border-teal-500/30 whitespace-nowrap tracking-tight">
                             {p.ultimoDia}
                           </span>
                           <div className="min-w-0">
-                            <div className="text-xs font-black text-white leading-none whitespace-nowrap">
+                            <div className="text-[11px] sm:text-xs font-black text-white leading-tight sm:whitespace-nowrap">
                               {p.modalidadSueldo === 'mensual_fin' ? 'Cierre y cobro mensual' : 'Cierre de mes'}
                             </div>
-                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5 whitespace-nowrap">
+                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5 sm:whitespace-nowrap">
                               {p.modalidadSueldo === 'mensual_fin' ? 'Balance con sueldo' : 'Balance final'}
                             </div>
                           </div>
                         </div>
                         <strong
-                          className={`text-sm font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                          className={`self-end text-sm font-black whitespace-nowrap shrink-0 text-right sm:ml-2 sm:self-auto ${
                             p.balanceFin < 0 ? 'text-red-400' : 'text-teal-400'
                           }`}
                         >

@@ -555,7 +555,7 @@ export const AdminView: React.FC = () => {
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {/* Barra de Búsqueda */}
           <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full flex-1 sm:max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
@@ -570,8 +570,86 @@ export const AdminView: React.FC = () => {
             </div>
           </div>
 
-          {/* Tabla de Usuarios */}
-          <div className="overflow-x-auto">
+          {/* Fichas de usuario para móvil */}
+          <div className="space-y-3 bg-slate-50/70 p-3 md:hidden">
+            {usuariosFiltrados.map((u) => {
+              const fechaRegistro = u.creado_el ? new Date(u.creado_el).toLocaleDateString('es-PE') : '—';
+              const fechaAcceso = u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE') : 'Nunca';
+
+              return (
+                <article key={u.id} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {u.avatar_url ? (
+                        <img src={u.avatar_url} alt={u.nombre} className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                          {(u.nombre || u.email).slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <h3 className="truncate text-sm font-bold text-slate-900">{u.nombre}</h3>
+                          {u.es_admin && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-800">Admin</span>}
+                        </div>
+                        <p className="break-all text-xs text-slate-500">{u.email}</p>
+                      </div>
+                    </div>
+                    {u.bloqueado ? (
+                      <span className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700">Suspendido</span>
+                    ) : (
+                      <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Activo</span>
+                    )}
+                  </div>
+
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Proveedor</dt>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{u.proveedor}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Billeteras</dt>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{u.billeteras_count}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Registro</dt>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{fechaRegistro}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Último acceso</dt>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{fechaAcceso}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Acciones de soporte</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => abrirModalPassword(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 hover:text-teal-700">
+                        <KeyRound className="h-4 w-4" /> Cambiar clave
+                      </button>
+                      <button type="button" onClick={() => handleEnviarResetEmail(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700">
+                        <Mail className="h-4 w-4" /> Enviar email
+                      </button>
+                      {!u.es_admin && (
+                        <>
+                          <button type="button" onClick={() => handleToggleEstadoUsuario(u)} className={`inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-2 text-[11px] font-semibold ${u.bloqueado ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' : 'border-amber-200 text-amber-700 hover:bg-amber-50'}`}>
+                            {u.bloqueado ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
+                            {u.bloqueado ? 'Reactivar' : 'Bloquear'}
+                          </button>
+                          <button type="button" title="Eliminar cuenta definitivamente" aria-label={`Eliminar cuenta de ${u.nombre}`} onClick={() => handleEliminarUsuario(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-rose-200 bg-rose-50/70 px-2 text-[11px] font-semibold text-rose-700 hover:bg-rose-100">
+                            <Trash2 className="h-4 w-4" /> Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* Tabla de Usuarios para escritorio */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                 <tr>
@@ -730,14 +808,14 @@ export const AdminView: React.FC = () => {
                 className="min-h-10 w-full rounded-xl border border-slate-200 pl-10 pr-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <span className="text-xs text-slate-500">
+            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              <span className="whitespace-nowrap text-[11px] text-slate-500 sm:text-xs">
                 Mostrando <strong>{monedasFiltradas.length}</strong> de <strong>{monedasAdmin.length}</strong> monedas
               </span>
               <button
                 type="button"
                 onClick={abrirCrearMoneda}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex min-h-10 w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-teal-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-teal-700 active:bg-teal-800 cursor-pointer sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
                 <span>Nueva Moneda</span>
@@ -745,8 +823,82 @@ export const AdminView: React.FC = () => {
             </div>
           </div>
 
-          {/* Tabla de Monedas */}
-          <div className="overflow-x-auto">
+          {/* Tarjetas de monedas para móvil */}
+          <div className="space-y-3 bg-slate-50/70 p-3 md:hidden">
+            {monedasFiltradas.map((m) => {
+              const estaActiva = m.activo !== false;
+              const totalUso = m.total_billeteras ?? (stats ? (m.codigo === 'PEN' ? stats.billeteras_pen : m.codigo === 'USD' ? stats.billeteras_usd : m.codigo === 'EUR' ? stats.billeteras_eur : 0) : 0);
+
+              return (
+                <article key={m.codigo} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-teal-100 bg-teal-50 text-lg font-black text-teal-800">
+                        {m.simbolo}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm font-bold text-slate-900">{m.nombre}</h3>
+                          <span className="inline-flex rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-black tracking-wide text-amber-300">
+                            {m.codigo}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Símbolo: <strong className="text-slate-700">{m.simbolo}</strong></p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleActivoMoneda(m)}
+                      title={estaActiva ? 'Desactivar para nuevas billeteras' : 'Activar para nuevas billeteras'}
+                      className={`inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold transition-colors cursor-pointer ${
+                        estaActiva
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          : 'border-slate-200 bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${estaActiva ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {estaActiva ? 'Activa' : 'Inactiva'}
+                    </button>
+                  </div>
+
+                  <dl className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Billeteras</dt>
+                      <dd className="mt-0.5 text-xs font-bold text-slate-800">{totalUso} {totalUso === 1 ? 'billetera' : 'billeteras'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Orden del catálogo</dt>
+                      <dd className="mt-0.5 text-xs font-bold text-slate-800">{m.orden ?? 0}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarMoneda(m)}
+                      className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-teal-700"
+                    >
+                      <Pencil className="h-4 w-4" /> Editar moneda
+                    </button>
+                    {!['PEN', 'USD'].includes(m.codigo) && (
+                      <button
+                        type="button"
+                        title="Eliminar divisa"
+                        disabled={totalUso > 0}
+                        onClick={() => handleEliminarMoneda(m)}
+                        className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 className="h-4 w-4" /> Eliminar
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* Tabla de Monedas para escritorio */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                 <tr>

@@ -19,6 +19,7 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
+  MoreHorizontal,
   X,
 } from 'lucide-react';
 
@@ -196,6 +197,23 @@ export const MovimientosView: React.FC = () => {
       return true;
     });
   }, [movimientos, filtroAnio, filtroMes, filtroTipo, filtroCategoria, busqueda]);
+
+  const gruposMovimientos = useMemo(() => {
+    const grupos = new Map<string, MovimientoAgenda[]>();
+    movimientosFiltrados.forEach((movimiento) => {
+      const fechaGrupo = fechaRealMovimiento(movimiento);
+      const grupo = grupos.get(fechaGrupo) ?? [];
+      grupo.push(movimiento);
+      grupos.set(fechaGrupo, grupo);
+    });
+    return Array.from(grupos, ([fecha, items]) => ({ fecha, items }));
+  }, [movimientosFiltrados]);
+
+  const etiquetaFechaGrupo = (fechaISO: string) => {
+    const [anio, mes, dia] = fechaISO.split('-').map(Number);
+    const nombreMes = NOMBRES_MESES[mes - 1] ?? '';
+    return `${dia} ${nombreMes.slice(0, 3)} ${anio}`;
+  };
 
   // Resumen del periodo filtrado
   const resumenPeriodo = useMemo(() => {
@@ -448,7 +466,114 @@ export const MovimientosView: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <>
+          {/* Tarjetas agrupadas por fecha para móvil */}
+          <div className="space-y-5 bg-slate-50/60 p-3 md:hidden">
+            {gruposMovimientos.map((grupo) => (
+              <section key={grupo.fecha} aria-label={`Movimientos del ${etiquetaFechaGrupo(grupo.fecha)}`} className="space-y-2">
+                <h3 className="px-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  {etiquetaFechaGrupo(grupo.fecha)}
+                </h3>
+                <div className="space-y-2">
+                  {grupo.items.map((m) => {
+                    const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
+                    const catNombre = cat ? cat.nombre : 'Otros';
+                    const catColor = cat ? cat.color : '#0d9488';
+                    const vinculado = pagosDeuda.some((p) => p.movimiento_id === m.id);
+                    const incluido = !!fechaReferencia && m.pago_confirmado && fechaRealMovimiento(m) < fechaReferencia;
+
+                    return (
+                      <article key={m.id} className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <div
+                          className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border"
+                          style={{
+                            backgroundColor: `${catColor}15`,
+                            borderColor: `${catColor}30`,
+                            color: catColor,
+                          }}
+                        >
+                          <i className={`fas ${cat?.icono || 'fa-tag'} text-sm`}></i>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="min-w-0 flex-1 break-words text-sm font-bold leading-snug text-slate-900">
+                              {m.descripcion}
+                            </h4>
+                            <details className="relative shrink-0">
+                              <summary
+                                aria-label={`Acciones de ${m.descripcion}`}
+                                className="grid h-8 w-8 list-none cursor-pointer place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 [&::-webkit-details-marker]:hidden"
+                              >
+                                <MoreHorizontal className="h-5 w-5" />
+                              </summary>
+                              <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                                <button
+                                  type="button"
+                                  disabled={soloLectura || vinculado}
+                                  onClick={(e) => {
+                                    e.currentTarget.closest('details')?.removeAttribute('open');
+                                    abrirEdicion(m);
+                                  }}
+                                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <Edit2 className="h-4 w-4" /> Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={soloLectura}
+                                  onClick={(e) => {
+                                    e.currentTarget.closest('details')?.removeAttribute('open');
+                                    void handleEliminar(m.id);
+                                  }}
+                                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Eliminar
+                                </button>
+                              </div>
+                            </details>
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span
+                              className="rounded-md px-1.5 py-0.5 text-[10px] font-bold"
+                              style={{ backgroundColor: `${catColor}12`, color: catColor }}
+                            >
+                              {catNombre}
+                            </span>
+                            {incluido && <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700">Saldo base</span>}
+                            {vinculado && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">Cuota</span>}
+                            <button
+                              disabled={soloLectura || vinculado}
+                              onClick={() => handleToggleConfirmado(m)}
+                              className={`inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 ${
+                                m.pago_confirmado
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-amber-50 text-amber-700'
+                              }`}
+                              title="Clic para alternar Confirmado / Pendiente"
+                            >
+                              {m.pago_confirmado ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                              {m.pago_confirmado ? 'Pagado' : 'Pendiente'}
+                            </button>
+                          </div>
+
+                          <div className="mt-2 flex justify-end border-t border-slate-100 pt-2">
+                            <span className={`whitespace-nowrap text-sm font-black ${m.tipo === 'ingreso' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                              {m.tipo === 'ingreso' ? '+' : '-'}{formatearMoneda(m.monto)}
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          {/* Lista de escritorio conservando las acciones actuales */}
+          <div className="hidden divide-y divide-slate-100 md:block">
             {movimientosFiltrados.map((m) => {
               const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
               const catNombre = cat ? cat.nombre : 'Otros';
@@ -560,6 +685,7 @@ export const MovimientosView: React.FC = () => {
               );
             })}
           </div>
+          </>
         )}
       </div>
 

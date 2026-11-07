@@ -27,7 +27,6 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  Sliders,
   Search,
   History,
   RotateCcw,
@@ -1605,15 +1604,6 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda' }
                         </button>
 
                         <div className="flex items-center gap-1">
-                          <button
-                            disabled={soloLectura}
-                            type="button"
-                            onClick={() => abrirModalEdicionRecurrente(card.rec)}
-                            title="Duración e importe"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          >
-                            <Sliders className="w-4 h-4" />
-                          </button>
                           <button
                             disabled={soloLectura}
                             type="button"

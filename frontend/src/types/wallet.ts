@@ -10,6 +10,7 @@ export interface MonedaConfig {
   actualizado_el?: string;
   total_billeteras?: number;
 }
+export type ModoSaldoInicial = 'hoy' | 'pasado';
 export interface Billetera {
   id: number;
   user_id: string;
@@ -19,6 +20,7 @@ export interface Billetera {
   es_principal: boolean;
   monto_base?: number;
   fecha_referencia?: string | null;
+  modo_saldo_inicial?: ModoSaldoInicial | null;
   creado_el?: string;
   actualizado_el?: string;
 }

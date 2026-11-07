@@ -303,28 +303,42 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Footer del Sidebar: Usuario */}
+        {/* Footer del Sidebar: Cuenta y cierre de sesión */}
         <div className="p-3 border-t border-slate-800 bg-slate-900/60 shrink-0">
-          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/40 border border-slate-800">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-xs">
-                {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/40 border border-slate-800">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                  {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">
+                    {user?.user_metadata?.full_name || 'Mi Cuenta'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">
-                  {user?.user_metadata?.full_name || 'Mi Cuenta'}
-                </p>
-                <p className="text-[10px] text-slate-400 truncate">
-                  {user?.email}
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(true)}
+                title="Seguridad y Perfil"
+                aria-label="Seguridad y Perfil"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-teal-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+              </button>
             </div>
             <button
-              onClick={() => setProfileModalOpen(true)}
-              title="Seguridad y Perfil"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-teal-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              type="button"
+              onClick={signOut}
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-500/10 active:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
             >
-              <KeyRound className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
+              <span>Cerrar sesión</span>
             </button>
           </div>
         </div>
@@ -531,13 +545,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {user?.user_metadata?.full_name || user?.email}
               </span>
               <KeyRound className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-400 transition-colors" />
-            </button>
-            <button
-              onClick={signOut}
-              title="Cerrar sesión"
-              className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>

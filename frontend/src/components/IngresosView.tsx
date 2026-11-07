@@ -449,25 +449,12 @@ export const IngresosView: React.FC = () => {
                 )}
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Gestiona tu sueldo quincenal o mensual y tus ingresos recurrentes adicionales.
+                Administra tu sueldo e ingresos recurrentes.
               </p>
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          disabled={soloLectura}
-          onClick={() => {
-            setNuevoMesInicio(ingresoMes);
-            setNuevoAnioInicio(ingresoAnio);
-            setModalNuevoIngreso(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Ingreso Fijo</span>
-        </button>
       </div>
 
       {/* 2. Barra de Contexto: Selector Global de Período */}
@@ -545,7 +532,7 @@ export const IngresosView: React.FC = () => {
           <div className="flex items-start justify-between relative z-10">
             <div>
               <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-teal-300">
-                Total Ingresos Esperados
+                Ingresos previstos
               </span>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-2xl sm:text-3xl font-black tracking-tight">
@@ -580,7 +567,7 @@ export const IngresosView: React.FC = () => {
                 ({porcentajeCobrado}%)
               </span>
               <span className="text-slate-400">
-                Falta:{' '}
+                Por cobrar:{' '}
                 <strong className="text-amber-300 font-bold">
                   {formatearMoneda(totalPendienteMes)}
                 </strong>
@@ -599,29 +586,29 @@ export const IngresosView: React.FC = () => {
         <div className="sm:col-span-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Esquema de Sueldo
+              Frecuencia de pago
             </span>
             <strong className="text-base sm:text-lg font-extrabold text-slate-900 block mt-1">
-              {ingresoModo === 'quincenal' ? 'Quincenal (2 Pagos)' : 'Mensual (1 Pago)'}
+              {ingresoModo === 'quincenal' ? 'Quincenal' : 'Mensual'}
             </strong>
             <p className="text-xs text-slate-500 mt-1">
               {ingresoModo === 'quincenal'
-                ? `Día 15 (${formatearMoneda(parseFloat(ingresoS15) || 0)}) y Fin de mes (${formatearMoneda(parseFloat(ingresoS30) || 0)})`
+                ? `15: ${formatearMoneda(parseFloat(ingresoS15) || 0)} · Fin de mes: ${formatearMoneda(parseFloat(ingresoS30) || 0)}`
                 : ingresoMomentoMensual === 'fin_mes'
                 ? `Fin de mes (${formatearMoneda(parseFloat(ingresoS30 || ingresoS15) || 0)})`
                 : `Quincena (${formatearMoneda(parseFloat(ingresoS15 || ingresoS30) || 0)})`}
             </p>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>Próximo cobro:</span>
+            <span>Próximo:</span>
             <span className="font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
               {ingresoModo === 'quincenal'
                 ? hoy.getDate() < 15
-                  ? '15 de ' + NOMBRES_MESES[ingresoMes]
+                  ? `15 ${NOMBRES_MESES[ingresoMes].slice(0, 3).toLowerCase()}`
                   : 'Fin de mes'
                 : ingresoMomentoMensual === 'fin_mes'
                 ? 'Fin de mes'
-                : '15 de ' + NOMBRES_MESES[ingresoMes]}
+                : `15 ${NOMBRES_MESES[ingresoMes].slice(0, 3).toLowerCase()}`}
             </span>
           </div>
         </div>
@@ -630,20 +617,14 @@ export const IngresosView: React.FC = () => {
         <div className="sm:col-span-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Sueldos Año {ingresoAnio}
+              Sueldo anual {ingresoAnio}
             </span>
             <strong className="text-base sm:text-lg font-extrabold text-slate-900 block mt-1">
               {formatearMoneda(totalSueldoAnioIngresos)}
             </strong>
             <p className="text-xs text-slate-500 mt-1">
-              {mesesConfiguradosAnio} de 12 meses configurados
+              {mesesConfiguradosAnio}/12 meses configurados
             </p>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Planificación:</span>
-            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-              {Math.round((mesesConfiguradosAnio / 12) * 100)}% Cubierto
-            </span>
           </div>
         </div>
       </div>
@@ -661,14 +642,8 @@ export const IngresosView: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
-                    Configuración de Sueldo
+                    Sueldo de {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Configura cómo cobras en{' '}
-                    <strong className="text-slate-800">
-                      {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
-                    </strong>
-                  </p>
                 </div>
               </div>
               {/* Estado de guardado en vivo */}
@@ -710,7 +685,7 @@ export const IngresosView: React.FC = () => {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    2 Pagos (Quincenal)
+                    Quincenal
                   </button>
                   <button
                     type="button"
@@ -721,7 +696,7 @@ export const IngresosView: React.FC = () => {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    1 Pago Mensual
+                    Mensual
                   </button>
                 </div>
               </div>
@@ -764,10 +739,7 @@ export const IngresosView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-700">1er Pago · Día 15</span>
-                      <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
-                        Quincena
-                      </span>
+                      <span className="text-xs font-bold text-slate-700">1.er pago · día 15</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-slate-400">{simboloMoneda}</span>
@@ -785,10 +757,7 @@ export const IngresosView: React.FC = () => {
 
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-700">2do Pago · Fin de mes</span>
-                      <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
-                        Día 30/31
-                      </span>
+                      <span className="text-xs font-bold text-slate-700">2.º pago · fin de mes</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-slate-400">{simboloMoneda}</span>
@@ -843,7 +812,7 @@ export const IngresosView: React.FC = () => {
               <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-teal-500" />
-                  <span className="text-xs font-bold text-teal-900">Sueldo Total del Mes:</span>
+                  <span className="text-xs font-bold text-teal-900">Total mensual:</span>
                 </div>
                 <strong className="text-sm font-black text-teal-900">
                   {formatearMoneda(sueldoMesCalculado)}
@@ -860,9 +829,9 @@ export const IngresosView: React.FC = () => {
                 />
                 <div className="text-xs leading-relaxed text-slate-600">
                   <strong className="text-slate-800 block">
-                    Aplicar a todos los meses restantes del año {ingresoAnio}
+                    Aplicar a los meses restantes de {ingresoAnio}
                   </strong>
-                  Copia esta misma configuración de cobro para los siguientes meses en un solo clic.
+                  Repite esta distribución de sueldo.
                 </div>
               </label>
             </form>
@@ -875,9 +844,7 @@ export const IngresosView: React.FC = () => {
                 <strong className="text-emerald-600">{mensajeSueldo}</strong>
               ) : hayCambiosSueldo ? (
                 'Presiona Guardar para aplicar cambios'
-              ) : (
-                'Configuración sincronizada'
-              )}
+              ) : null}
             </span>
             <button
               type="submit"
@@ -898,16 +865,10 @@ export const IngresosView: React.FC = () => {
             <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 gap-2">
               <div className="min-w-0">
                 <h2 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
-                  Otros Ingresos Programados
+                  Otros ingresos · {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
                 </h2>
-                <p className="text-xs text-slate-500 truncate">
-                  Ingresos recurrentes adicionales en{' '}
-                  <span className="font-semibold text-slate-700">
-                    {NOMBRES_MESES[ingresoMes]}
-                  </span>
-                </p>
               </div>
-              <button
+              {otrosIngresosMes.length > 0 && <button
                 disabled={soloLectura}
                 type="button"
                 onClick={() => {
@@ -918,8 +879,8 @@ export const IngresosView: React.FC = () => {
                 className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Programar ingreso</span>
-              </button>
+                <span>Programar ingreso</span>
+              </button>}
             </div>
 
             {/* Contenido: Lista o Empty State */}
@@ -932,7 +893,7 @@ export const IngresosView: React.FC = () => {
                   Sin ingresos adicionales este mes
                 </h3>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto mb-4 leading-relaxed">
-                  Si tienes alquileres, freelance, rentas o dividendos fijos, regístralos para anticipar tu liquidez real.
+                  Registra ingresos recurrentes para incluirlos en tu proyección.
                 </p>
                 <button
                   disabled={soloLectura}
@@ -944,7 +905,7 @@ export const IngresosView: React.FC = () => {
                   }}
                   className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5 transition-all"
                 >
-                  <span>+ Programar primer ingreso fijo</span>
+                  <span>Programar ingreso</span>
                 </button>
               </div>
             ) : (

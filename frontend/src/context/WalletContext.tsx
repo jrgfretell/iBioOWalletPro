@@ -7,7 +7,7 @@ import type { WalletTable } from '../lib/walletClient';
 import { confirmarAccion } from '../lib/alerts';
 import { useAuth } from './AuthContext';
 import { formatearMoneda as formatoMonetario, fechaHoyISO } from '../types/wallet';
-import type { Billetera, Moneda, Categoria, SueldoMes, MovimientoRecurrente, MovimientoAgenda, Deuda, DeudaCuota, DeudaPago, MonedaConfig } from '../types/wallet';
+import type { Billetera, Moneda, ModoSaldoInicial, Categoria, SueldoMes, MovimientoRecurrente, MovimientoAgenda, Deuda, DeudaCuota, DeudaPago, MonedaConfig } from '../types/wallet';
 
 interface WalletData {
   montoBase: number;
@@ -35,8 +35,8 @@ interface WalletContextType extends WalletData {
   reportarError: (error: unknown) => void;
   clienteBilletera: Pick<typeof supabase, 'from'>;
   seleccionarBilletera: (id: number) => Promise<boolean>;
-  crearBilletera: (nombre: string, moneda: Moneda, montoBase?: number, fechaReferencia?: string) => Promise<boolean>;
-  editarBilletera: (id: number, nombre: string, montoBase?: number, fechaReferencia?: string) => Promise<boolean>;
+  crearBilletera: (nombre: string, moneda: Moneda, montoBase?: number, fechaReferencia?: string, modoSaldoInicial?: ModoSaldoInicial) => Promise<boolean>;
+  editarBilletera: (id: number, nombre: string, montoBase?: number, fechaReferencia?: string, modoSaldoInicial?: ModoSaldoInicial) => Promise<boolean>;
   archivarBilletera: (id: number, archivada: boolean) => Promise<boolean>;
   eliminarBilletera: (id: number) => Promise<boolean>;
   registrarFormulario: (id: string, label: string) => () => void;
@@ -56,12 +56,13 @@ const storedWallet = (userId: string) => { try { return Number(localStorage.getI
 const rememberWallet = (userId: string, id: number) => { try { localStorage.setItem('wallet_actual_'+userId, String(id)); } catch { /* Private/restricted storage remains optional. */ } };
 
 function enrichWalletsWithConfig(rawWallets: Record<string, unknown>[], rawConfigs: Record<string, unknown>[]): Billetera[] {
-  const configMap = new Map<number, { monto_base: number; fecha_referencia: string | null }>();
+  const configMap = new Map<number, { monto_base: number; fecha_referencia: string | null; modo_saldo_inicial: ModoSaldoInicial | null }>();
   for (const c of rawConfigs) {
     if (c.billetera_id != null) {
       configMap.set(Number(c.billetera_id), {
         monto_base: Number(c.monto_base || 0),
         fecha_referencia: typeof c.fecha_referencia === 'string' ? c.fecha_referencia.slice(0, 10) : null,
+        modo_saldo_inicial: c.modo_saldo_inicial === 'hoy' || c.modo_saldo_inicial === 'pasado' ? c.modo_saldo_inicial : null,
       });
     }
   }
@@ -73,6 +74,7 @@ function enrichWalletsWithConfig(rawWallets: Record<string, unknown>[], rawConfi
       id,
       monto_base: cfg?.monto_base ?? 0,
       fecha_referencia: cfg?.fecha_referencia ?? null,
+      modo_saldo_inicial: cfg?.modo_saldo_inicial ?? null,
     } as Billetera;
   });
 }
@@ -269,7 +271,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return result;
   }
 
-  const crearBilletera = async(nombre:string,moneda:Moneda,montoBase=0,fechaReferencia?:string)=>{
+  const crearBilletera = async(nombre:string,moneda:Moneda,montoBase=0,fechaReferencia?:string,modoSaldoInicial:ModoSaldoInicial='hoy')=>{
     if(modoLegacy||!user||!await canLeave()||pendingWrites.current) return false;
     beginWrite();
     try {
@@ -281,18 +283,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         p_moneda:moneda,
         p_monto_base:monto,
         p_fecha_referencia:fecha,
+        p_modo_saldo_inicial:modoSaldoInicial,
       });
       if(response.error && (response.error.code==='PGRST202' || response.error.message?.includes('crear_billetera'))) {
         response=await supabase.rpc('crear_billetera',{p_nombre:nombre.trim(),p_moneda:moneda});
         if(!response.error && response.data) {
           const createdFallback=(Array.isArray(response.data)?response.data[0]:response.data) as Billetera;
           if(createdFallback?.id && (monto!==0 || fecha)) {
-            await supabase.rpc('operacion_billetera',{
+            const operationRes=await supabase.rpc('operacion_billetera',{
               p_billetera_id:Number(createdFallback.id),
               p_solicitud:crypto.randomUUID(),
               p_accion:'saldo_referencia',
               p_datos:{monto,fecha},
             });
+            if(operationRes.error) throw operationRes.error;
+            const modeRes=await supabase.from('config_billetera').update({modo_saldo_inicial:modoSaldoInicial}).eq('user_id',uid).eq('billetera_id',Number(createdFallback.id));
+            if(modeRes.error) throw modeRes.error;
           }
         }
       }
@@ -306,7 +312,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } catch(reason) {reportarError(reason);return false;} finally {endWrite();}
   };
 
-  const editarBilletera = async(id:number,nombre:string,montoBase?:number,fechaReferencia?:string)=>{
+  const editarBilletera = async(id:number,nombre:string,montoBase?:number,fechaReferencia?:string,modoSaldoInicial:ModoSaldoInicial='hoy')=>{
     if(modoLegacy||!user||pendingWrites.current) return false;
     beginWrite();
     try {
@@ -316,6 +322,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const rpcRes=await supabase.rpc('actualizar_billetera',{
         p_billetera_id:id,
         p_nombre:nombre.trim(),
+        p_modo_saldo_inicial:modoSaldoInicial,
         p_monto_base:monto,
         p_fecha_referencia:monto!==null?fecha:null,
       });
@@ -332,6 +339,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             });
             if(opRes.error) throw opRes.error;
           }
+          const modeRes=await supabase.from('config_billetera').update({modo_saldo_inicial:modoSaldoInicial}).eq('user_id',uid).eq('billetera_id',id);
+          if(modeRes.error) throw modeRes.error;
         } else {
           throw rpcRes.error;
         }

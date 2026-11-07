@@ -8,7 +8,6 @@ import {
   Trash2,
   Check,
   Search,
-  HelpCircle,
   Banknote,
   DollarSign,
   Euro,
@@ -17,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { AnimatedModal } from './AnimatedModal';
-import { OnboardingModal } from './OnboardingModal';
 import { WalletCreatedPrompt } from './WalletCreatedPrompt';
 import { fechaHoyISO } from '../types/wallet';
 import type { Billetera, Moneda, ActiveTab } from '../types/wallet';
@@ -47,7 +45,6 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
   // Estados de navegación interna
   const [tabFiltro, setTabFiltro] = useState<string>('todas');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showGuide, setShowGuide] = useState(false);
 
   // Estados de modales de creación y edición
   const [modalOpen, setModalOpen] = useState(false);
@@ -57,6 +54,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
   const [inputMoneda, setInputMoneda] = useState<Moneda>('');
   const [inputMontoBase, setInputMontoBase] = useState('0');
   const [inputFechaRef, setInputFechaRef] = useState(() => fechaHoyISO());
+  const [fechaRefOriginalEdicion, setFechaRefOriginalEdicion] = useState<string | null>(null);
+  const [fechaRefEditada, setFechaRefEditada] = useState(false);
   const [modoSaldo, setModoSaldo] = useState<'hoy' | 'pasado'>('hoy');
 
   useEffect(() => {
@@ -125,6 +124,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
     setInputMoneda(monedasDisponibles[0]?.codigo || '');
     setInputMontoBase('0');
     setInputFechaRef(fechaHoyISO());
+    setFechaRefOriginalEdicion(null);
+    setFechaRefEditada(false);
     setModoSaldo('hoy');
     setErrorModal(null);
     setModalOpen(true);
@@ -140,7 +141,9 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
     const fecha = (isCurrent ? fechaRefActual : wallet.fecha_referencia) || fechaHoyISO();
     setInputMontoBase(String(base));
     setInputFechaRef(fecha);
-    setModoSaldo(fecha < fechaHoyISO() ? 'pasado' : 'hoy');
+    setFechaRefOriginalEdicion(fecha);
+    setFechaRefEditada(false);
+    setModoSaldo(wallet.modo_saldo_inicial ?? (fecha < fechaHoyISO() ? 'pasado' : 'hoy'));
     setErrorModal(null);
     setModalOpen(true);
   };
@@ -155,13 +158,15 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
     }
     const monto = parseFloat(inputMontoBase);
     const montoFinal = Number.isFinite(monto) ? monto : 0;
-    const fechaFinal = modoSaldo === 'hoy' ? fechaHoyISO() : (inputFechaRef || fechaHoyISO());
+    const fechaFinal = modalMode === 'edit'
+      ? (fechaRefEditada ? inputFechaRef : (fechaRefOriginalEdicion || inputFechaRef || fechaHoyISO()))
+      : modoSaldo === 'hoy' ? fechaHoyISO() : (inputFechaRef || fechaHoyISO());
 
     try {
       setGuardando(true);
       setErrorModal(null);
       if (modalMode === 'create') {
-        const ok = await crearBilletera(nombreLimpio, inputMoneda, montoFinal, fechaFinal);
+        const ok = await crearBilletera(nombreLimpio, inputMoneda, montoFinal, fechaFinal, modoSaldo);
         if (ok) {
           await toastExito(`Billetera "${nombreLimpio}" creada con éxito`);
           setModalOpen(false);
@@ -171,7 +176,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           setErrorModal('No se pudo crear la billetera. Intenta nuevamente.');
         }
       } else if (editingWallet) {
-        const ok = await editarBilletera(editingWallet.id, nombreLimpio, montoFinal, fechaFinal);
+        const ok = await editarBilletera(editingWallet.id, nombreLimpio, montoFinal, fechaFinal, modoSaldo);
         if (ok) {
           await toastExito('Billetera actualizada');
           setModalOpen(false);
@@ -231,12 +236,6 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
 
   return (
     <div className="space-y-6">
-      {/* Onboarding Guide Modal */}
-      <OnboardingModal
-        forceOpenGuide={showGuide}
-        onCloseGuide={() => setShowGuide(false)}
-      />
-
       {/* 1. Header Principal del Módulo */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -256,14 +255,6 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setShowGuide(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-          >
-            <HelpCircle className="w-4 h-4 text-slate-400" />
-            <span>Guía de Billeteras</span>
-          </button>
           <button
             type="button"
             onClick={abrirCrear}
@@ -590,12 +581,12 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               </div>
               <div>
                 <h3 className="font-bold text-base text-slate-900">
-                  {modalMode === 'create' ? 'Crea un perfil para tu dinero' : 'Editar Billetera'}
+                  {modalMode === 'create' ? 'Crea un perfil para tu dinero' : 'Edita tu perfil de dinero'}
                 </h3>
                 <p className="text-xs text-slate-500">
                   {modalMode === 'create'
                     ? 'Elige la moneda y define desde qué saldo quieres comenzar.'
-                    : 'Ajusta el nombre o el saldo base de inicio.'}
+                    : 'Actualiza el nombre y el saldo inicial de referencia.'}
                 </p>
               </div>
             </div>
@@ -633,23 +624,27 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               )}
             </div>
 
-            {modalMode === 'create' && (
+            {(
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Moneda</label>
-                  <span className="text-[10px] font-semibold text-slate-400">Según el catálogo activo</span>
+                  <span className="text-[10px] font-semibold text-slate-400">{modalMode === 'create' ? 'Según el catálogo activo' : 'No se puede cambiar después de crearla'}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-0.5 sm:grid-cols-3">
-                  {monedasDisponibles.filter((m) => m.activo !== false).map((m) => {
+                <div className={`grid gap-2 pr-0.5 ${modalMode === 'create' ? 'max-h-40 grid-cols-2 overflow-y-auto sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3'}`}>
+                  {(modalMode === 'create'
+                    ? monedasDisponibles.filter((m) => m.activo !== false)
+                    : [monedasDisponibles.find((m) => m.codigo === editingWallet?.moneda) || { codigo: editingWallet?.moneda || inputMoneda, nombre: editingWallet?.moneda || inputMoneda, simbolo: editingWallet?.moneda || inputMoneda }]
+                  ).map((m) => {
                     const isSelected = inputMoneda === m.codigo;
 
                     return (
                       <button
                         key={m.codigo}
                         type="button"
+                        disabled={modalMode === 'edit'}
                         onClick={() => setInputMoneda(m.codigo)}
                         aria-pressed={isSelected}
-                        className={`min-h-[58px] rounded-xl border px-3 py-2 text-left flex items-center gap-2.5 cursor-pointer transition-all ${
+                        className={`min-h-[58px] rounded-xl border px-3 py-2 text-left flex items-center gap-2.5 transition-all ${modalMode === 'create' ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'} ${
                           isSelected
                             ? 'bg-teal-50 border-teal-500 text-teal-800 ring-2 ring-teal-500/10'
                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -661,21 +656,20 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                     );
                   })}
                 </div>
-                {monedasCargadas && monedasDisponibles.filter(m => m.activo !== false).length === 0 && (
+                {modalMode === 'create' && monedasCargadas && monedasDisponibles.filter(m => m.activo !== false).length === 0 && (
                   <p className="mt-2 text-sm text-rose-700">No hay monedas activas en el catálogo de la aplicación.</p>
                 )}
               </div>
             )}
 
-            {modalMode === 'create' ? (
-              <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
+            <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Saldo inicial de referencia</span>
                   <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">Base de proyección</span>
                 </div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">¿Cómo deseas definir tu saldo inicial?</label>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button type="button" aria-pressed={modoSaldo === 'hoy'} onClick={() => { setModoSaldo('hoy'); setInputFechaRef(fechaHoyISO()); }} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'hoy' ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 bg-white/70 hover:bg-white'}`}>
+                  <button type="button" aria-pressed={modoSaldo === 'hoy'} onClick={() => { setModoSaldo('hoy'); if (modalMode === 'create') setInputFechaRef(fechaHoyISO()); }} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'hoy' ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 bg-white/70 hover:bg-white'}`}>
                     <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}><Wallet className="h-4 w-4" /></span>
                     <span className="min-w-0"><span className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-900">Dinero disponible HOY <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">Recomendado</span></span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500">Lo que tienes en mano o cuenta ahora mismo.</span></span>
                   </button>
@@ -684,30 +678,29 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                     <span className="min-w-0"><span className="block text-xs font-bold text-slate-900">Capital inicial en el PASADO</span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500">Reconstruye tu saldo descontando pagos históricos.</span></span>
                   </button>
                 </div>
+                {modalMode === 'edit' && (
+                  <div className="rounded-xl border border-teal-200/80 bg-teal-50 p-2.5 text-xs leading-relaxed text-teal-900">
+                    <strong>Fecha de referencia guardada: {new Intl.DateTimeFormat('es-PE').format(new Date(`${(fechaRefOriginalEdicion || inputFechaRef)}T12:00:00`))}.</strong> Se conserva al editar el nombre o el saldo. Solo cambiará si eliges “Capital inicial en el PASADO” y modificas explícitamente la fecha.
+                  </div>
+                )}
                 {modoSaldo === 'hoy' ? (
                   <>
                     <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">Saldo disponible ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label>
                     <input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" />
-                    <div className="rounded-xl border border-teal-200/80 bg-teal-50 p-2.5 text-xs leading-relaxed text-teal-900"><strong>✓ Punto de partida: Hoy ({new Intl.DateTimeFormat('es-PE').format(new Date(`${fechaHoyISO()}T12:00:00`))}).</strong> Si registras compromisos o cuotas que pagaste meses atrás, <strong>no se descontarán</strong> de este dinero. Solo se descontarán pagos desde hoy en adelante.</div>
+                    {modalMode === 'create' && (
+                      <div className="rounded-xl border border-teal-200/80 bg-teal-50 p-2.5 text-xs leading-relaxed text-teal-900"><strong>✓ Punto de partida: Hoy ({new Intl.DateTimeFormat('es-PE').format(new Date(`${fechaHoyISO()}T12:00:00`))}).</strong> Si registras compromisos o cuotas que pagaste meses atrás, <strong>no se descontarán</strong> de este dinero. Solo se descontarán pagos desde hoy en adelante.</div>
+                    )}
                   </>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div><label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">Capital inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label><input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
-                      <div><label htmlFor="wallet-base-date" className="mb-1 block text-xs font-semibold text-slate-600">¿En qué fecha tenías este capital?</label><input id="wallet-base-date" type="date" required max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => setInputFechaRef(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
+                      <div><label htmlFor="wallet-base-amount" className="mb-1 block min-h-8 text-xs font-semibold leading-4 text-slate-600">Capital inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label><input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
+                      <div><label htmlFor="wallet-base-date" className="mb-1 block min-h-8 text-xs font-semibold leading-4 text-slate-600">¿En qué fecha tenías este capital?</label><input id="wallet-base-date" type="date" required max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => { setInputFechaRef(e.target.value); if (modalMode === 'edit') setFechaRefEditada(true); }} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
                     </div>
-                    <div className="rounded-xl border border-amber-200/80 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900"><strong>ℹ Reconstrucción histórica:</strong> Los abonos de cuotas y gastos posteriores a <strong>{inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : 'la fecha elegida'}</strong> se irán restando mes a mes hasta calcular cuánto dinero te queda actualmente.</div>
+                    <div className="rounded-xl border border-amber-200/80 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900"><strong>Reconstrucción histórica:</strong> Los abonos de cuotas y gastos posteriores a <strong>{inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : 'la fecha elegida'}</strong> se irán restando mes a mes hasta calcular cuánto dinero te queda actualmente.</div>
                   </>
                 )}
               </section>
-            ) : (
-              <section className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5">
-                <label htmlFor="wallet-base-amount" className="block text-xs font-bold uppercase tracking-wider text-slate-700">Saldo base inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label>
-                <input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" />
-                <div className="flex gap-3 text-xs"><button type="button" onClick={() => { setModoSaldo('hoy'); setInputFechaRef(fechaHoyISO()); }} className={`font-semibold ${modoSaldo === 'hoy' ? 'text-teal-700 underline' : 'text-slate-500'}`}>Dinero disponible HOY</button><button type="button" onClick={() => setModoSaldo('pasado')} className={`font-semibold ${modoSaldo === 'pasado' ? 'text-teal-700 underline' : 'text-slate-500'}`}>Capital inicial en el PASADO</button></div>
-                {modoSaldo === 'pasado' && <input aria-label="Fecha de referencia del saldo" type="date" max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => setInputFechaRef(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm" />}
-              </section>
-            )}
 
             {errorModal && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
@@ -734,15 +727,15 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           </form>
           </div>
           <aside className="hidden flex-col border-l border-slate-100 bg-slate-50 p-5 md:flex">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Así se verá tu billetera</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{modalMode === 'create' ? 'Así se verá tu billetera' : 'Vista previa de los cambios'}</span>
             <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between"><span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700"><Wallet className="h-4 w-4" /></span><span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-extrabold text-slate-600">{inputMoneda || '—'}</span></div>
               <p className="mt-4 break-words text-sm font-extrabold text-slate-900">{inputNombre.trim() || 'Nombre de billetera'}</p>
               <p className="mt-1 text-[11px] text-slate-400">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.nombre || 'Moneda'}</p>
               <div className="my-4 h-px bg-slate-100" />
-              <span className="text-[9px] font-extrabold uppercase tracking-wide text-slate-400">Saldo inicial · {modoSaldo === 'pasado' ? 'Fecha pasada' : 'Hoy'}</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-wide text-slate-400">Saldo inicial · {modalMode === 'edit' ? 'Referencia guardada' : modoSaldo === 'pasado' ? 'Fecha pasada' : 'Hoy'}</span>
               <p className="mt-1 text-xl font-black tracking-tight text-slate-900">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || ''} {new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(inputMontoBase) || 0)}</p>
-              {modoSaldo === 'pasado' && <p className="mt-1 text-[10px] text-slate-500">Fecha de referencia: {inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : '—'}</p>}
+              {(modalMode === 'edit' || modoSaldo === 'pasado') && <p className="mt-1 text-[10px] text-slate-500">Fecha de referencia: {inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : '—'}</p>}
             </div>
             <div className="mt-auto rounded-xl border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-500"><strong className="text-slate-700">Tu saldo es el punto de partida.</strong> Puedes completar tus ingresos después para obtener proyecciones más precisas.</div>
           </aside>
