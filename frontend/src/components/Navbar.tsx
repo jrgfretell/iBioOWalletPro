@@ -28,6 +28,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { WalletQuickSwitcher } from './WalletQuickSwitcher';
+import { lockDocumentScroll } from '../lib/scrollLock';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -58,47 +59,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Estado del drawer lateral en móvil
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  // Evita que los gestos del drawer móvil desplacen el contenido que queda detrás.
+  // Comparte el bloqueo con los modales para que overlays anidados no restauren el scroll antes de tiempo.
   useLayoutEffect(() => {
     if (!mobileDrawerOpen) return;
-
-    const scrollY = window.scrollY;
-    const root = document.documentElement;
-    const body = document.body;
-    const previousRootOverflow = root.style.overflow;
-    const previousRootOverscroll = root.style.overscrollBehavior;
-    const previousBodyStyles = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-      overscrollBehavior: body.style.overscrollBehavior,
-    };
-
-    root.style.overflow = 'hidden';
-    root.style.overscrollBehavior = 'none';
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    body.style.overscrollBehavior = 'none';
-
-    return () => {
-      root.style.overflow = previousRootOverflow;
-      root.style.overscrollBehavior = previousRootOverscroll;
-      body.style.position = previousBodyStyles.position;
-      body.style.top = previousBodyStyles.top;
-      body.style.left = previousBodyStyles.left;
-      body.style.right = previousBodyStyles.right;
-      body.style.width = previousBodyStyles.width;
-      body.style.overflow = previousBodyStyles.overflow;
-      body.style.overscrollBehavior = previousBodyStyles.overscrollBehavior;
-      window.scrollTo(0, scrollY);
-    };
+    return lockDocumentScroll();
   }, [mobileDrawerOpen]);
 
   // Apertura automática si viene desde enlace de recuperación de contraseña
