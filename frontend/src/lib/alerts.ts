@@ -88,11 +88,11 @@ export const toastExito = (title: string) => {
   return Swal.fire({
     toast: true,
     position: 'bottom-end',
-    icon: 'success',
+    iconHtml: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>',
     title,
     showConfirmButton: false,
     timer: 3000,
-    timerProgressBar: true,
+    timerProgressBar: false,
     customClass: toastClass,
   });
 };
