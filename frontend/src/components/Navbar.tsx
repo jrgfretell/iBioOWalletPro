@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -57,6 +57,49 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Estado del drawer lateral en móvil
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Evita que los gestos del drawer móvil desplacen el contenido que queda detrás.
+  useLayoutEffect(() => {
+    if (!mobileDrawerOpen) return;
+
+    const scrollY = window.scrollY;
+    const root = document.documentElement;
+    const body = document.body;
+    const previousRootOverflow = root.style.overflow;
+    const previousRootOverscroll = root.style.overscrollBehavior;
+    const previousBodyStyles = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+    };
+
+    root.style.overflow = 'hidden';
+    root.style.overscrollBehavior = 'none';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+
+    return () => {
+      root.style.overflow = previousRootOverflow;
+      root.style.overscrollBehavior = previousRootOverscroll;
+      body.style.position = previousBodyStyles.position;
+      body.style.top = previousBodyStyles.top;
+      body.style.left = previousBodyStyles.left;
+      body.style.right = previousBodyStyles.right;
+      body.style.width = previousBodyStyles.width;
+      body.style.overflow = previousBodyStyles.overflow;
+      body.style.overscrollBehavior = previousBodyStyles.overscrollBehavior;
+      window.scrollTo(0, scrollY);
+    };
+  }, [mobileDrawerOpen]);
 
   // Apertura automática si viene desde enlace de recuperación de contraseña
   useEffect(() => {
@@ -643,7 +686,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               {/* Contenido con Scroll Independiente */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
                 {/* Sección: Menú Principal */}
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
