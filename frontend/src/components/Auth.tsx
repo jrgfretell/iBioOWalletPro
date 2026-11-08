@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '../lib/supabase';
+import { getAuthRedirectUrl } from '../lib/mobileAuth';
 import { Wallet, Mail, Lock, ArrowRight, ArrowLeft, UserPlus, LogIn, AlertCircle, CheckCircle2, ShieldCheck, KeyRound, Send, Eye, EyeOff } from 'lucide-react';
 
 type AuthMode = 'login' | 'register' | 'forgot';
@@ -49,15 +52,22 @@ export const Auth: React.FC = () => {
     setLoadingGoogle(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: getAuthRedirectUrl(),
+          skipBrowserRedirect: Capacitor.isNativePlatform(),
         },
       });
       if (error) throw error;
+      // Google bloquea los inicios de sesión dentro de WebViews; Android usa el navegador del sistema.
+      if (Capacitor.isNativePlatform()) {
+        if (!data.url) throw new Error('No se recibió el enlace de inicio de sesión de Google.');
+        await Browser.open({ url: data.url });
+      }
     } catch (err: unknown) {
       setErrorMsg(mensajeErrorAuth(err, 'google'));
+    } finally {
       setLoadingGoogle(false);
     }
   };
@@ -79,6 +89,7 @@ export const Auth: React.FC = () => {
         const { error, data } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          ...(Capacitor.isNativePlatform() ? { options: { emailRedirectTo: getAuthRedirectUrl() } } : {}),
         });
         if (error) throw error;
 
@@ -89,7 +100,7 @@ export const Auth: React.FC = () => {
         }
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: getAuthRedirectUrl('recovery'),
         });
         if (error) throw error;
         setSuccessMsg('¡Enlace enviado! Revisa tu bandeja de entrada o spam para restablecer tu contraseña.');

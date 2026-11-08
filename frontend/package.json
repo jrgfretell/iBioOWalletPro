@@ -7,9 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.6.0",
     "@supabase/supabase-js": "^2.118.0",
     "framer-motion": "^14.9.0",
     "lucide-react": "^1.67.0",
@@ -18,6 +24,7 @@
     "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@tailwindcss/vite": "^4.3.4",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

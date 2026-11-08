@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
+import { App as CapacitorApp } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { supabase } from '../lib/supabase';
 import { alertaError } from '../lib/alerts';
+import { MOBILE_AUTH_SCHEME } from '../lib/mobileAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [esAdmin, setEsAdmin] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const userRef = useRef<User | null>(null);
+  const handledAuthUrls = useRef(new Set<string>());
 
   useEffect(() => {
     userRef.current = user;
@@ -50,6 +56,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       if (isKnownAdmin) setEsAdmin(true);
     }
+  }, []);
+
+  // Completa OAuth y recuperación de contraseña cuando Supabase vuelve desde el navegador Android.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let active = true;
+    let listener: PluginListenerHandle | undefined;
+
+    const handleAuthUrl = async (url: string) => {
+      if (handledAuthUrls.current.has(url)) return;
+
+      let callback: URL;
+      try {
+        callback = new URL(url);
+      } catch {
+        return;
+      }
+
+      if (callback.protocol !== `${MOBILE_AUTH_SCHEME}:` || callback.hostname !== 'auth' || callback.pathname !== '/callback') {
+        return;
+      }
+
+      handledAuthUrls.current.add(url);
+      const params = new URLSearchParams(callback.search);
+      const hashParams = new URLSearchParams(callback.hash.replace(/^#/, ''));
+      hashParams.forEach((value, key) => {
+        if (!params.has(key)) params.set(key, value);
+      });
+
+      if (params.get('type') === 'recovery') setIsPasswordRecovery(true);
+
+      const authError = params.get('error_description') || params.get('error');
+      if (authError) {
+        await alertaError('No se pudo completar el acceso', authError);
+        await Browser.close().catch(() => undefined);
+        return;
+      }
+
+      try {
+        let error: Error | null = null;
+        const code = params.get('code');
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (code) {
+          const flowId = params.get('sb_flow_id');
+          ({ error } = await supabase.auth.exchangeCodeForSession(
+            code,
+            flowId ? { flowId } : undefined
+          ));
+        } else if (accessToken && refreshToken) {
+          ({ error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }));
+        } else {
+          throw new Error('El enlace de acceso llegó incompleto. Solicita uno nuevo e inténtalo otra vez.');
+        }
+
+        if (error) throw error;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Inténtalo nuevamente.';
+        await alertaError('No se pudo completar el acceso', message);
+      } finally {
+        await Browser.close().catch(() => undefined);
+      }
+    };
+
+    void CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      void handleAuthUrl(url);
+    }).then((registeredListener) => {
+      if (!active) {
+        void registeredListener.remove();
+        return;
+      }
+      listener = registeredListener;
+    });
+
+    void CapacitorApp.getLaunchUrl().then((launch) => {
+      if (active && launch?.url) void handleAuthUrl(launch.url);
+    }).catch(() => undefined);
+
+    return () => {
+      active = false;
+      void listener?.remove();
+    };
   }, []);
 
   const signOut = useCallback(async () => {
