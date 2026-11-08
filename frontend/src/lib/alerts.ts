@@ -10,6 +10,12 @@ const customClass = {
   cancelButton: 'px-5 py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm mx-1',
 };
 
+const toastClass = {
+  container: 'app-toast-container',
+  popup: 'app-toast-popup',
+  title: 'app-toast-title',
+};
+
 export const confirmarAccion = async ({
   title,
   text,
@@ -37,6 +43,9 @@ export const confirmarAccion = async ({
     reverseButtons: true,
     focusCancel: true,
     customClass,
+    buttonsStyling: true,
+    width: 'min(30rem, calc(100vw - 2rem))',
+    padding: '1.5rem',
   });
 
   return result.isConfirmed;
@@ -78,12 +87,13 @@ export const alertaInfo = (title: string, text?: string) => {
 export const toastExito = (title: string) => {
   return Swal.fire({
     toast: true,
-    position: 'top-end',
+    position: 'bottom-end',
     icon: 'success',
     title,
     showConfirmButton: false,
-    timer: 2000,
+    timer: 3000,
     timerProgressBar: true,
+    customClass: toastClass,
   });
 };
 
