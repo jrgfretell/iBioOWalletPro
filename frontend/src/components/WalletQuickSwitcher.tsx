@@ -104,9 +104,9 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
         aria-label={`Billetera actual: ${billeteraActual?.nombre || 'Seleccionar'}`}
         className={`w-full flex items-center justify-between gap-2.5 rounded-xl transition-all cursor-pointer select-none text-left ${
           compact
-            ? 'py-1.5 px-2.5 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 text-white'
-            : 'p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-white shadow-xs'
-        } ${isOpen ? 'ring-2 ring-teal-500/40 border-teal-500/60' : ''}`}
+            ? 'py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white'
+            : 'p-2.5 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white shadow-xs'
+        } ${isOpen ? 'ring-1 ring-slate-500/50 border-slate-500' : ''}`}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div className="w-7 h-7 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center shrink-0">
@@ -152,7 +152,7 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden p-2 text-white min-w-[240px]"
+            className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-800 border border-slate-600/90 rounded-2xl shadow-2xl shadow-slate-950/50 overflow-hidden p-2 text-white min-w-[240px]"
           >
             {/* Buscador de Billeteras (Solo si hay más de 3 billeteras) */}
             {billeteras.filter((w) => !w.archivada).length > 3 && (
@@ -188,8 +188,8 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
                     onClick={() => handleSelect(wallet)}
                     className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer text-left ${
                       isSelected
-                        ? 'bg-teal-500/20 text-white font-bold border border-teal-500/40 shadow-xs'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent'
+                        ? 'bg-teal-500/10 text-white font-bold border border-teal-400/50 shadow-xs'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-700/80 border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -222,7 +222,7 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
             </div>
 
             {/* Separador y Acciones de Gestión */}
-            <div className="pt-2 border-t border-slate-800 space-y-1">
+            <div className="pt-2 border-t border-slate-700 space-y-1">
               {onOpenCreate && (
                 <button
                   type="button"
@@ -244,7 +244,7 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
                     setIsOpen(false);
                     onNavigateToBilleteras();
                   }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer text-left"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/80 transition-colors cursor-pointer text-left"
                 >
                   <Settings className="w-3.5 h-3.5 text-slate-400" />
                   <span>Administrar billeteras...</span>
