@@ -393,8 +393,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* 2. Columna Principal de Contenido (con padding izquierdo en md para no solaparse con el sidebar fijo) */}
       <div className="md:pl-64 flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Topbar Superior */}
-        <header className="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 h-16 shrink-0">
-          <div className="w-full px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 app-safe-top shrink-0">
+          <div className="w-full px-4 sm:px-6 lg:px-8 safe-area-horizontal h-full flex items-center justify-between">
             {/* Izquierda: Hamburguesa en Móvil / Breadcrumb en Escritorio */}
             <div className="flex items-center gap-3">
               {/* Botón Hamburguesa en Móvil */}
@@ -649,7 +649,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-              className="relative w-72 max-w-[85vw] h-full bg-slate-900 border-r border-slate-800 text-white flex flex-col shadow-2xl z-10 select-none"
+              className="relative w-72 max-w-[85vw] h-full bg-slate-900 border-r border-slate-800 text-white flex flex-col shadow-2xl z-10 select-none safe-area-inset"
             >
               {/* Header del Drawer */}
               <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800 shrink-0">
