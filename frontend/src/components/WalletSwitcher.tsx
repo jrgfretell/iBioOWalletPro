@@ -228,15 +228,15 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
             <Wallet className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Billetera actual
             </span>
             <span className="flex flex-wrap items-center gap-2">
-              <span className="truncate text-sm font-bold text-slate-900">
+              <span className="truncate text-sm font-semibold text-slate-900">
                 {loading && !billeteraActual ? 'Cargando…' : billeteraActual?.nombre || 'Elige una billetera'}
               </span>
               {billeteraActual && (
-                <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600">
                   {billeteraActual.moneda}
                 </span>
               )}
@@ -256,10 +256,10 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
               className="flex items-center gap-2 rounded-xl bg-slate-50 hover:bg-teal-50/70 border border-slate-200/80 hover:border-teal-200 px-3 py-1.5 text-left transition-all cursor-pointer disabled:opacity-60"
             >
               <div>
-                <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   Saldo Base {fechaRefFormateada ? `(${fechaRefFormateada})` : ''}
                 </span>
-                <span className="text-xs font-extrabold text-slate-800">
+                <span className="text-xs font-bold text-slate-800">
                   {formatearMoneda(montoBaseActual)}
                 </span>
               </div>
@@ -313,7 +313,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 </button>
               )}
               <div>
-                <h2 className="font-bold text-slate-900">
+                <h2 className="font-semibold text-slate-900">
                   {view === 'list' ? 'Mis billeteras' : view === 'create' ? 'Nueva billetera' : 'Editar billetera'}
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -414,7 +414,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                           className="flex min-w-0 flex-1 items-center gap-2.5 text-left cursor-pointer group disabled:opacity-50"
                         >
                           <span
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-black text-sm border transition-colors ${
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-sm border transition-colors ${
                               isCurrent
                                 ? 'bg-teal-50 text-teal-700 border-teal-200/80'
                                 : 'bg-slate-100 text-slate-600 border-slate-200/80 group-hover:bg-slate-200/70'
@@ -424,11 +424,11 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center gap-1.5">
-                              <span className="truncate text-sm font-extrabold text-slate-900 group-hover:text-teal-700 transition-colors">
+                              <span className="truncate text-sm font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
                                 {wallet.nombre}
                               </span>
                               {wallet.es_principal && (
-                                <span className="rounded-md bg-teal-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-teal-800 shrink-0">
+                                <span className="rounded-md bg-teal-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-teal-800 shrink-0">
                                   Principal
                                 </span>
                               )}
@@ -441,7 +441,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
 
                         {/* Indicador de estado / Botón Cambiar */}
                         {isCurrent ? (
-                          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-700 text-[10px] font-bold shrink-0">
+                          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-700 text-[11px] font-semibold shrink-0">
                             <Check className="h-3 w-3 text-teal-600" />
                             <span>En uso</span>
                           </div>
@@ -459,7 +459,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                             type="button"
                             disabled={busy || escribiendo}
                             onClick={() => choose(wallet)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200/60 text-teal-700 text-xs font-bold shrink-0 cursor-pointer transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200/60 text-teal-700 text-xs font-semibold shrink-0 cursor-pointer transition-colors"
                           >
                             <span>Cambiar</span>
                             <ChevronRight className="h-3.5 w-3.5" />
@@ -470,18 +470,18 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                       {/* Fila 2: Bloque de Saldo Base Destacado */}
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block truncate">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block truncate">
                             Saldo Base Inicial
                           </span>
-                          <div className="text-base font-black text-slate-900 tracking-tight mt-0.5 whitespace-nowrap">
+                          <div className="text-base font-bold text-slate-900 tracking-tight mt-0.5 whitespace-nowrap">
                             {formatoMonetario(wBase, wallet.moneda, monedasDisponibles.find(m => m.codigo === wallet.moneda)?.simbolo || wallet.moneda)}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-[10px] font-medium text-slate-400 block">
+                          <span className="text-[11px] font-medium text-slate-400 block">
                             Fecha de corte
                           </span>
-                          <span className="text-xs font-bold text-slate-600 block mt-0.5 whitespace-nowrap">
+                          <span className="text-xs font-semibold text-slate-600 block mt-0.5 whitespace-nowrap">
                             {wFecha ? wFecha.split('-').reverse().join('/') : '—'}
                           </span>
                         </div>
@@ -494,7 +494,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                           disabled={busy || escribiendo || wallet.archivada}
                           aria-label={`Editar ${wallet.nombre}`}
                           onClick={() => startEdit(wallet)}
-                          className="flex-1 min-h-9 py-1 px-2.5 rounded-xl bg-slate-50 hover:bg-teal-50/70 border border-slate-200/80 hover:border-teal-200 text-slate-700 hover:text-teal-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
+                          className="flex-1 min-h-9 py-1 px-2.5 rounded-xl bg-slate-50 hover:bg-teal-50/70 border border-slate-200/80 hover:border-teal-200 text-slate-700 hover:text-teal-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                         >
                           <Pencil className="h-3.5 w-3.5 text-teal-600" />
                           <span>Editar saldo</span>
@@ -519,7 +519,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                             disabled={busy || escribiendo}
                             aria-label={`Eliminar ${wallet.nombre}`}
                             onClick={() => handleDelete(wallet)}
-                            className="min-h-9 py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100/80 border border-rose-200/70 text-rose-600 hover:text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
+                            className="min-h-9 py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100/80 border border-rose-200/70 text-rose-600 hover:text-rose-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                           >
                             <Trash2 className="h-3.5 w-3.5 text-rose-600" />
                             <span>Eliminar</span>
@@ -572,15 +572,15 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
               {/* Parámetros consolidados de Saldo Inicial de Referencia */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Saldo Inicial de Referencia</span>
-                  <span className="rounded bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
+                  <span className="text-xs font-semibold text-slate-800">Saldo Inicial de Referencia</span>
+                  <span className="rounded bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-800">
                     Base de Proyección
                   </span>
                 </div>
 
                 {/* Selector de modalidad */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
                     ¿Cómo deseas definir tu saldo inicial?
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -605,8 +605,8 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-slate-900">Dinero disponible HOY</span>
-                          <span className="rounded bg-teal-100 px-1.5 py-0.2 text-[9px] font-bold text-teal-800">Recomendado</span>
+                          <span className="text-xs font-semibold text-slate-900">Dinero disponible HOY</span>
+                          <span className="rounded bg-teal-100 px-1.5 py-0.2 text-[11px] font-semibold text-teal-800">Recomendado</span>
                         </div>
                         <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
                           Lo que tienes en mano o cuenta ahora mismo.
@@ -631,7 +631,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                         <History className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-xs font-bold text-slate-900">Capital inicial en el PASADO</span>
+                        <span className="text-xs font-semibold text-slate-900">Capital inicial en el PASADO</span>
                         <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
                           Reconstruye tu saldo descontando pagos históricos.
                         </p>
@@ -702,11 +702,11 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 <div className="rounded-xl bg-amber-50/90 border border-amber-200/90 p-3 sm:p-3.5 text-xs text-amber-950 flex items-start gap-2.5 shadow-2xs">
                   <span className="text-base leading-none select-none shrink-0 mt-0.5">💡</span>
                   <div className="min-w-0 leading-relaxed">
-                    <strong className="block text-amber-900 font-bold text-xs sm:text-sm">
+                    <strong className="block text-amber-900 font-semibold text-xs sm:text-sm">
                       ¿Recibiste un ingreso extra o realizaste un gasto hoy?
                     </strong>
                     <p className="mt-1 text-amber-800 text-[11px] sm:text-xs leading-normal">
-                      <strong>No es necesario modificar este saldo base.</strong> Regístralo en la pestaña <strong className="text-slate-900 underline decoration-amber-400">Movimientos</strong> como <span className="font-bold text-emerald-700">Ingreso (+)</span> o <span className="font-bold text-rose-700">Gasto (-)</span> para conservar tu historial intacto sin descalibrar tus fechas de corte.
+                      <strong>No es necesario modificar este saldo base.</strong> Regístralo en la pestaña <strong className="text-slate-900 underline decoration-amber-400">Movimientos</strong> como <span className="font-semibold text-emerald-700">Ingreso (+)</span> o <span className="font-semibold text-rose-700">Gasto (-)</span> para conservar tu historial intacto sin descalibrar tus fechas de corte.
                     </p>
                   </div>
                 </div>
@@ -730,7 +730,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 <button
                   type="submit"
                   disabled={busy || !nombre.trim() || (view === 'create' && (!monedasCargadas || !monedasDisponibles.some(m => m.codigo === moneda)))}
-                  className="min-h-11 rounded-xl bg-teal-600 px-5 text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
+                  className="min-h-11 rounded-xl bg-teal-600 px-5 text-sm font-semibold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
                 >
                   {busy ? 'Guardando…' : view === 'create' ? 'Crear billetera' : 'Guardar cambios'}
                 </button>
@@ -759,12 +759,12 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
             <Sparkles className="h-7 w-7 text-teal-600" />
           </div>
 
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">
             ¡Billetera creada con éxito!
           </h3>
 
           <p className="mt-2.5 text-sm text-slate-600 leading-relaxed">
-            Has creado <strong className="text-slate-900 font-bold">{createdWalletName}</strong>. ¿Deseas registrar los ingresos programados o sueldo fijo de esta billetera ahora?
+            Has creado <strong className="text-slate-900 font-semibold">{createdWalletName}</strong>. ¿Deseas registrar los ingresos programados o sueldo fijo de esta billetera ahora?
           </p>
 
           <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-slate-600 text-left flex items-start gap-2.5">
@@ -792,7 +792,7 @@ export function WalletSwitcher({ onNavigateToTab }: WalletSwitcherProps = {}) {
                 setCreatedWalletName(null);
                 onNavigateToTab?.('pagos', 'ingresos');
               }}
-              className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 cursor-pointer transition-all flex items-center justify-center gap-2"
+              className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 text-xs sm:text-sm font-semibold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 cursor-pointer transition-all flex items-center justify-center gap-2"
             >
               <span>Configurar ingresos</span>
               <ChevronRight className="h-4 w-4" />

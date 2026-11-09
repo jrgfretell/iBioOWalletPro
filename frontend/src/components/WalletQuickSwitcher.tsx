@@ -114,14 +114,14 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-white truncate max-w-[120px] sm:max-w-[150px]">
+              <span className="text-xs font-semibold text-white truncate max-w-[120px] sm:max-w-[150px]">
                 {loading && !billeteraActual
                   ? 'Cargando…'
                   : billeteraActual?.nombre || 'Elige billetera'}
               </span>
               {billeteraActual && (
                 <span
-                  className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border shrink-0 ${badgeColor(
+                  className={`text-[11px] font-bold px-1.5 py-0.2 rounded border shrink-0 ${badgeColor(
                     billeteraActual.moneda
                   )}`}
                 >
@@ -130,7 +130,7 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
               )}
             </div>
             {!compact && billeteraActual && (
-              <p className="text-[10px] text-slate-400 truncate">
+              <p className="text-[11px] text-slate-400 truncate">
                 Base: <span className="font-semibold text-slate-300">{formatearMoneda(montoBase)}</span>
               </p>
             )}
@@ -170,9 +170,9 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
             )}
 
             {/* Etiqueta de Sección */}
-            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+            <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
               <span>Billeteras Activas</span>
-              <span className="text-[9px] text-slate-500 font-normal">
+              <span className="text-[11px] text-slate-500 font-normal">
                 {filteredWallets.length} disponible(s)
               </span>
             </div>
@@ -188,13 +188,13 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
                     onClick={() => handleSelect(wallet)}
                     className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer text-left ${
                       isSelected
-                        ? 'bg-teal-500/10 text-white font-bold border border-teal-400/50 shadow-xs'
+                        ? 'bg-teal-500/10 text-white font-semibold border border-teal-400/50 shadow-xs'
                         : 'text-slate-300 hover:text-white hover:bg-slate-700/80 border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span
-                        className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border shrink-0 ${badgeColor(
+                        className={`text-[11px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${badgeColor(
                           wallet.moneda
                         )}`}
                       >

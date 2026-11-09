@@ -10,4 +10,5 @@ scratch/
 client_secret_*.json
 *.credentials.json
 .wrangler/
+/supabase/.temp/
 

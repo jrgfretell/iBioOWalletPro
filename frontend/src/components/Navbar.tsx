@@ -254,8 +254,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Wallet className="w-4 h-4" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="font-bold text-white tracking-tight text-base">Mi Billete</span>
-            <span className="font-extrabold text-teal-400 text-base">Pro</span>
+            <span className="font-semibold text-white tracking-tight text-base">Mi Billete</span>
+            <span className="font-bold text-teal-400 text-base">Pro</span>
           </div>
         </div>
 
@@ -269,7 +269,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Lista de Navegación con Scroll Vertical */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 block mb-2">
               Menú Principal
             </span>
             <nav className="space-y-1">
@@ -281,7 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
                       isActive
-                        ? 'bg-teal-500/15 text-teal-300 font-bold border-l-2 border-teal-400 shadow-xs'
+                        ? 'bg-teal-500/15 text-teal-300 font-semibold border-l-2 border-teal-400 shadow-xs'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                     }`}
                   >
@@ -295,14 +295,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {esAdmin && (
             <div className="border-t border-slate-700/70 pt-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
                 Administración
               </span>
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
                   activeTab === 'admin'
-                    ? 'bg-amber-500/15 text-amber-300 font-bold border-l-2 border-amber-400 shadow-xs'
+                    ? 'bg-amber-500/15 text-amber-300 font-semibold border-l-2 border-amber-400 shadow-xs'
                     : 'text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/10'
                 }`}
               >
@@ -318,14 +318,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/40 border border-slate-800">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
                   {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate">
+                  <p className="text-xs font-semibold text-white truncate">
                     {user?.user_metadata?.full_name || 'Mi Cuenta'}
                   </p>
-                  <p className="text-[10px] text-slate-400 truncate">
+                  <p className="text-[11px] text-slate-400 truncate">
                     {user?.email}
                   </p>
                 </div>
@@ -376,7 +376,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="w-7 h-7 rounded-lg bg-teal-500/20 border border-teal-400/30 text-teal-400 flex items-center justify-center">
                   <Wallet className="w-4 h-4" />
                 </div>
-                <span className="font-extrabold text-white text-base tracking-tight">
+                <span className="font-bold text-white text-base tracking-tight">
                   Mi Billete <span className="text-teal-400">Pro</span>
                 </span>
               </div>
@@ -385,7 +385,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="hidden md:flex items-center gap-2">
                 <span className="text-xs font-semibold text-slate-400">Sección activa</span>
                 <span className="text-slate-600">/</span>
-                <span className="text-sm font-extrabold text-white tracking-wide">
+                <span className="text-sm font-bold text-white tracking-wide">
                   {tabTitles[activeTab] || 'Dashboard'}
                 </span>
               </div>
@@ -438,7 +438,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="w-6 h-6 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center">
                           <Bell className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-bold text-white tracking-wide">
+                        <span className="text-xs font-semibold text-white tracking-wide">
                           Avisos de Pagos
                         </span>
                       </div>
@@ -457,7 +457,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-2.5">
                           <span className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-rose-300">
+                            <p className="text-xs font-semibold text-rose-300">
                               {resumenAlertas.vencidos.count}{' '}
                               {resumenAlertas.vencidos.count === 1
                                 ? 'pago vencido'
@@ -465,7 +465,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </p>
                             <p className="text-xs text-rose-200/80 mt-0.5 font-medium">
                               Total pendiente:{' '}
-                              <span className="font-bold text-rose-100">
+                              <span className="font-semibold text-rose-100">
                                 {formatearMoneda(resumenAlertas.vencidos.total)}
                               </span>
                             </p>
@@ -477,7 +477,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
                           <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-amber-300">
+                            <p className="text-xs font-semibold text-amber-300">
                               {resumenAlertas.vencenHoy.count}{' '}
                               {resumenAlertas.vencenHoy.count === 1
                                 ? 'pago vence hoy'
@@ -485,7 +485,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </p>
                             <p className="text-xs text-amber-200/80 mt-0.5 font-medium">
                               Total a pagar hoy:{' '}
-                              <span className="font-bold text-amber-100">
+                              <span className="font-semibold text-amber-100">
                                 {formatearMoneda(resumenAlertas.vencenHoy.total)}
                               </span>
                             </p>
@@ -497,7 +497,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-start gap-2.5">
                           <span className="w-2 h-2 rounded-full bg-sky-400 mt-1.5 shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-sky-300">
+                            <p className="text-xs font-semibold text-sky-300">
                               {resumenAlertas.proximos.count}{' '}
                               {resumenAlertas.proximos.count === 1
                                 ? 'pago en los próximos 3 días'
@@ -505,7 +505,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </p>
                             <p className="text-xs text-sky-200/80 mt-0.5 font-medium">
                               Total estimado:{' '}
-                              <span className="font-bold text-sky-100">
+                              <span className="font-semibold text-sky-100">
                                 {formatearMoneda(resumenAlertas.proximos.total)}
                               </span>
                             </p>
@@ -547,7 +547,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center text-xs font-bold border border-teal-500/30">
+                <div className="w-6 h-6 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center text-xs font-semibold border border-teal-500/30">
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
@@ -581,8 +581,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               {item.icon}
-              <span className={`mt-1 text-[10px] tracking-tight text-center w-full block truncate ${
-                isActive ? 'font-bold text-teal-300' : 'font-medium'
+              <span className={`mt-1 text-[11px] tracking-tight text-center w-full block truncate ${
+                isActive ? 'font-semibold text-teal-300' : 'font-medium'
               }`}>
                 {item.label}
               </span>
@@ -622,8 +622,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <Wallet className="w-4 h-4" />
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="font-bold text-white tracking-tight text-base">Mi Billete</span>
-                    <span className="font-extrabold text-teal-400 text-base">Pro</span>
+                    <span className="font-semibold text-white tracking-tight text-base">Mi Billete</span>
+                    <span className="font-bold text-teal-400 text-base">Pro</span>
                   </div>
                 </div>
                 <button
@@ -638,7 +638,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Quick Switcher de Billetera en el Drawer Móvil */}
               <div className="p-3 border-b border-slate-800 bg-slate-900/60 shrink-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1 block mb-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-1 block mb-1.5">
                   Billetera Activa
                 </span>
                 <WalletQuickSwitcher
@@ -653,7 +653,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
                 {/* Sección: Menú Principal */}
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 block mb-2">
                     Menú Principal
                   </span>
                   <nav className="space-y-1">
@@ -668,7 +668,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
                             isActive
-                              ? 'bg-teal-500/15 text-teal-300 font-bold border-l-2 border-teal-400 shadow-xs'
+                              ? 'bg-teal-500/15 text-teal-300 font-semibold border-l-2 border-teal-400 shadow-xs'
                               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                           }`}
                         >
@@ -683,7 +683,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {/* Sección: Administración (si es admin) */}
                 {esAdmin && (
                   <div className="border-t border-slate-700/70 pt-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-500/80 px-3 block mb-2">
                       Administración
                     </span>
                     <button
@@ -693,7 +693,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
                         activeTab === 'admin'
-                          ? 'bg-amber-500/15 text-amber-300 font-bold border-l-2 border-amber-400 shadow-xs'
+                          ? 'bg-amber-500/15 text-amber-300 font-semibold border-l-2 border-amber-400 shadow-xs'
                           : 'text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10'
                       }`}
                     >
@@ -705,7 +705,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Sección: Accesos de Configuración y Seguridad */}
                 <div className="border-t border-slate-700/70 pt-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 block mb-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 block mb-2">
                     Ajustes
                   </span>
                   <button
@@ -724,14 +724,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Footer del Drawer: Usuario & Cerrar sesión */}
               <div className="p-4 border-t border-slate-800 bg-slate-900/80 shrink-0 space-y-3">
                 <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/60">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-slate-950 font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
                     {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-white truncate">
+                    <p className="text-xs font-semibold text-white truncate">
                       {user?.user_metadata?.full_name || 'Mi Cuenta'}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate">
+                    <p className="text-[11px] text-slate-400 truncate">
                       {user?.email}
                     </p>
                   </div>
@@ -764,7 +764,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">Mi Perfil & Seguridad</h3>
+                <h3 className="font-semibold text-base text-white">Mi Perfil & Seguridad</h3>
                 <p className="text-xs text-slate-400">Gestiona tus credenciales de acceso</p>
               </div>
             </div>
@@ -793,7 +793,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center text-sm font-bold border border-teal-500/40">
+              <div className="w-10 h-10 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center text-sm font-semibold border border-teal-500/40">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </div>
             )}
@@ -804,7 +804,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <p className="text-xs text-slate-400 truncate">{user?.email}</p>
             </div>
             <span
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                 esAdmin
                   ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                   : 'bg-teal-500/15 text-teal-300 border border-teal-500/30'
@@ -899,7 +899,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="submit"
                 disabled={guardandoPassword || !nuevoPassword || !confirmarPassword}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-500 hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-md shadow-teal-500/20 flex items-center gap-2 cursor-pointer transition-all"
+                className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-teal-500 hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-md shadow-teal-500/20 flex items-center gap-2 cursor-pointer transition-all"
               >
                 {guardandoPassword ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

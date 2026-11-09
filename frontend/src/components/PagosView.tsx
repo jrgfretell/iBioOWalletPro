@@ -114,11 +114,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
   const [montoPorCuota, setMontoPorCuota] = useState<string>('');
   const [fecha1raCuota, setFecha1raCuota] = useState<string>(fechaHoyISO());
   const [deudaCatId, setDeudaCatId] = useState<number | ''>('');
-  const [forzarFinDeMes, setForzarFinDeMes] = useState<boolean>(() => {
-    const hoyIso = fechaHoyISO();
-    const [y, m, d] = hoyIso.split('-').map(Number);
-    return d === obtenerUltimoDiaMes(y, m - 1);
-  });
+  const [forzarFinDeMes, setForzarFinDeMes] = useState<boolean>(false);
 
   // Edición inline de fecha de cuota
   const [editandoCuotaId, setEditandoCuotaId] = useState<number | null>(null);
@@ -150,7 +146,24 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     const id=crypto.randomUUID();solicitudes.current.set(accion,{datos:texto,id});return id;
   };
   const abrirPago=(objetivo:Omit<ObjetivoPago,'solicitud'>)=>setPagoObjetivo({...objetivo,solicitud:crypto.randomUUID()});
+  const cuotasPendientesDesde=(cuotaId:number)=>{
+    const inicio=cuotas.find(c=>c.id===cuotaId);
+    if(!inicio)return [];
+    return cuotas.filter(c=>c.deuda_id===inicio.deuda_id&&c.numero>=inicio.numero)
+      .sort((a,b)=>a.numero-b.numero)
+      .map(c=>({cuotaId:c.id,numero:c.numero,pendiente:Math.max(0,Math.round((c.monto-pagosDeuda.filter(p=>p.cuota_id===c.id).reduce((s,p)=>s+p.monto,0))*100)/100)}))
+      .filter(c=>c.pendiente>0);
+  };
   const cuotasPrevias=generarCuotas(fecha1raCuota,Number(numCuotas),Number(montoPorCuota),forzarFinDeMes);
+  const partesFechaPrimera = fecha1raCuota.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const anioPrimeraCuota = partesFechaPrimera ? Number(partesFechaPrimera[1]) : 0;
+  const mesPrimeraCuota = partesFechaPrimera ? Number(partesFechaPrimera[2]) : 0;
+  const diaPrimeraCuota = partesFechaPrimera ? Number(partesFechaPrimera[3]) : 0;
+  const fechaPrimeraEsFinDeMes = Boolean(partesFechaPrimera) &&
+    diaPrimeraCuota === obtenerUltimoDiaMes(anioPrimeraCuota, mesPrimeraCuota - 1);
+  const fechaPrimeraFormateada = partesFechaPrimera
+    ? `${String(diaPrimeraCuota).padStart(2, '0')}/${String(mesPrimeraCuota).padStart(2, '0')}/${anioPrimeraCuota}`
+    : '';
 
   const handleIrACronograma = (cardKey: string) => {
     // 1. Limpiar filtros y búsqueda para asegurar que el cronograma esté visible
@@ -421,7 +434,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     try {
     if (!user) return;
     if(soporteEtapa5) {
-      abrirPago({nombre:fila.nombre,monto:fila.pendiente,vencimiento:fila.fecha,cuotaId:fila.cuotaRef?.id,recurrenteId:fila.recurrenteId}); return;
+      abrirPago({nombre:fila.nombre,monto:fila.pendiente,vencimiento:fila.fecha,cuotaId:fila.cuotaRef?.id,cuotasSiguientes:fila.cuotaRef?cuotasPendientesDesde(fila.cuotaRef.id):undefined,recurrenteId:fila.recurrenteId}); return;
     }
     setProcesandoAccion(fila.id);
     try {
@@ -599,26 +612,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
       if (error || !dData) return;
 
-      const [yBase, mBase, dBase] = fecha1raCuota.split('-').map(Number);
-      const maxDiaBase = obtenerUltimoDiaMes(yBase, mBase - 1);
-      const esFinDeMes = forzarFinDeMes || dBase === maxDiaBase;
-
-      const cuotasInsert = [];
-      for (let i = 0; i < nCuotas; i++) {
-        const fechaTarget = new Date(yBase, mBase - 1 + i, 1);
-        const anioT = fechaTarget.getFullYear();
-        const mesT = fechaTarget.getMonth();
-        const maxDia = obtenerUltimoDiaMes(anioT, mesT);
-        const diaReal = esFinDeMes ? maxDia : Math.min(dBase, maxDia);
-        const fechaStr = `${anioT}-${String(mesT + 1).padStart(2, '0')}-${String(diaReal).padStart(2, '0')}`;
-        cuotasInsert.push({
-          user_id: user.id,
-          deuda_id: dData.id,
-          numero: i + 1,
-          monto: mCuota,
-          fecha: fechaStr,
-        });
-      }
+      const cuotasInsert = cuotasPrevias.map((cuota, i) => ({
+        user_id: user.id,
+        deuda_id: dData.id,
+        numero: i + 1,
+        monto: cuota.monto,
+        fecha: cuota.fecha,
+      }));
       await supabase.from('deuda_cuotas').insert(cuotasInsert);
     } else {
       const mNum = parseFloat(recMonto);
@@ -781,10 +781,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
       {/* Cabecera Principal */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-wider text-teal-600 mb-0.5">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-teal-600 mb-0.5">
             {scope === 'recurrentes' ? 'GASTOS QUE SE REPITEN' : 'TU AGENDA FINANCIERA'}
           </p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             {scope === 'recurrentes' ? 'Pagos recurrentes' : 'Pagos programados'}
           </h1>
           <p className="text-xs text-slate-500">
@@ -799,7 +799,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
             setModalTipoCrear(scope === 'recurrentes' ? 'continuo' : 'cuotas');
             setModalNuevoProgramado(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs cursor-pointer self-start sm:self-auto shrink-0"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs cursor-pointer self-start sm:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>{scope === 'recurrentes' ? 'Nuevo pago recurrente' : 'Nuevo compromiso'}</span>
@@ -835,10 +835,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                   Compromisos de {NOMBRES_MESES[agendaMes]} {agendaAnio}
                 </span>
-                <span className="text-base sm:text-lg font-black text-slate-900 mt-0.5 block">
+                <span className="text-base sm:text-lg font-bold text-slate-900 mt-0.5 block">
                   Total: {formatearMoneda(resumenAgenda.programado)}
                 </span>
               </div>
@@ -848,7 +848,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                   setAgendaMes(hoy.getMonth());
                   setAgendaAnio(hoy.getFullYear());
                 }}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
                 title="Volver al mes actual"
               >
                 <Calendar className="w-3.5 h-3.5 text-teal-600" />
@@ -886,27 +886,27 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
             {/* 3 Métricas en una sola fila dividida */}
             <div className="grid grid-cols-3 divide-x divide-slate-100 text-center pt-1">
               <div className="px-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-teal-700 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700 block">
                   Pagado
                 </span>
-                <span className="text-xs sm:text-sm font-black text-teal-700 block mt-0.5 truncate">
+                <span className="text-xs sm:text-sm font-bold text-teal-700 block mt-0.5 truncate">
                   {formatearMoneda(resumenAgenda.pagado)}
                 </span>
               </div>
               <div className="px-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 block">
                   Pendiente
                 </span>
-                <span className="text-xs sm:text-sm font-black text-amber-700 block mt-0.5 truncate">
+                <span className="text-xs sm:text-sm font-bold text-amber-700 block mt-0.5 truncate">
                   {formatearMoneda(resumenAgenda.pendiente)}
                 </span>
               </div>
               <div className="px-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-red-500 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-red-500 block">
                   Vencido
                 </span>
                 <span
-                  className={`text-xs sm:text-sm font-black block mt-0.5 truncate ${
+                  className={`text-xs sm:text-sm font-bold block mt-0.5 truncate ${
                     resumenAgenda.vencido > 0 ? 'text-red-600' : 'text-slate-400'
                   }`}
                 >
@@ -920,13 +920,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Mes
                 </label>
                 <select
                   value={agendaMes}
                   onChange={(e) => setAgendaMes(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
                   {NOMBRES_MESES.map((m, idx) => (
                     <option key={idx} value={idx}>
@@ -937,13 +937,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Año
                 </label>
                 <select
                   value={agendaAnio}
                   onChange={(e) => setAgendaAnio(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
                   {[hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1].map((a) => (
                     <option key={a} value={a}>
@@ -954,7 +954,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Tipo
                 </label>
                 <select
@@ -962,7 +962,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                   onChange={(e) =>
                     setAgendaTipo(e.target.value as 'todos' | 'continuo' | 'cuotas')
                   }
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
                   <option value="todos">Todos los compromisos</option>
                   <option value="continuo">Ingresos fijos</option>
@@ -971,7 +971,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Estado
                 </label>
                 <select
@@ -981,7 +981,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       e.target.value as 'todos' | 'pendiente' | 'pagado' | 'vencido'
                     )
                   }
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-500"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-500"
                 >
                   <option value="todos">Todos</option>
                   <option value="pendiente">Pendientes</option>
@@ -1022,7 +1022,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <div className="flex items-start justify-between gap-2.5">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
-                          className={`w-9 h-9 rounded-xl flex flex-col items-center justify-center shrink-0 border text-xs font-black ${
+                          className={`w-9 h-9 rounded-xl flex flex-col items-center justify-center shrink-0 border text-xs font-bold ${
                             isPaid
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
                               : isOverdue
@@ -1031,17 +1031,17 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                           }`}
                         >
                           <span className="leading-none">{d}</span>
-                          <span className="text-[9px] font-semibold uppercase text-slate-400 mt-0.5">
+                          <span className="text-[11px] font-semibold uppercase text-slate-400 mt-0.5">
                             {NOMBRES_MESES[Number(m) - 1]?.slice(0, 3)}
                           </span>
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate">
+                          <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">
                             {r.nombre}
                           </h4>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px]">
-                            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-bold">
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[11px]">
+                            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold">
                               {r.tipo}
                             </span>
                             {r.detalle && (
@@ -1050,11 +1050,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                               </span>
                             )}
                             {isPaid ? (
-                              <span className="font-bold text-emerald-600">✓ Pagado</span>
+                              <span className="font-semibold text-emerald-600">✓ Pagado</span>
                             ) : isOverdue ? (
-                              <span className="font-bold text-red-600">! Vencido</span>
+                              <span className="font-semibold text-red-600">! Vencido</span>
                             ) : (
-                              <span className="font-bold text-amber-600">● Pendiente</span>
+                              <span className="font-semibold text-amber-600">● Pendiente</span>
                             )}
                           </div>
                         </div>
@@ -1062,11 +1062,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
                       {/* Monto */}
                       <div className="text-right shrink-0">
-                        <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                        <span className="text-[11px] uppercase font-semibold text-slate-400 block">
                           {isPaid ? 'Abonado' : 'Por pagar'}
                         </span>
                         <strong
-                          className={`text-xs sm:text-sm font-black ${
+                          className={`text-xs sm:text-sm font-bold ${
                             isPaid ? 'text-emerald-600' : 'text-slate-900'
                           }`}
                         >
@@ -1080,7 +1080,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       <button
                         type="button"
                         onClick={() => handleIrACronograma(cardKey)}
-                        className="text-teal-700 hover:text-teal-800 font-bold text-[11px] inline-flex items-center gap-0.5 cursor-pointer hover:underline"
+                        className="text-teal-700 hover:text-teal-800 font-semibold text-[11px] inline-flex items-center gap-0.5 cursor-pointer hover:underline"
                       >
                         <span>Cronograma</span>
                         <ChevronRight className="w-3 h-3" />
@@ -1110,7 +1110,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                             type="button"
                             disabled={soloLectura || procesandoAccion === r.id}
                             onClick={() => handleRegistrarPagoAgenda(r)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] shadow-2xs cursor-pointer ml-1"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] shadow-2xs cursor-pointer ml-1"
                           >
                             <Plus className="w-3 h-3" />
                             <span>{procesandoAccion === r.id ? '...' : 'Pagar'}</span>
@@ -1121,7 +1121,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                               disabled={soloLectura}
                               type="button"
                               onClick={() => handleAnularPagoAgenda(r)}
-                              className="px-2 py-1 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold text-[11px] cursor-pointer ml-1"
+                              className="px-2 py-1 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 font-semibold text-[11px] cursor-pointer ml-1"
                             >
                               Anular
                             </button>
@@ -1139,7 +1139,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden w-full min-w-0">
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left text-xs min-w-[700px]">
-                <thead className="bg-slate-50/80 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
+                <thead className="bg-slate-50/80 text-slate-500 uppercase font-bold text-[11px] tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4">Vencimiento</th>
                     <th className="py-3 px-4">Compromiso</th>
@@ -1182,25 +1182,25 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
                           {/* Compromiso */}
                           <td className="py-3.5 px-4 min-w-[160px]">
-                            <strong className="block text-slate-900 font-extrabold">{r.nombre}</strong>
+                            <strong className="block text-slate-900 font-bold">{r.nombre}</strong>
                             <span className="text-[11px] text-slate-500">{r.detalle}</span>
                           </td>
 
                           {/* Tipo */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px]">
                               {r.tipo}
                             </span>
                           </td>
 
                           {/* Programado */}
-                          <td className="py-3.5 px-4 whitespace-nowrap font-bold text-slate-900">
+                          <td className="py-3.5 px-4 whitespace-nowrap font-semibold text-slate-900">
                             {formatearMoneda(r.programado)}
                           </td>
 
                           {/* Pagado */}
                           <td
-                            className={`py-3.5 px-4 whitespace-nowrap font-bold ${
+                            className={`py-3.5 px-4 whitespace-nowrap font-semibold ${
                               r.pagado > 0 ? 'text-emerald-600' : 'text-slate-400'
                             }`}
                           >
@@ -1209,7 +1209,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
                           {/* Pendiente */}
                           <td
-                            className={`py-3.5 px-4 whitespace-nowrap font-extrabold ${
+                            className={`py-3.5 px-4 whitespace-nowrap font-bold ${
                               r.pendiente > 0 ? 'text-slate-900' : 'text-slate-400'
                             }`}
                           >
@@ -1219,17 +1219,17 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                           {/* Estado */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
                             {isPaid ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 Pagado
                               </span>
                             ) : isOverdue ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-bold">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-semibold">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                 Vencido
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 Pendiente
                               </span>
@@ -1244,7 +1244,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                   type="button"
                                   disabled={soloLectura || (procesandoAccion === r.id)}
                                   onClick={() => handleRegistrarPagoAgenda(r)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs cursor-pointer mr-1"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs shadow-xs cursor-pointer mr-1"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
                                   <span>
@@ -1256,7 +1256,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                   <button disabled={soloLectura}
                                     type="button"
                                     onClick={() => handleAnularPagoAgenda(r)}
-                                    className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 font-bold text-[11px] cursor-pointer mr-1"
+                                    className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 font-semibold text-[11px] cursor-pointer mr-1"
                                   >
                                     Anular
                                   </button>
@@ -1294,7 +1294,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                   handleIrACronograma(cardKey);
                                 }}
                                 title="Ver cronograma completo"
-                                className="text-teal-600 hover:text-teal-700 font-bold text-[11px] inline-flex items-center gap-0.5 cursor-pointer ml-1 whitespace-nowrap min-h-8 py-1 px-2 rounded-lg hover:bg-teal-50 active:bg-teal-100 transition-colors"
+                                className="text-teal-600 hover:text-teal-700 font-semibold text-[11px] inline-flex items-center gap-0.5 cursor-pointer ml-1 whitespace-nowrap min-h-8 py-1 px-2 rounded-lg hover:bg-teal-50 active:bg-teal-100 transition-colors"
                               >
                                 <span>Ver cronograma</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
@@ -1326,7 +1326,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 type="button"
                 onClick={() => setFiltroCronogramas('todos')}
                 aria-pressed={filtroCronogramas === 'todos'}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                   filtroCronogramas === 'todos' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
@@ -1336,7 +1336,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 type="button"
                 onClick={() => setFiltroCronogramas('activas')}
                 aria-pressed={filtroCronogramas === 'activas'}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                   filtroCronogramas === 'activas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
@@ -1346,7 +1346,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 type="button"
                 onClick={() => setFiltroCronogramas('pagadas')}
                 aria-pressed={filtroCronogramas === 'pagadas'}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                   filtroCronogramas === 'pagadas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
@@ -1395,10 +1395,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <History className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs sm:text-sm font-bold text-slate-800">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-800">
                       Historial de abonos registrados
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-slate-200/80 text-slate-700">
+                    <span className="px-2 py-0.5 rounded-full text-[11px] sm:text-[11px] font-semibold bg-slate-200/80 text-slate-700">
                       {pagosDeuda.length}
                     </span>
                   </div>
@@ -1422,7 +1422,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     return (
                       <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2.5 first:pt-1">
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-900 truncate">
+                          <p className="text-xs font-semibold text-slate-900 truncate">
                             {d ? `${d.nombre} · Cuota ${c?.numero}` : 'Abono de cronograma'}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
@@ -1430,7 +1430,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                             <span>·</span>
                             <span className="font-semibold text-slate-800">{formatearMoneda(p.monto)}</span>
                             {fechaReferencia && p.fecha < fechaReferencia && (
-                              <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                              <span className="text-[11px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                                 En saldo inicial
                               </span>
                             )}
@@ -1476,7 +1476,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                   setModalTipoCrear(scope === 'recurrentes' ? 'continuo' : 'cuotas');
                   setModalNuevoProgramado(true);
                 }}
-                className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:underline cursor-pointer"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-teal-600 hover:underline cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{scope === 'recurrentes' ? 'Agregar primer pago recurrente' : 'Crear primer cronograma en cuotas'}</span>
@@ -1486,7 +1486,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
             <div className="space-y-6">
               {clavesVisibles.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
                 <Search aria-hidden="true" className="w-6 h-6 text-slate-400 mx-auto mb-3" />
-                <h2 className="text-sm font-bold text-slate-800">No encontramos {scope === 'recurrentes' ? 'pagos recurrentes' : 'cronogramas en cuotas'}</h2>
+                <h2 className="text-sm font-semibold text-slate-800">No encontramos {scope === 'recurrentes' ? 'pagos recurrentes' : 'cronogramas en cuotas'}</h2>
                 <p className="text-xs text-slate-500 mt-2">Prueba con otro nombre o categoría.</p>
                 <button type="button" onClick={() => { setBusquedaCronogramas(''); setFiltroCronogramas('todos'); }}
                   className="min-h-11 mt-3 px-4 text-sm font-semibold text-teal-700 hover:bg-teal-50 rounded-xl cursor-pointer">Restablecer filtros</button>
@@ -1519,11 +1519,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                             <i className={`fas ${catIcon} text-base`}></i>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words">
+                            <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-snug break-words">
                               {card.nombre}
                             </h2>
                             <div className="mt-1">
-                              <span className="inline-flex px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                              <span className="inline-flex px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[11px] font-bold uppercase tracking-wider">
                                 Recurrente
                               </span>
                             </div>
@@ -1532,10 +1532,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
                         {/* Monto fijo por cada repetición mensual */}
                         <div className="text-right shrink-0">
-                          <span className="block text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                          <span className="block text-[11px] text-slate-400 font-bold uppercase tracking-wider">
                             Cada mes
                           </span>
-                          <strong className="block text-base sm:text-xl font-black text-slate-900 mt-0.5">
+                          <strong className="block text-base sm:text-xl font-bold text-slate-900 mt-0.5">
                             {formatearMoneda(card.rec.monto)}
                           </strong>
                         </div>
@@ -1546,19 +1546,19 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100">
                             <div className="min-w-0">
-                              <span className="block text-[11px] font-bold text-slate-500">Próximos 13 meses</span>
+                              <span className="block text-[11px] font-semibold text-slate-500">Próximos 13 meses</span>
                               <span className="block mt-0.5 text-[11px] text-slate-400">Proyección, sin límite de pagos</span>
                             </div>
-                            <strong className="shrink-0 text-sm font-black text-slate-800">
+                            <strong className="shrink-0 text-sm font-bold text-slate-800">
                               {formatearMoneda(card.importePeriodo)}
                             </strong>
                           </div>
                           <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100">
                             <div className="min-w-0">
-                              <span className="block text-[11px] font-bold text-emerald-800">Abonado históricamente</span>
+                              <span className="block text-[11px] font-semibold text-emerald-800">Abonado históricamente</span>
                               <span className="block mt-0.5 text-[11px] text-emerald-700">{card.pagosHistoricos} {card.pagosHistoricos === 1 ? 'pago registrado' : 'pagos registrados'}</span>
                             </div>
-                            <strong className="shrink-0 text-sm font-black text-emerald-900">
+                            <strong className="shrink-0 text-sm font-bold text-emerald-900">
                               {formatearMoneda(card.totalHistoricoAbonado)}
                             </strong>
                           </div>
@@ -1570,11 +1570,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         {card.proximo ? (
                           <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 border border-amber-200">
+                              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-bold shrink-0 border border-amber-200">
                                 {card.proximo.fecha.split('-')[2]}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="text-xs font-black text-amber-950">
+                                <div className="text-xs font-bold text-amber-950">
                                   Próximo pago
                                 </div>
                                 <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
@@ -1582,12 +1582,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                 </div>
                               </div>
                             </div>
-                            <strong className="text-xs sm:text-sm font-black text-amber-950 shrink-0 ml-2">
+                            <strong className="text-xs sm:text-sm font-bold text-amber-950 shrink-0 ml-2">
                               {formatearMoneda(card.proximo.pendiente)}
                             </strong>
                           </div>
                         ) : (
-                          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                             <span>Sin pagos pendientes en los próximos 13 meses</span>
                           </div>
@@ -1606,7 +1606,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                               [card.idKey]: !expandida,
                             }))
                           }
-                          className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
+                          className="inline-flex items-center gap-1.5 font-semibold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
                         >
                           <span>{expandida ? 'Ocultar pagos' : 'Ver próximos 13 meses'}</span>
                           <ChevronDown
@@ -1681,18 +1681,18 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                 <div key={v.numero} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                      <p className="text-xs font-black text-slate-800 capitalize">{mesVencimiento}</p>
+                                      <p className="text-xs font-bold text-slate-800 capitalize">{mesVencimiento}</p>
                                       <p className="mt-0.5 text-[11px] text-slate-500">Vence {d}/{m}/{y}</p>
                                     </div>
-                                    <strong className="shrink-0 text-sm font-black text-slate-900">{formatearMoneda(v.importe)}</strong>
+                                    <strong className="shrink-0 text-sm font-bold text-slate-900">{formatearMoneda(v.importe)}</strong>
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
                                     {isPaid ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Pagado
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Pendiente
                                       </span>
                                     )}
@@ -1709,7 +1709,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                             await recargarTodo();
                                           } catch (error) { reportarError(error); }
                                         }}
-                                        className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs">
+                                        className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-xs cursor-pointer shadow-xs">
                                         Registrar pago
                                       </button>
                                     ) : v.movimientoId ? (
@@ -1731,7 +1731,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                           </div>
                           <div className="hidden sm:block overflow-x-auto">
                           <table className="w-full text-left text-xs min-w-[560px]">
-                            <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
+                            <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[11px] tracking-wider border-b border-slate-200">
                               <tr>
                                 <th className="py-2.5 px-4">Mes</th>
                                 <th className="py-2.5 px-4">Vencimiento</th>
@@ -1754,17 +1754,17 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                     <td className="py-3 px-4 font-medium text-slate-800">
                                       {d}/{m}/{y}
                                     </td>
-                                    <td className="py-3 px-4 font-bold text-slate-900">
+                                    <td className="py-3 px-4 font-semibold text-slate-900">
                                       {formatearMoneda(v.importe)}
                                     </td>
                                     <td className="py-3 px-4">
                                       {isPaid ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
                                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                           Pagado
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold">
                                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                           Pendiente
                                         </span>
@@ -1794,7 +1794,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
     } catch (error) { reportarError(error); }
   }}
-                                            className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs"
+                                            className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-xs cursor-pointer shadow-xs"
                                           >
                                             + Registrar pago
                                           </button>
@@ -1893,11 +1893,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                             <i className={`fas ${catIcon} text-base`}></i>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words">
+                            <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-snug break-words">
                               {d.nombre}
                             </h2>
                             <div className="mt-1">
-                              <span className="inline-flex px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                              <span className="inline-flex px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/60 text-teal-800 text-[11px] font-bold uppercase tracking-wider">
                                 {cuotasD.length} cuotas
                               </span>
                             </div>
@@ -1906,10 +1906,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
                         {/* Pendiente Total */}
                         <div className="text-right shrink-0">
-                          <span className="block text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                          <span className="block text-[11px] text-slate-400 font-bold uppercase tracking-wider">
                             Pendiente
                           </span>
-                          <strong className="block text-base sm:text-xl font-black text-slate-900 mt-0.5">
+                          <strong className="block text-base sm:text-xl font-bold text-slate-900 mt-0.5">
                             {formatearMoneda(totalPactado - totalAbonado)}
                           </strong>
                         </div>
@@ -1919,12 +1919,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       <div className="px-4 sm:px-5 pb-3">
                         <div className="p-3 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-[11px] font-bold text-slate-500">
+                            <span className="text-[11px] font-semibold text-slate-500">
                               Progreso de pagos
                             </span>
-                            <span className="text-xs font-black text-teal-700">
+                            <span className="text-xs font-bold text-teal-700">
                               {pct}%{' '}
-                              <span className="text-[10px] font-medium text-slate-400">
+                              <span className="text-[11px] font-medium text-slate-400">
                                 ({pagadas} de {cuotasD.length} pagadas)
                               </span>
                             </span>
@@ -1940,13 +1940,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-0.5">
                             <span>
                               Abonado:{' '}
-                              <strong className="text-slate-600 font-black">
+                              <strong className="text-slate-600 font-bold">
                                 {formatearMoneda(totalAbonado)}
                               </strong>
                             </span>
                             <span>
                               Total pactado:{' '}
-                              <strong className="text-slate-700 font-black">
+                              <strong className="text-slate-700 font-bold">
                                 {formatearMoneda(totalPactado)}
                               </strong>
                             </span>
@@ -1959,11 +1959,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         {proximaCuota ? (
                           <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black shrink-0 border border-amber-200">
+                              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-bold shrink-0 border border-amber-200">
                                 {proximaCuota.fecha ? proximaCuota.fecha.split('-')[2] : '1'}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="text-xs font-black text-amber-950">
+                                <div className="text-xs font-bold text-amber-950">
                                   Próximo vencimiento
                                 </div>
                                 <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
@@ -1973,12 +1973,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                 </div>
                               </div>
                             </div>
-                            <strong className="text-xs sm:text-sm font-black text-amber-950 shrink-0 ml-2">
+                            <strong className="text-xs sm:text-sm font-bold text-amber-950 shrink-0 ml-2">
                               {formatearMoneda(proximaPendiente)}
                             </strong>
                           </div>
                         ) : (
-                          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                             <span>¡Completado! Todas las cuotas están pagadas</span>
                           </div>
@@ -1997,7 +1997,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                               [`deuda-${d.id}`]: !expandida,
                             }))
                           }
-                          className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
+                          className="inline-flex items-center gap-1.5 font-semibold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
                         >
                           <span>{expandida ? 'Ocultar cuotas' : `Ver ${cuotasD.length} cuotas`}</span>
                           <ChevronDown
@@ -2108,7 +2108,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       <AnimatedDisclosure open={expandida} id={`vencimientos-deuda-${d.id}`}>
                         <div className="border-t border-slate-200 overflow-x-auto w-full">
                           <table className="w-full text-left text-xs min-w-[550px]">
-                            <thead className="bg-slate-50 text-slate-500 uppercase font-black text-[10px] tracking-wider border-b border-slate-200">
+                            <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[11px] tracking-wider border-b border-slate-200">
                               <tr>
                                 <th className="py-2.5 px-4">Cuota</th>
                                 <th className="py-2.5 px-4">Vencimiento</th>
@@ -2172,26 +2172,27 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                               setEditandoCuotaId(c.id);
                                               setNuevaFechaCuota(c.fecha);
                                             }}
-                                            className="opacity-0 group-hover/fecha:opacity-100 transition-opacity p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-teal-700 cursor-pointer"
+                                            className="transition-opacity p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-teal-700 cursor-pointer"
                                             title="Cambiar fecha de vencimiento"
+                                            aria-label={`Cambiar fecha de vencimiento de la cuota ${c.numero}`}
                                           >
                                             <Edit2 className="w-3 h-3" />
                                           </button>
                                         </div>
                                       )}
                                     </td>
-                                    <td className="py-3 px-4 font-bold text-slate-900">
+                                    <td className="py-3 px-4 font-semibold text-slate-900">
                                       {formatearMoneda(c.monto)}
                                     </td>
                                     <td
                                       className={`py-3 px-4 ${
-                                        abonado > 0 ? 'text-emerald-600 font-bold' : 'text-slate-400'
+                                        abonado > 0 ? 'text-emerald-600 font-semibold' : 'text-slate-400'
                                       }`}
                                     >
                                       {formatearMoneda(abonado)}
                                     </td>
                                     <td
-                                      className={`py-3 px-4 font-black ${
+                                      className={`py-3 px-4 font-bold ${
                                         pendiente > 0 ? 'text-slate-900' : 'text-slate-400'
                                       }`}
                                     >
@@ -2199,12 +2200,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                     </td>
                                     <td className="py-3 px-4">
                                       {pagada ? (
-                                        <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
+                                        <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
                                           <CheckCircle2 className="w-3.5 h-3.5" />
                                           Pagada
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 text-amber-700 font-bold">
+                                        <span className="inline-flex items-center gap-1 text-amber-700 font-semibold">
                                           Pendiente
                                         </span>
                                       )}
@@ -2215,7 +2216,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                           type="button"
                                           onClick={async () => {
     try {
-                                            if(soporteEtapa5){abrirPago({nombre:d.nombre,monto:pendiente,vencimiento:c.fecha,cuotaId:c.id});return;}
+                                            if(soporteEtapa5){abrirPago({nombre:d.nombre,monto:pendiente,vencimiento:c.fecha,cuotaId:c.id,cuotasSiguientes:cuotasPendientesDesde(c.id)});return;}
                                             const { data: movData } = await supabase
                                               .from('movimientos_agenda')
                                               .insert({
@@ -2244,7 +2245,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
     } catch (error) { reportarError(error); }
   }}
-                                          className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs cursor-pointer"
+                                          className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-xs cursor-pointer"
                                         >
                                           + Registrar pago
                                         </button>
@@ -2273,7 +2274,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
             {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="text-base font-bold">
+              <h3 className="text-base font-semibold">
                 {editTipo === 'recurrente'
                   ? editTipoMovimiento === 'ingreso'
                     ? 'Editar Ingreso Programado'
@@ -2291,14 +2292,14 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
             <form onSubmit={handleGuardarEdicion} className="p-5 space-y-4">
               {editTipo === 'recurrente' && scope !== 'recurrentes' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Tipo de programación
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setEditTipoMovimiento('ingreso')}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors border ${
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors border ${
                         editTipoMovimiento === 'ingreso'
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-xs'
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -2309,7 +2310,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <button
                       type="button"
                       onClick={() => setEditTipoMovimiento('gasto')}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors border ${
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors border ${
                         editTipoMovimiento === 'gasto'
                           ? 'bg-rose-50 text-rose-700 border-rose-300 shadow-xs'
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -2322,7 +2323,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Nombre
                 </label>
                 <input
@@ -2338,7 +2339,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Monto mensual ({simboloMoneda})
                       </label>
                       <input
@@ -2348,11 +2349,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         required
                         value={editMonto}
                         onChange={(e) => setEditMonto(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Día de vencimiento (1-31)
                       </label>
                       <input
@@ -2362,13 +2363,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         required
                         value={editDia}
                         onChange={(e) => setEditDia(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Iniciar desde (Mes y Año)
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -2405,7 +2406,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Categoría</label>
                 <select
                   value={editCatId}
                   onChange={(e) =>
@@ -2426,14 +2427,14 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 <button disabled={soloLectura}
                   type="button"
                   onClick={() => setModalEdicionAbierto(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={soloLectura || (guardandoEdicion)}
-                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold cursor-pointer"
                 >
                   {guardandoEdicion ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
@@ -2452,7 +2453,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
             {errorBilletera && <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">{errorBilletera}</p>}
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
-              <h3 className="text-base font-bold">{scope === 'recurrentes' ? 'Nuevo pago recurrente' : 'Nuevo compromiso'}</h3>
+              <h3 className="text-base font-semibold">{scope === 'recurrentes' ? 'Nuevo pago recurrente' : 'Nuevo compromiso'}</h3>
               <button disabled={soloLectura||creando}
                 onClick={() => setModalNuevoProgramado(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
@@ -2469,7 +2470,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                   <p className="mt-0.5 text-teal-800">Se repetirá cada mes hasta que lo retires.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
                   <button type="button" onClick={() => setModalTipoCrear('cuotas')}
                     className={`py-2 rounded-lg cursor-pointer transition-all ${modalTipoCrear === 'cuotas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>
                     Cronograma en cuotas
@@ -2492,7 +2493,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               {modalTipoCrear === 'cuotas' ? (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Nombre del compromiso / compra
                     </label>
                     <input
@@ -2500,14 +2501,14 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       required
                       value={nombreDeuda}
                       onChange={(e) => setNombreDeuda(e.target.value)}
-                      placeholder="Ej. Cibertec Deee, Laptop en cuotas, BCP..."
+                      placeholder="Ej. Laptop en cuotas, préstamo..."
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         N° de cuotas
                       </label>
                       <input
@@ -2517,11 +2518,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         required
                         value={numCuotas}
                         onChange={(e) => {setNumCuotas(e.target.value);setHistoricos({});}}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Monto por cuota ({simboloMoneda})
                       </label>
                       <input
@@ -2532,15 +2533,15 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         value={montoPorCuota}
                         onChange={(e) => setMontoPorCuota(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Fecha 1ra cuota
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Fecha de la primera cuota
                       </label>
                       <input
                         type="date"
@@ -2549,19 +2550,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         onChange={(e) => {
                           const val = e.target.value;
                           setFecha1raCuota(val);
-                          if (val) {
-                            const [y, m, d] = val.split('-').map(Number);
-                            const maxDia = obtenerUltimoDiaMes(y, m - 1);
-                            if (d === maxDia) {
-                              setForzarFinDeMes(true);
-                            }
-                          }
+                          setForzarFinDeMes(false);
                         }}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Categoría
                       </label>
                       <select
@@ -2581,29 +2576,45 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
-                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={forzarFinDeMes}
-                        onChange={(e) => setForzarFinDeMes(e.target.checked)}
-                        className="mt-0.5 rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
-                      />
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 block">
-                          Ajustar automáticamente al último día de cada mes (Fin de mes)
+                  {partesFechaPrimera && Number(numCuotas) > 1 && !fechaPrimeraEsFinDeMes && (
+                    <p className="-mt-1 text-[11px] leading-relaxed text-slate-500">
+                      La primera cuota vence el {fechaPrimeraFormateada}. Las siguientes se proponen el día {diaPrimeraCuota} de cada mes; podrás ajustar cada fecha en el cronograma.
+                    </p>
+                  )}
+
+                  {partesFechaPrimera && Number(numCuotas) === 1 && (
+                    <p className="-mt-1 text-[11px] leading-relaxed text-slate-500">
+                      La única cuota vence el {fechaPrimeraFormateada}.
+                    </p>
+                  )}
+
+                  {partesFechaPrimera && Number(numCuotas) > 1 && fechaPrimeraEsFinDeMes && (
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={forzarFinDeMes}
+                          onChange={(e) => setForzarFinDeMes(e.target.checked)}
+                          className="mt-0.5 rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+                        />
+                        <span>
+                          <span className="text-xs font-semibold text-slate-800 block">
+                            Ajustar las próximas cuotas al fin de mes
+                          </span>
+                          <span className="text-[11px] text-slate-500 block mt-0.5">
+                            La primera se mantiene el {fechaPrimeraFormateada}. {forzarFinDeMes
+                              ? 'Las siguientes vencerán al cierre de cada mes (31, 28/29...).'
+                              : 'Si lo marcas, solo las siguientes cuotas se moverán al último día de su mes.'}
+                          </span>
                         </span>
-                        <span className="text-[11px] text-slate-500 block mt-0.5">
-                          Si está marcado, cada cuota vencerá en el último día de su mes respectivo (ej. 30 Nov, 31 Dic, 31 Ene, 28/29 Feb...).
-                        </span>
-                      </div>
-                    </label>
-                  </div>
+                      </label>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Descripción
                     </label>
                     <input
@@ -2613,8 +2624,8 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       onChange={(e) => setRecDesc(e.target.value)}
                       placeholder={
                         modalTipoCrear === 'ingreso'
-                          ? 'Ej. Renta departamento, Pensión...'
-                          : 'Ej. Suno, Internet Fibra, Luz, Alquiler...'
+                          ? 'Ej. Clases, alquiler, pensión...'
+                          : 'Ej. Internet, seguro, alquiler...'
                       }
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                     />
@@ -2622,7 +2633,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Monto mensual ({simboloMoneda})
                       </label>
                       <input
@@ -2633,11 +2644,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         value={recMonto}
                         onChange={(e) => setRecMonto(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Día de vencimiento (1-31)
                       </label>
                       <input
@@ -2661,13 +2672,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                             }
                           }
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Iniciar desde (Mes y Año)
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -2718,7 +2729,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Categoría
                     </label>
                     <select
@@ -2745,10 +2756,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 cuotasPrevias.some((c) => c.fecha < fechaHoyStr) && (
                   <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[11px] font-semibold text-amber-800">
                         ℹ️
                       </span>
-                      <h4 className="text-xs font-bold text-slate-800">
+                      <h4 className="text-xs font-semibold text-slate-800">
                         Vencimientos y pagos históricos
                       </h4>
                     </div>
@@ -2817,13 +2828,13 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                 <button disabled={soloLectura || creando}
                   type="button"
                   onClick={() => setModalNuevoProgramado(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button disabled={soloLectura || creando}
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold cursor-pointer"
                 >
                   Guardar Compromiso
                 </button>

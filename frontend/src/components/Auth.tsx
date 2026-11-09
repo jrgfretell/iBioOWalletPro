@@ -128,7 +128,7 @@ export const Auth: React.FC = () => {
           >
             <Wallet className="w-8 h-8" />
           </motion.div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-baseline justify-center gap-1.5">
+          <h1 className="text-3xl font-bold text-white tracking-tight flex items-baseline justify-center gap-1.5">
             <span>Mi Billete</span>
             <span className="text-teal-400">Pro</span>
           </h1>
@@ -152,7 +152,7 @@ export const Auth: React.FC = () => {
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">Recuperar Contraseña</h2>
+                  <h2 className="text-base font-semibold text-white">Recuperar Contraseña</h2>
                   <p className="text-xs text-slate-400">Te enviaremos un enlace seguro a tu correo</p>
                 </div>
               </div>
@@ -195,7 +195,7 @@ export const Auth: React.FC = () => {
                 onClick={handleGoogleAuth}
                 disabled={loading || loadingGoogle}
                 aria-busy={loadingGoogle}
-                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 font-bold rounded-xl text-sm border border-slate-200/90 shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mb-5 hover:shadow-md"
+                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 font-semibold rounded-xl text-sm border border-slate-200/90 shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mb-5 hover:shadow-md"
               >
                 {loadingGoogle ? (
                   <><div aria-hidden="true" className="w-5 h-5 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin" /><span>Conectando con Google…</span></>
@@ -229,7 +229,7 @@ export const Auth: React.FC = () => {
               {/* Divisor Visual */}
               <div className="relative flex items-center justify-center mb-5">
                 <div className="border-t border-slate-700/60 w-full" />
-                <span className="bg-slate-800/90 px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none shrink-0">
+                <span className="bg-slate-800/90 px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none shrink-0">
                   o con correo
                 </span>
                 <div className="border-t border-slate-700/60 w-full" />

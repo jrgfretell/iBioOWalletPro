@@ -25,12 +25,12 @@ export function WalletCreatedPrompt({ open, walletName, onDismiss, onConfigureIn
           <Sparkles className="h-7 w-7 text-teal-600" />
         </div>
 
-        <h3 className="text-xl font-black text-slate-900 tracking-tight">
+        <h3 className="text-xl font-bold text-slate-900 tracking-tight">
           ¡Billetera creada con éxito!
         </h3>
 
         <p className="mt-2.5 text-sm text-slate-600 leading-relaxed">
-          Has creado <strong className="text-slate-900 font-bold">{walletName}</strong>. ¿Deseas registrar los ingresos programados o sueldo fijo de esta billetera ahora?
+          Has creado <strong className="text-slate-900 font-semibold">{walletName}</strong>. ¿Deseas registrar los ingresos programados o sueldo fijo de esta billetera ahora?
         </p>
 
         <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-slate-600 text-left flex items-start gap-2.5">
@@ -51,7 +51,7 @@ export function WalletCreatedPrompt({ open, walletName, onDismiss, onConfigureIn
           <button
             type="button"
             onClick={onConfigureIncome}
-            className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 cursor-pointer transition-all flex items-center justify-center gap-2"
+            className="min-h-11 flex-1 rounded-xl bg-teal-600 px-4 text-xs sm:text-sm font-semibold text-white shadow-md shadow-teal-600/20 hover:bg-teal-700 cursor-pointer transition-all flex items-center justify-center gap-2"
           >
             <span>Configurar ingresos</span>
             <ArrowRight className="h-4 w-4" />

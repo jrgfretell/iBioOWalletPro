@@ -4,10 +4,10 @@ import type { SweetAlertIcon } from 'sweetalert2';
 // Opciones base con estilos acordes al diseño de Mi Billete Pro
 const customClass = {
   popup: 'rounded-2xl border border-slate-200 shadow-2xl p-6 font-sans',
-  title: 'text-slate-900 font-extrabold text-lg',
+  title: 'text-slate-900 font-bold text-lg',
   htmlContainer: 'text-slate-600 text-sm mt-2',
-  confirmButton: 'px-5 py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm mx-1',
-  cancelButton: 'px-5 py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm mx-1',
+  confirmButton: 'px-5 py-2.5 rounded-xl font-semibold text-xs cursor-pointer shadow-sm mx-1',
+  cancelButton: 'px-5 py-2.5 rounded-xl font-semibold text-xs cursor-pointer shadow-sm mx-1',
 };
 
 const toastClass = {

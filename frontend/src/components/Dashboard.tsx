@@ -80,7 +80,7 @@ const WalletShell: React.FC = () => {
             </div>
           ) : !billeteraActual ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-              <h1 className="font-bold text-slate-900">Tu próximo comienzo</h1>
+              <h1 className="font-semibold text-slate-900">Tu próximo comienzo</h1>
               <p className="mt-2 text-sm text-slate-500">Crea una billetera o reactiva una archivada desde el menú lateral.</p>
             </div>
           ) : ready ? (

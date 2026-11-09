@@ -205,7 +205,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       <header className="space-y-0.5">
-        <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
           {nombreSaludo ? `${saludo}, ${nombreSaludo}` : '¡Hola!'}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500">Aquí tienes el resumen de tus finanzas.</p>
@@ -223,7 +223,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <CalendarCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900">Próximos pagos</h2>
+                  <h2 className="text-sm font-semibold text-slate-900">Próximos pagos</h2>
                   <p className="text-xs text-slate-500">
                     {proximosPagos.length > 0
                       ? `${proximosPagos.length} ${proximosPagos.length === 1 ? 'pendiente' : 'pendientes'}`
@@ -266,19 +266,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center text-xs font-bold shrink-0 ${
+                          className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center text-xs font-semibold shrink-0 ${
                             item.vencido
                               ? 'bg-red-100 text-red-700'
                               : 'bg-white border border-slate-200 text-slate-800'
                           }`}
                         >
-                          <span className="text-sm font-black leading-none">{d}</span>
-                          <span className="text-[10px] uppercase text-slate-500">
+                          <span className="text-sm font-bold leading-none">{d}</span>
+                          <span className="text-[11px] uppercase text-slate-500">
                             {MESES_CORTOS[Number(m) - 1]}
                           </span>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-900 truncate">{item.nombre}</p>
+                          <p className="text-xs font-semibold text-slate-900 truncate">{item.nombre}</p>
                           <p className="text-[11px] text-slate-500">
                             {item.etiqueta} · {y}
                             {item.vencido && (
@@ -290,7 +290,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-extrabold text-slate-900 shrink-0 ml-2">
+                      <span className="text-xs font-bold text-slate-900 shrink-0 ml-2">
                         {formatearMoneda(item.monto)}
                       </span>
                     </div>
@@ -305,7 +305,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
                 <PieChart className="w-4 h-4 text-teal-600" />
-                <h2 className="text-sm font-bold text-slate-900">Gastos por Categoría</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Gastos por Categoría</h2>
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -335,10 +335,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center mb-4">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Gasto total · {NOMBRES_MESES[catMes]}
               </span>
-              <div className="text-2xl font-black text-slate-900 mt-0.5">
+              <div className="text-2xl font-bold text-slate-900 mt-0.5">
                 {formatearMoneda(reporteGastosCategoria.total)}
               </div>
             </div>
@@ -366,7 +366,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-slate-400 text-[11px]">{pct}%</span>
-                          <span className="font-bold text-slate-900">
+                          <span className="font-semibold text-slate-900">
                             {formatearMoneda(item.monto)}
                           </span>
                         </div>
@@ -398,9 +398,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="flex flex-wrap items-center gap-2 text-base font-bold text-slate-900">
+                  <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900">
                     Proyección mensual
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{billeteraActual?.moneda}</span>
+                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{billeteraActual?.moneda}</span>
                   </h2>
                   <p className="text-xs text-slate-500">
                     Incluye sueldos, movimientos y pagos pendientes
@@ -445,23 +445,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="space-y-4 mb-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                    <span className="text-[11px] font-semibold uppercase text-slate-400 block">
                       Mejor mes proyectado
                     </span>
-                    <strong className="text-sm font-extrabold text-emerald-600 block mt-0.5">
+                    <strong className="text-sm font-bold text-emerald-600 block mt-0.5">
                       {kpisProyeccion.mejorMes.label}
                     </strong>
-                    <span className="text-xs font-bold text-slate-700">
+                    <span className="text-xs font-semibold text-slate-700">
                       {formatearMoneda(kpisProyeccion.mejorMes.balanceFin)}
                     </span>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                    <span className="text-[11px] font-semibold uppercase text-slate-400 block">
                       Menor liquidez
                     </span>
                     <strong
-                      className={`text-sm font-extrabold block mt-0.5 ${
+                      className={`text-sm font-bold block mt-0.5 ${
                         kpisProyeccion.menorLiquidez.balanceFin < 0
                           ? 'text-red-600'
                           : 'text-amber-600'
@@ -469,19 +469,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     >
                       {kpisProyeccion.menorLiquidez.label}
                     </strong>
-                    <span className="text-xs font-bold text-slate-700">
+                    <span className="text-xs font-semibold text-slate-700">
                       {formatearMoneda(kpisProyeccion.menorLiquidez.balanceFin)}
                     </span>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
-                    <span className="text-[11px] font-bold uppercase text-slate-400 block">
+                    <span className="text-[11px] font-semibold uppercase text-slate-400 block">
                       Gastos por aplicar · {kpisProyeccion.actual.label}
                     </span>
-                    <strong className="text-sm font-extrabold text-slate-800 block mt-0.5">
+                    <strong className="text-sm font-bold text-slate-800 block mt-0.5">
                       Mes en curso
                     </strong>
-                    <span className="text-xs font-bold text-red-600">
+                    <span className="text-xs font-semibold text-red-600">
                       -{formatearMoneda(kpisProyeccion.actual.gastosTotales)}
                     </span>
                   </div>
@@ -558,19 +558,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-extrabold text-slate-900">{p.label}</h3>
+                            <h3 className="text-sm font-bold text-slate-900">{p.label}</h3>
                             {p.esActual && (
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
                                 Actual
                               </span>
                             )}
                             {p.esPasado && (
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                                 Concluido
                               </span>
                             )}
                             {tieneDeficit && (
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700">
                                 Déficit
                               </span>
                             )}
@@ -593,27 +593,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           {/* Bloque 1: Resumen de Flujo Mensual (Saldo Base superior + 2 Columnas amplias) */}
                           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2">
                             <div className="flex items-center justify-between px-1 text-xs pb-1.5 border-b border-slate-200/60">
-                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight truncate min-w-0">
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-tight truncate min-w-0">
                                 {fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`) ? 'Saldo de referencia' : 'Saldo inicial mes'}
                               </span>
-                              <strong className="text-xs font-black text-slate-800 whitespace-nowrap shrink-0 text-right ml-2">
+                              <strong className="text-xs font-bold text-slate-800 whitespace-nowrap shrink-0 text-right ml-2">
                                 {formatearMoneda(p.balanceInicio)}
                               </strong>
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-center">
                               <div className="p-1.5 rounded-lg bg-emerald-50/70 border border-emerald-100/80 flex flex-col items-center min-w-0">
-                                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-tight truncate w-full">
+                                <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-tight truncate w-full">
                                   + Ingresos
                                 </span>
-                                <span className="text-xs font-black text-emerald-600 whitespace-nowrap mt-0.5">
+                                <span className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">
                                   +{formatearMoneda(p.ingresosTotales)}
                                 </span>
                               </div>
                               <div className="p-1.5 rounded-lg bg-red-50/70 border border-red-100/80 flex flex-col items-center min-w-0">
-                                <span className="text-[10px] font-bold text-red-700 uppercase tracking-tight truncate w-full">
+                                <span className="text-[11px] font-semibold text-red-700 uppercase tracking-tight truncate w-full">
                                   - Gastos
                                 </span>
-                                <span className="text-xs font-black text-red-600 whitespace-nowrap mt-0.5">
+                                <span className="text-xs font-bold text-red-600 whitespace-nowrap mt-0.5">
                                   -{formatearMoneda(p.gastosTotales)}
                                 </span>
                               </div>
@@ -622,7 +622,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                           {/* Bloque 2: Timeline de Evolución Adaptativo */}
                           <div className="space-y-1.5">
-                            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-between px-0.5">
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between px-0.5">
                               <span>Evolución de liquidez</span>
                               <span className="font-normal lowercase">saldo proyectado</span>
                             </div>
@@ -632,16 +632,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 1 Mensual: Mitad de mes */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       1-15
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Mitad de mes</div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Control días 1 al 15</div>
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Mitad de mes</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Control días 1 al 15</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.balanceTras15 < 0 ? 'text-red-600' : 'text-slate-800'
                                     }`}
                                   >
@@ -652,16 +652,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 2 Mensual: Pre-cobro */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       16-{p.ultimoDia - 1}
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
                                     }`}
                                   >
@@ -674,16 +674,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 1 Mensual en Quincena: Pre-cobro */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       1-14
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
                                     }`}
                                   >
@@ -694,18 +694,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 2 Mensual en Quincena: Cobro mensual */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       15
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">
                                         Cobro mensual
                                       </div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo tras sueldo</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo tras sueldo</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-700'
                                     }`}
                                   >
@@ -716,16 +716,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 3 Mensual en Quincena: Pre-cierre */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       16-{p.ultimoDia - 1}
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
                                     }`}
                                   >
@@ -738,16 +738,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 1 Quincenal / Estándar: Pre-quincena */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       1-14
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-quincena</div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 1 al 14</div>
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-quincena</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Días 1 al 14</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
                                     }`}
                                   >
@@ -758,18 +758,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 2 Quincenal: Tras quincena */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       15
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">
                                         Tras quincena
                                       </div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Saldo al día 15</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo al día 15</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.balanceTras15 < 0 ? 'text-red-600' : 'text-emerald-700'
                                     }`}
                                   >
@@ -780,16 +780,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 {/* Hito 3 Quincenal: Pre-cierre */}
                                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       16-{p.ultimoDia - 1}
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
-                                      <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
+                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
                                     </div>
                                   </div>
                                   <strong
-                                    className={`text-xs font-black whitespace-nowrap shrink-0 text-right ml-2 ${
+                                    className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
                                       p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
                                     }`}
                                   >
@@ -802,7 +802,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                           {((p.modalidadSueldo === 'mensual_fin' && (!p.tras15Disponible || !p.antesFinDisponible)) ||
                             (p.modalidadSueldo !== 'mensual_fin' && (!p.antes15Disponible || !p.tras15Disponible || !p.antesFinDisponible))) && (
-                            <p className="mt-1 text-[10px] text-slate-400 text-center">
+                            <p className="mt-1 text-[11px] text-slate-400 text-center">
                               — Tramo anterior al saldo de referencia; no se reconstruye su saldo.
                             </p>
                           )}
@@ -814,20 +814,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <div className="mt-3 pt-3 border-t border-slate-100">
                       <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-slate-900 text-white shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center text-[10px] font-black shrink-0 border border-teal-500/30 whitespace-nowrap tracking-tight">
+                          <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center text-[11px] font-bold shrink-0 border border-teal-500/30 whitespace-nowrap tracking-tight">
                             {p.ultimoDia}
                           </span>
                           <div className="min-w-0">
-                            <div className="text-[11px] sm:text-xs font-black text-white leading-tight sm:whitespace-nowrap">
+                            <div className="text-[11px] sm:text-xs font-bold text-white leading-tight sm:whitespace-nowrap">
                               {p.modalidadSueldo === 'mensual_fin' ? 'Cierre y cobro mensual' : 'Cierre de mes'}
                             </div>
-                            <div className="text-[10px] text-slate-400 leading-tight mt-0.5 sm:whitespace-nowrap">
+                            <div className="text-[11px] text-slate-400 leading-tight mt-0.5 sm:whitespace-nowrap">
                               {p.modalidadSueldo === 'mensual_fin' ? 'Balance con sueldo' : 'Balance final'}
                             </div>
                           </div>
                         </div>
                         <strong
-                          className={`self-end text-sm font-black whitespace-nowrap shrink-0 text-right sm:ml-2 sm:self-auto ${
+                          className={`self-end text-sm font-bold whitespace-nowrap shrink-0 text-right sm:ml-2 sm:self-auto ${
                             p.balanceFin < 0 ? 'text-red-400' : 'text-teal-400'
                           }`}
                         >
@@ -838,7 +838,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => setModalDetalleMes(p)}
-                        className="mt-2.5 w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        className="mt-2.5 w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Ver movimientos ({p.items.length})</span>
@@ -858,7 +858,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
               <div>
-                <h3 className="text-base font-bold">{modalDetalleMes.label}</h3>
+                <h3 className="text-base font-semibold">{modalDetalleMes.label}</h3>
                 <p className="text-xs text-slate-300">
                   Desglose completo de ingresos, sueldos, gastos y cuotas
                 </p>
@@ -874,19 +874,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <div className="p-5 overflow-y-auto space-y-3 flex-1">
               <div className="grid grid-cols-2 gap-3 mb-2">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[11px] text-slate-400 font-bold uppercase block">
+                  <span className="text-[11px] text-slate-400 font-semibold uppercase block">
                     {fechaReferencia?.startsWith(`${modalDetalleMes.anio}-${String(modalDetalleMes.mes+1).padStart(2,'0')}`)?'Saldo de referencia':'Saldo Inicial Mes'}
                   </span>
-                  <strong className="text-sm font-extrabold text-slate-900">
+                  <strong className="text-sm font-bold text-slate-900">
                     {formatearMoneda(modalDetalleMes.balanceInicio)}
                   </strong>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[11px] text-slate-400 font-bold uppercase block">
+                  <span className="text-[11px] text-slate-400 font-semibold uppercase block">
                     Saldo Cierre Mes
                   </span>
                   <strong
-                    className={`text-sm font-extrabold ${
+                    className={`text-sm font-bold ${
                       modalDetalleMes.balanceFin < 0 ? 'text-red-600' : 'text-teal-600'
                     }`}
                   >
@@ -907,11 +907,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       className="p-3 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-2 bg-white hover:bg-slate-50/80 text-xs"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center justify-center shrink-0">
+                        <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-semibold flex items-center justify-center shrink-0">
                           {item.dia}
                         </span>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 break-words">{item.descripcion}</p>
+                          <p className="font-semibold text-slate-900 break-words">{item.descripcion}</p>
                           <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                             <span
                               className="w-2 h-2 rounded-full inline-block"
@@ -925,7 +925,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                         </div>
                       </div>
                       <span
-                        className={`font-extrabold shrink-0 self-end sm:self-center ${
+                        className={`font-bold shrink-0 self-end sm:self-center ${
                           item.tipo === 'ingreso' ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
@@ -944,14 +944,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   setModalDetalleMes(null);
                   onNavigate('movimientos');
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Ir a Movimientos</span>
               </button>
               <button
                 onClick={() => setModalDetalleMes(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold cursor-pointer"
               >
                 Cerrar
               </button>
