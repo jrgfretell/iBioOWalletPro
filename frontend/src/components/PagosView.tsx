@@ -316,50 +316,6 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     return { programado, pagado, pendiente, vencido };
   }, [filasAgenda]);
 
-  // ELIMINAR COMPROMISO DIRECTAMENTE
-  const handleEliminarCompromiso = async (fila: FilaAgenda) => {
-    try {
-    if (!user) return;
-    const confirmado = await confirmarAccion({
-      title: '¿Eliminar compromiso?',
-      text: `Se borrará "${fila.nombre}" de la agenda y de tus cronogramas.`,
-      confirmButtonText: 'Sí, eliminar',
-    });
-    if (!confirmado) return;
-
-    setProcesandoAccion(fila.id);
-    try {
-      if(soporteEtapa5) {
-        const accion=fila.recurrenteId?'retirar_recurrente':'retirar_cronograma';
-        const datos=fila.recurrenteId?{recurrente_id:fila.recurrenteId}:{deuda_id:fila.deudaId};
-        await ejecutarOperacion(accion,datos,solicitudPara(accion,datos));toastExito('Compromiso retirado. Se conserva el historial pagado.');return;
-      }
-      if (fila.recurrenteId) {
-        // Eliminar plantilla recurrente
-        await supabase
-          .from('movimientos_recurrentes')
-          .delete()
-          .eq('id', fila.recurrenteId)
-          .eq('user_id', user.id);
-        // Limpiar movimientos asociados no confirmados
-        await supabase
-          .from('movimientos_agenda')
-          .delete()
-          .eq('recurrente_id', fila.recurrenteId)
-          .eq('user_id', user.id);
-      } else if (fila.deudaId) {
-        // Eliminar deuda y todas sus cuotas
-        await supabase.from('deudas').delete().eq('id', fila.deudaId).eq('user_id', user.id);
-      }
-      await recargarTodo();
-      toastExito(`"${fila.nombre}" eliminado`);
-    } finally {
-      setProcesandoAccion(null);
-    }
-
-    } catch (error) { reportarError(error); }
-  };
-
   // ABRIR MODAL DE EDICIÓN RECURRENTE
   const abrirModalEdicionRecurrente = (rec: MovimientoRecurrente) => {
     const inicio = obtenerMesInicioRecurrente(rec, hoy.getFullYear(), hoy.getMonth());
@@ -373,25 +329,6 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     setEditMesInicio(inicio.mes);
     setEditAnioInicio(inicio.anio);
     setModalEdicionAbierto(true);
-  };
-
-  // ABRIR MODAL DE EDICIÓN
-  const handleAbrirEdicion = (fila: FilaAgenda) => {
-    if (fila.recurrenteRef) {
-      abrirModalEdicionRecurrente(fila.recurrenteRef);
-    } else if (fila.deudaId) {
-      const deuda = deudas.find((d) => d.id === fila.deudaId);
-      if (deuda) {
-        setEditTipo('deuda');
-        setEditTipoMovimiento('gasto');
-        setEditId(deuda.id);
-        setEditNombre(deuda.nombre);
-        setEditMonto(String(fila.programado));
-        setEditDia('1');
-        setEditCatId(deuda.categoria_id ?? '');
-        setModalEdicionAbierto(true);
-      }
-    }
   };
 
   // GUARDAR EDICIÓN DEL COMPROMISO
@@ -1134,48 +1071,24 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       </div>
                     </div>
 
-                    {/* Acciones */}
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-1 text-xs">
+                    {/* La agenda permite consultar el detalle y registrar el pago. */}
+                    <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_132px] items-center gap-2 border-t border-slate-100 pt-2 text-xs">
+                      {!isPaid && (
+                        <button type="button" disabled={soloLectura || procesandoAccion === r.id}
+                          onClick={() => handleRegistrarPagoAgenda(r)}
+                          className="col-start-2 row-start-1 inline-flex min-h-10 w-full items-center justify-center whitespace-nowrap rounded-xl bg-teal-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-teal-700 disabled:opacity-50 cursor-pointer">
+                          {procesandoAccion === r.id ? 'Procesando…' : 'Registrar pago'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleIrACronograma(cardKey, r.recurrenteId ? 'recurrentes' : 'cronogramas')}
-                        className="text-teal-700 hover:text-teal-800 font-semibold text-[11px] inline-flex items-center gap-0.5 cursor-pointer hover:underline"
+                        className="col-start-1 row-start-1 inline-flex min-h-10 items-center gap-0.5 text-[11px] font-semibold text-teal-700 hover:text-teal-800 cursor-pointer hover:underline"
                       >
-                        <span>{r.recurrenteId ? 'Ver pagos' : 'Cronograma'}</span>
+                        <span>{r.recurrenteId ? 'Ver pagos' : 'Ver cronograma'}</span>
                         <ChevronRight className="w-3 h-3" />
                       </button>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleAbrirEdicion(r)}
-                          title="Editar compromiso"
-                          className="p-1 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={soloLectura || procesandoAccion === r.id}
-                          onClick={() => handleEliminarCompromiso(r)}
-                          title="Eliminar compromiso"
-                          className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-40"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        {!isPaid ? (
-                          <button
-                            type="button"
-                            disabled={soloLectura || procesandoAccion === r.id}
-                            onClick={() => handleRegistrarPagoAgenda(r)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] shadow-2xs cursor-pointer ml-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>{procesandoAccion === r.id ? '...' : 'Pagar'}</span>
-                          </button>
-                        ) : null}
-                      </div>
                     </div>
                   </div>
                 );
@@ -1196,7 +1109,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <th className="py-3 px-4">Pagado</th>
                     <th className="py-3 px-4">Pendiente</th>
                     <th className="py-3 px-4">Estado</th>
-                    <th className="py-3 px-3 text-center w-[196px]">Acciones</th>
+                    <th className="py-3 px-3 text-center w-[300px]">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1284,30 +1197,19 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                             )}
                           </td>
 
-                          {/* Acciones: Registrar pago + Editar + Eliminar + Ver Detalle */}
-                          <td className="py-2.5 px-3 w-[196px] min-w-[196px]">
-                            <div className="grid grid-cols-[minmax(0,1fr)_32px] items-center gap-x-1 gap-y-1">
+                          {/* La Agenda es de consulta y registro; el mantenimiento vive en cada panel. */}
+                          <td className="py-2.5 px-3 w-[300px] min-w-[300px]">
+                            <div className="grid grid-cols-[132px_132px] items-center justify-end gap-2">
                               {!isPaid ? (
                                 <button
                                   type="button"
                                   disabled={soloLectura || (procesandoAccion === r.id)}
                                   onClick={() => handleRegistrarPagoAgenda(r)}
-                                  className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-lg bg-teal-600 px-2 text-[11px] font-semibold text-white shadow-xs transition-colors hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
+                                  className="inline-flex h-9 min-w-[132px] items-center justify-center whitespace-nowrap rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
                                 >
-                                  <Plus className="h-3.5 w-3.5 shrink-0" />
                                   <span>{procesandoAccion === r.id ? 'Procesando…' : 'Registrar pago'}</span>
                                 </button>
-                              ) : <span aria-hidden="true" className="h-8" />}
-
-                              <button
-                                type="button"
-                                onClick={() => handleAbrirEdicion(r)}
-                                title="Editar compromiso"
-                                aria-label={`Editar ${r.nombre}`}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-teal-50 hover:text-teal-700 cursor-pointer"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </button>
+                              ) : <span aria-hidden="true" className="h-9" />}
 
                               <button
                                 type="button"
@@ -1319,22 +1221,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                   handleIrACronograma(cardKey, esRecurrente ? 'recurrentes' : 'cronogramas');
                                 }}
                                 title={r.recurrenteId ? 'Ver próximos pagos' : 'Ver cronograma completo'}
-                                className="inline-flex h-7 min-w-0 items-center justify-start gap-0.5 rounded-md pl-2 pr-1 text-left text-[11px] font-semibold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-800 cursor-pointer"
+                                className="inline-flex h-9 shrink-0 items-center justify-start gap-0.5 whitespace-nowrap rounded-lg px-2 text-[11px] font-semibold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-800 cursor-pointer"
                               >
                                 <span className="truncate">{r.recurrenteId ? 'Ver pagos' : 'Ver cronograma'}</span>
                                 <ChevronRight className="h-3.5 w-3.5 shrink-0" />
                               </button>
 
-                              <button
-                                type="button"
-                                disabled={soloLectura || (procesandoAccion === r.id)}
-                                onClick={() => handleEliminarCompromiso(r)}
-                                title="Eliminar compromiso"
-                                aria-label={`Eliminar ${r.nombre}`}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 cursor-pointer"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
                             </div>
                           </td>
                         </tr>
