@@ -278,31 +278,31 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
 
       {/* Balance Strip compacto (3 en 1 - Estilo Fintech) */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-        <div className="grid grid-cols-3 divide-x divide-slate-100 text-center">
-          <div className="px-1 sm:px-3">
+        <div className="grid grid-cols-2 text-center sm:grid-cols-3">
+          <div className="min-w-0 px-1 sm:px-3">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 block">
               Ingresos
             </span>
-            <div className="text-sm sm:text-lg font-bold text-emerald-600 mt-0.5 truncate">
+            <div className="text-sm sm:text-lg font-bold text-emerald-600 mt-0.5 wrap-anywhere">
               +{formatearMoneda(resumenPeriodo.ingresos)}
             </div>
           </div>
 
-          <div className="px-1 sm:px-3">
+          <div className="min-w-0 border-l border-slate-100 px-1 sm:px-3">
             <span className="text-[11px] font-bold uppercase tracking-wider text-red-500 block">
               Gastos
             </span>
-            <div className="text-sm sm:text-lg font-bold text-red-600 mt-0.5 truncate">
+            <div className="text-sm sm:text-lg font-bold text-red-600 mt-0.5 wrap-anywhere">
               -{formatearMoneda(resumenPeriodo.gastos)}
             </div>
           </div>
 
-          <div className="px-1 sm:px-3">
+          <div className="col-span-2 mt-2.5 min-w-0 border-t border-slate-100 px-1 pt-2.5 sm:col-span-1 sm:mt-0 sm:border-t-0 sm:border-l sm:px-3 sm:pt-0">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
               Flujo Neto
             </span>
             <div
-              className={`text-sm sm:text-lg font-bold mt-0.5 truncate ${
+              className={`text-sm sm:text-lg font-bold mt-0.5 wrap-anywhere ${
                 resumenPeriodo.balance < 0 ? 'text-red-600' : 'text-slate-900'
               }`}
             >

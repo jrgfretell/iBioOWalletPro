@@ -1163,7 +1163,7 @@ export const IngresosView: React.FC = () => {
                 <option value="">Sin categoría</option>
                 {categorias.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icono} {c.nombre}
+                    {c.nombre}
                   </option>
                 ))}
               </select>
@@ -1278,7 +1278,7 @@ export const IngresosView: React.FC = () => {
                 <option value="">Sin categoría</option>
                 {categorias.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icono} {c.nombre}
+                    {c.nombre}
                   </option>
                 ))}
               </select>
