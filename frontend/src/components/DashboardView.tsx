@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 interface DashboardViewProps {
-  onNavigate: (tab: ActiveTab) => void;
+  onNavigate: (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'recurrentes') => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
@@ -88,6 +88,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       vencido: boolean;
       esHoy: boolean;
       destino: ActiveTab;
+      subTab?: 'cronogramas' | 'recurrentes';
     }[] = [];
 
     // 1. Cuotas con saldo pendiente
@@ -109,6 +110,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           vencido: c.fecha < fechaHoyStr,
           esHoy: c.fecha === fechaHoyStr,
           destino: 'pagos',
+          subTab: 'cronogramas',
         });
       }
     });
@@ -145,7 +147,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             monto: rec.monto,
             vencido: fecha < fechaHoyStr,
             esHoy: fecha === fechaHoyStr,
-            destino: 'recurrentes',
+            destino: 'pagos',
+            subTab: 'recurrentes',
           });
         });
       });
@@ -164,7 +167,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           monto: m.monto,
           vencido: m.fecha < fechaHoyStr,
           esHoy: m.fecha === fechaHoyStr,
-          destino: m.recurrente_id ? 'recurrentes' : 'pagos',
+          destino: m.recurrente_id ? 'pagos' : 'movimientos',
+          subTab: m.recurrente_id ? 'recurrentes' : undefined,
         });
       });
 
@@ -303,7 +307,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => onNavigate(item.destino)}
+                      onClick={() => onNavigate(item.destino, item.subTab)}
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                         item.vencido
                           ? 'bg-red-50/60 border-red-200 hover:bg-red-50'

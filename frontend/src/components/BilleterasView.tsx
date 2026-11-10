@@ -574,7 +574,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
         <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden">
           <div className="grid md:grid-cols-[minmax(0,1.35fr)_minmax(230px,.8fr)]">
           <div className="p-5 sm:p-6">
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+          <div className="flex items-center pb-3.5 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center">
                 <Wallet className="w-5 h-5" />
@@ -590,13 +590,6 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              ✕
-            </button>
           </div>
 
           <form onSubmit={handleGuardarBilletera} className="mt-4 space-y-4">

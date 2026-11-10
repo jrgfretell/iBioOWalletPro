@@ -10,21 +10,21 @@ import { CategoriasView } from './CategoriasView';
 import { AdminView } from './AdminView';
 import { OnboardingModal } from './OnboardingModal';
 import { WalletCreatedPrompt } from './WalletCreatedPrompt';
-import type { ActiveTab } from '../types/wallet';
+import type { ActiveTab, DestinoPago } from '../types/wallet';
 
 const WalletShell: React.FC = () => {
   const { billeteraActual, ready, loading, error, limpiarError, recargarTodo } = useWallet();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [pagosSubTab, setPagosSubTab] = useState<'agenda' | 'cronogramas'>('agenda');
+  const [pagosSubTab, setPagosSubTab] = useState<'agenda' | 'cronogramas' | 'recurrentes'>('agenda');
+  const [destinoPago, setDestinoPago] = useState<DestinoPago | null>(null);
   const [createdWalletName, setCreatedWalletName] = useState<string | null>(null);
   const [showPostCreatePrompt, setShowPostCreatePrompt] = useState(false);
 
-  const handleNavigate = (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas') => {
+  const handleNavigate = (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'recurrentes') => {
+    setDestinoPago(null);
     setActiveTab(tab);
     if (subTab) {
       setPagosSubTab(subTab);
-    } else if (tab === 'recurrentes') {
-      setPagosSubTab('cronogramas');
     } else if (tab === 'pagos') {
       setPagosSubTab('agenda');
     }
@@ -85,11 +85,14 @@ const WalletShell: React.FC = () => {
             </div>
           ) : ready ? (
             <div key={`${billeteraActual.user_id}:${billeteraActual.id}:${billeteraActual.archivada}`}>
-              {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => handleNavigate(tab)} />}
+              {activeTab === 'dashboard' && <DashboardView onNavigate={handleNavigate} />}
               {activeTab === 'ingresos' && <IngresosView />}
-              {activeTab === 'movimientos' && <MovimientosView />}
-              {activeTab === 'pagos' && <PagosView scope="programados" initialSubTab={pagosSubTab} />}
-              {activeTab === 'recurrentes' && <PagosView scope="recurrentes" initialSubTab="cronogramas" />}
+              {activeTab === 'movimientos' && <MovimientosView onVerPago={(destino) => {
+                setDestinoPago(destino);
+                setPagosSubTab(destino.tipo === 'cuota' ? 'cronogramas' : 'recurrentes');
+                setActiveTab('pagos');
+              }} />}
+              {activeTab === 'pagos' && <PagosView initialSubTab={pagosSubTab} destinoPago={destinoPago} />}
               {activeTab === 'categorias' && <CategoriasView />}
             </div>
           ) : null}

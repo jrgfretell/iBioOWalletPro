@@ -23,6 +23,7 @@ export const confirmarAccion = async ({
   cancelButtonText = 'Cancelar',
   isDanger = true,
   icon = 'warning' as SweetAlertIcon,
+  compact = false,
 }: {
   title: string;
   text?: string;
@@ -30,11 +31,12 @@ export const confirmarAccion = async ({
   cancelButtonText?: string;
   isDanger?: boolean;
   icon?: SweetAlertIcon;
+  compact?: boolean;
 }): Promise<boolean> => {
   const result = await Swal.fire({
     title,
     text,
-    icon,
+    icon: compact ? undefined : icon,
     showCancelButton: true,
     confirmButtonColor: isDanger ? '#e11d48' : '#0d9488',
     cancelButtonColor: '#64748b',
@@ -42,9 +44,9 @@ export const confirmarAccion = async ({
     cancelButtonText,
     reverseButtons: true,
     focusCancel: true,
-    customClass,
+    customClass: compact ? { ...customClass, popup: 'payment-cancel-popup' } : customClass,
     buttonsStyling: true,
-    width: 'min(30rem, calc(100vw - 2rem))',
+    width: compact ? 'min(24rem, calc(100vw - 2rem))' : 'min(30rem, calc(100vw - 2rem))',
     padding: '1.5rem',
   });
 

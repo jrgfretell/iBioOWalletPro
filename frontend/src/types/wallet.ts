@@ -103,7 +103,7 @@ export interface DeudaPago {
   solicitud?: string | null;
 }
 
-export type ActiveTab = 'dashboard' | 'billeteras' | 'ingresos' | 'movimientos' | 'pagos' | 'recurrentes' | 'categorias' | 'admin';
+export type ActiveTab = 'dashboard' | 'billeteras' | 'ingresos' | 'movimientos' | 'pagos' | 'categorias' | 'admin';
 
 export interface AdminStats {
   total_usuarios: number;
@@ -195,3 +195,7 @@ export function recurrenteAplicaEnMes(
 }
 
 
+
+export type DestinoPago =
+  | { tipo: 'cuota'; deudaId: number; cuotaId: number; nombre?: string }
+  | { tipo: 'recurrente'; recurrenteId: number; nombre?: string };

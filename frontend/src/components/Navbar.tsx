@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   History,
   CalendarClock,
-  Repeat,
   Tags,
   LogOut,
   ShieldCheck,
@@ -219,7 +218,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const coreNavItems = [
     { id: 'dashboard' as ActiveTab, label: 'Inicio', desktopLabel: 'Inicio', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'movimientos' as ActiveTab, label: 'Movimientos', desktopLabel: 'Movimientos', icon: <History className="w-4 h-4" /> },
-    { id: 'pagos' as ActiveTab, label: 'Pagos', desktopLabel: 'Pagos programados', icon: <CalendarClock className="w-4 h-4" /> },
+    { id: 'pagos' as ActiveTab, label: 'Pagos', desktopLabel: 'Pagos', icon: <CalendarClock className="w-4 h-4" /> },
     { id: 'categorias' as ActiveTab, label: 'Categorías', desktopLabel: 'Categorías', icon: <Tags className="w-4 h-4" /> },
   ];
 
@@ -228,8 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'billeteras' as ActiveTab, label: 'Billeteras', desktopLabel: 'Mis Billeteras', icon: <WalletCards className="w-4 h-4" /> },
     { id: 'ingresos' as ActiveTab, label: 'Ingresos', desktopLabel: 'Sueldos e Ingresos', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'movimientos' as ActiveTab, label: 'Movimientos', desktopLabel: 'Movimientos', icon: <History className="w-4 h-4" /> },
-    { id: 'pagos' as ActiveTab, label: 'Pagos', desktopLabel: 'Pagos programados', icon: <CalendarClock className="w-4 h-4" /> },
-    { id: 'recurrentes' as ActiveTab, label: 'Recurrentes', desktopLabel: 'Pagos recurrentes', icon: <Repeat className="w-4 h-4" /> },
+    { id: 'pagos' as ActiveTab, label: 'Pagos', desktopLabel: 'Pagos', icon: <CalendarClock className="w-4 h-4" /> },
     { id: 'categorias' as ActiveTab, label: 'Categorías', desktopLabel: 'Categorías', icon: <Tags className="w-4 h-4" /> },
   ];
 
@@ -238,8 +236,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     billeteras: 'Gestión de Billeteras',
     ingresos: 'Sueldos e Ingresos',
     movimientos: 'Historial de Movimientos',
-    pagos: 'Pagos programados',
-    recurrentes: 'Pagos recurrentes',
+    pagos: 'Pagos',
     categorias: 'Categorías',
     admin: 'Panel de Administración',
   };
@@ -569,7 +566,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* 3. Mobile Bottom Navigation Bar (Exactamente 4 accesos principales) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
         {coreNavItems.map((item) => {
-          const isActive = activeTab === item.id || (item.id === 'pagos' && activeTab === 'recurrentes');
+          const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}

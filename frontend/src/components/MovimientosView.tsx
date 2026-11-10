@@ -8,26 +8,40 @@ import {
   fechaHoyISO,
   fechaRealMovimiento,
 } from '../types/wallet';
-import type { MovimientoAgenda } from '../types/wallet';
-import { confirmarAccion, toastExito } from '../lib/alerts';
+import type { MovimientoAgenda, DestinoPago } from '../types/wallet';
+import { confirmarAccion, toastExito, alertaInfo } from '../lib/alerts';
 import {
   Plus,
   Search,
   Filter,
-  ArrowUpCircle,
   Edit2,
   Trash2,
+  ChevronRight,
   CheckCircle2,
   Clock,
   MoreHorizontal,
   X,
 } from 'lucide-react';
 
-export const MovimientosView: React.FC = () => {
-  const { error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase, soporteEtapa5, ejecutarOperacion } = useWallet();
-  const { user } = useAuth();
-  const { movimientos, categorias, recargarTodo, fechaReferencia, pagosDeuda } = useWallet();
+function EstadoMovimiento({ movimiento, vinculado, deshabilitado, onToggle }: { movimiento: MovimientoAgenda; vinculado: boolean; deshabilitado: boolean; onToggle: () => void }) {
+  const clase = `inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${movimiento.pago_confirmado ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`;
+  const contenido = <>{movimiento.pago_confirmado ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}{movimiento.pago_confirmado ? 'Pagado' : 'Pendiente'}</>;
+  return vinculado ? <span className={clase}>{contenido}</span> : <button type="button" disabled={deshabilitado} onClick={onToggle} className={`${clase} cursor-pointer disabled:opacity-50`} title="Cambiar estado del movimiento">{contenido}</button>;
+}
 
+export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => void }> = ({ onVerPago }) => {
+  const { error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
+  const { user } = useAuth();
+  const { movimientos, categorias, recargarTodo, fechaReferencia, pagosDeuda, cuotas, deudas, recurrentes } = useWallet();
+
+  const esPagoVinculado = (m: MovimientoAgenda) => pagosDeuda.some(p => p.movimiento_id === m.id) || (m.tipo === 'gasto' && Boolean(m.recurrente_id || m.es_recurrente));
+  const verPago = (m: MovimientoAgenda) => {
+    const abono = pagosDeuda.find(p => p.movimiento_id === m.id);
+    const cuota = cuotas.find(c => c.id === abono?.cuota_id);
+    if (cuota) return onVerPago({ tipo: 'cuota', deudaId: cuota.deuda_id, cuotaId: cuota.id, nombre: deudas.find(d => d.id === cuota.deuda_id)?.nombre });
+    if (m.recurrente_id) return onVerPago({ tipo: 'recurrente', recurrenteId: m.recurrente_id, nombre: recurrentes.find(r => r.id === m.recurrente_id)?.descripcion });
+    void alertaInfo('Pago histórico', 'El compromiso fue retirado. Este gasto se conserva como parte de tu historial.');
+  };
   const hoy = new Date();
   const [filtroMes, setFiltroMes] = useState<number>(hoy.getMonth()); // -1 = Todos
   const [filtroAnio, setFiltroAnio] = useState<number>(hoy.getFullYear()); // -1 = Todos
@@ -81,6 +95,7 @@ export const MovimientosView: React.FC = () => {
   };
 
   const abrirEdicion = (m: MovimientoAgenda) => {
+    if (esPagoVinculado(m)) return;
     setEditandoId(m.id);
     setTipo(m.tipo);
     setDescripcion(m.descripcion);
@@ -94,7 +109,7 @@ export const MovimientosView: React.FC = () => {
   const handleGuardar = async (e: React.FormEvent) => {
     try {
     e.preventDefault();
-    if (!user) return;
+    if (!user || (editandoId && movimientos.some(m => m.id === editandoId && esPagoVinculado(m)))) return;
     const montoNum = parseFloat(monto);
     if (!descripcion.trim() || isNaN(montoNum) || montoNum <= 0 || !fecha) return;
 
@@ -133,6 +148,7 @@ export const MovimientosView: React.FC = () => {
   const handleToggleConfirmado = async (m: MovimientoAgenda) => {
     try {
     if (!user) return;
+    if (esPagoVinculado(m)) return;
     const nuevoEstado = !m.pago_confirmado;
     await supabase
       .from('movimientos_agenda')
@@ -150,28 +166,12 @@ export const MovimientosView: React.FC = () => {
   const handleEliminar = async (id: number) => {
     try {
       if (!user) return;
-      const pagoVinculado = pagosDeuda.find((p) => p.movimiento_id === id);
-
-      const confirmado = await confirmarAccion({
-        title: pagoVinculado ? '¿Eliminar abono de cronograma?' : '¿Eliminar movimiento?',
-        text: pagoVinculado
-          ? 'Se retirará este registro de tu historial y se anulará el abono de la cuota correspondiente.'
-          : 'Se retirará permanentemente de tu historial.',
-        confirmButtonText: 'Sí, eliminar',
-        isDanger: true,
-      });
-      if (!confirmado) return;
-
-      if (soporteEtapa5 && pagoVinculado) {
-        const datos = { pago_id: pagoVinculado.id };
-        const solicitud = crypto.randomUUID();
-        await ejecutarOperacion('anular_abono', datos, solicitud);
-        toastExito('Abono eliminado con éxito');
-      } else {
-        await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
-        await recargarTodo();
-        toastExito('Movimiento eliminado');
-      }
+      const movimiento = movimientos.find(m => m.id === id);
+      if (!movimiento || esPagoVinculado(movimiento)) return;
+      if (!await confirmarAccion({ title: '¿Eliminar movimiento?', text: 'Se retirará permanentemente de tu historial.', confirmButtonText: 'Sí, eliminar' })) return;
+      await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
+      await recargarTodo();
+      toastExito('Movimiento eliminado');
     } catch (error) {
       reportarError(error);
     }
@@ -262,8 +262,8 @@ export const MovimientosView: React.FC = () => {
             onClick={() => abrirNuevo('ingreso')}
             className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
           >
-            <ArrowUpCircle className="w-4 h-4" />
-            <span>+ Ingreso</span>
+            <Plus className="w-4 h-4" />
+            <span>Ingreso</span>
           </button>
           <button
             disabled={soloLectura}
@@ -271,7 +271,7 @@ export const MovimientosView: React.FC = () => {
             className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Gasto</span>
+            <span>Gasto</span>
           </button>
         </div>
       </div>
@@ -479,7 +479,7 @@ export const MovimientosView: React.FC = () => {
                     const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
                     const catNombre = cat ? cat.nombre : 'Otros';
                     const catColor = cat ? cat.color : '#0d9488';
-                    const vinculado = pagosDeuda.some((p) => p.movimiento_id === m.id);
+                    const vinculado = esPagoVinculado(m);
                     const incluido = !!fechaReferencia && m.pago_confirmado && fechaRealMovimiento(m) < fechaReferencia;
 
                     return (
@@ -500,7 +500,7 @@ export const MovimientosView: React.FC = () => {
                             <h4 className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-slate-900">
                               {m.descripcion}
                             </h4>
-                            <details className="relative shrink-0">
+                            {vinculado ? <button type="button" onClick={() => verPago(m)} className="inline-flex min-h-9 shrink-0 items-center gap-0.5 rounded-lg px-1 text-[11px] font-semibold text-teal-700 hover:bg-teal-50">Ver pago<ChevronRight className="h-3 w-3" /></button> : <details className="relative shrink-0">
                               <summary
                                 aria-label={`Acciones de ${m.descripcion}`}
                                 className="grid h-8 w-8 list-none cursor-pointer place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 [&::-webkit-details-marker]:hidden"
@@ -521,7 +521,7 @@ export const MovimientosView: React.FC = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  disabled={soloLectura}
+                                  disabled={soloLectura || Boolean(m.recurrente_id && !m.pago_confirmado)}
                                   onClick={(e) => {
                                     e.currentTarget.closest('details')?.removeAttribute('open');
                                     void handleEliminar(m.id);
@@ -531,7 +531,7 @@ export const MovimientosView: React.FC = () => {
                                   <Trash2 className="h-4 w-4" /> Eliminar
                                 </button>
                               </div>
-                            </details>
+                            </details>}
                           </div>
 
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -542,20 +542,8 @@ export const MovimientosView: React.FC = () => {
                               {catNombre}
                             </span>
                             {incluido && <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[11px] font-semibold text-teal-700">Saldo base</span>}
-                            {vinculado && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600">Cuota</span>}
-                            <button
-                              disabled={soloLectura || vinculado}
-                              onClick={() => handleToggleConfirmado(m)}
-                              className={`inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 ${
-                                m.pago_confirmado
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : 'bg-amber-50 text-amber-700'
-                              }`}
-                              title="Clic para alternar Confirmado / Pendiente"
-                            >
-                              {m.pago_confirmado ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                              {m.pago_confirmado ? 'Pagado' : 'Pendiente'}
-                            </button>
+                            {vinculado && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600">{m.es_recurrente ? 'Recurrente' : 'Cuota'}</span>}
+                            <EstadoMovimiento movimiento={m} vinculado={vinculado} deshabilitado={soloLectura} onToggle={() => void handleToggleConfirmado(m)} />
                           </div>
 
                           <div className="mt-2 flex justify-end border-t border-slate-100 pt-2">
@@ -578,7 +566,7 @@ export const MovimientosView: React.FC = () => {
               const cat = m.categoria_id ? mapaCategorias.get(m.categoria_id) : undefined;
               const catNombre = cat ? cat.nombre : 'Otros';
               const catColor = cat ? cat.color : '#0d9488';
-              const vinculado = pagosDeuda.some((p) => p.movimiento_id === m.id);
+              const vinculado = esPagoVinculado(m);
               const incluido = !!fechaReferencia && m.pago_confirmado && fechaRealMovimiento(m) < fechaReferencia;
               const [, month, d] = fechaRealMovimiento(m).split('-');
 
@@ -625,28 +613,9 @@ export const MovimientosView: React.FC = () => {
                           <span className="text-teal-700 font-medium">· En saldo base</span>
                         )}
                         {vinculado && (
-                          <span className="text-slate-500 font-medium">· Cuota</span>
+                          <span className="text-slate-500 font-medium">· {m.es_recurrente ? 'Recurrente' : 'Cuota'}</span>
                         )}
-                        <button
-                          disabled={soloLectura || vinculado}
-                          onClick={() => handleToggleConfirmado(m)}
-                          className={`inline-flex items-center gap-0.5 font-semibold cursor-pointer text-[11px] ${
-                            m.pago_confirmado ? 'text-emerald-600' : 'text-amber-600'
-                          }`}
-                          title="Clic para alternar Confirmado / Pendiente"
-                        >
-                          {m.pago_confirmado ? (
-                            <>
-                              <CheckCircle2 className="w-2.5 h-2.5" />
-                              <span>Pagado</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-2.5 h-2.5" />
-                              <span>Pendiente</span>
-                            </>
-                          )}
-                        </button>
+                        <EstadoMovimiento movimiento={m} vinculado={vinculado} deshabilitado={soloLectura} onToggle={() => void handleToggleConfirmado(m)} />
                       </div>
                     </div>
                   </div>
@@ -663,6 +632,7 @@ export const MovimientosView: React.FC = () => {
                     </span>
 
                     <div className="flex items-center gap-1">
+                      {vinculado ? <button type="button" onClick={() => verPago(m)} className="inline-flex min-h-8 items-center gap-0.5 rounded-lg px-2 text-[11px] font-semibold text-teal-700 hover:bg-teal-50">Ver pago<ChevronRight className="h-3 w-3" /></button> : <>
                       <button
                         disabled={soloLectura || vinculado}
                         onClick={() => abrirEdicion(m)}
@@ -672,13 +642,14 @@ export const MovimientosView: React.FC = () => {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        disabled={soloLectura}
+                        disabled={soloLectura || Boolean(m.recurrente_id && !m.pago_confirmado)}
                         onClick={() => handleEliminar(m.id)}
                         className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-30"
-                        title={vinculado ? 'Eliminar abono de cronograma' : 'Eliminar'}
+                        title={vinculado ? 'Eliminar abono de cronograma' : m.recurrente_id ? 'Anular pago' : 'Eliminar'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                      </>}
                     </div>
                   </div>
                 </div>
@@ -805,6 +776,7 @@ export const MovimientosView: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={pagoConfirmado}
+                  disabled={Boolean(editandoId && movimientos.find(m => m.id === editandoId)?.recurrente_id)}
                   onChange={(e) => setPagoConfirmado(e.target.checked)}
                   className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                 />
@@ -812,6 +784,7 @@ export const MovimientosView: React.FC = () => {
                   Movimiento ya realizado / pagado
                 </span>
               </label>
+              {editandoId && movimientos.find(m => m.id === editandoId)?.recurrente_id && <p className="text-xs text-slate-500">Para cambiar el estado, usa la acción del pago en la lista de movimientos.</p>}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button

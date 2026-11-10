@@ -50,10 +50,15 @@ export const IngresosView: React.FC = () => {
 
   const hoy = useMemo(() => new Date(), []);
   const fechaHoyStr = useMemo(() => fechaHoyISO(), []);
-
   // Selector global de período
   const [ingresoMes, setIngresoMes] = useState<number>(() => hoy.getMonth());
   const [ingresoAnio, setIngresoAnio] = useState<number>(() => hoy.getFullYear());
+  const diferenciaPeriodoMes = useMemo(
+    () => (ingresoAnio - hoy.getFullYear()) * 12 + ingresoMes - hoy.getMonth(),
+    [ingresoAnio, ingresoMes, hoy],
+  );
+  const periodoEsActual = diferenciaPeriodoMes === 0;
+  const periodoEsHistorico = diferenciaPeriodoMes < 0;
 
   // Estado del Sueldo del Mes seleccionado
   const [ingresoModo, setIngresoModo] = useState<'quincenal' | 'mensual'>('quincenal');
@@ -458,32 +463,34 @@ export const IngresosView: React.FC = () => {
       </div>
 
       {/* 2. Barra de Contexto: Selector Global de Período */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
+      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-semibold shrink-0">
             <Calendar className="w-4 h-4" />
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
               Período en consulta
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="mt-0.5 grid w-fit grid-cols-[40px_168px_40px] items-center gap-1">
               <button
                 type="button"
                 onClick={() => cambiarMesIngreso(-1)}
                 title="Mes anterior"
-                className="w-6 h-6 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer transition-colors"
+                aria-label="Ver mes anterior"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+              <span className="w-[168px] text-center text-sm font-bold tracking-tight text-slate-900 tabular-nums sm:text-base">
                 {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
               </span>
               <button
                 type="button"
                 onClick={() => cambiarMesIngreso(1)}
                 title="Mes siguiente"
-                className="w-6 h-6 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer transition-colors"
+                aria-label="Ver mes siguiente"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -491,35 +498,39 @@ export const IngresosView: React.FC = () => {
           </div>
         </div>
 
-        {/* Chips de apoyo y botón mes actual */}
-        <div className="flex items-center gap-2">
+        {/* Contexto temporal y retorno al período actual cuando corresponde */}
+        <div className="flex items-center justify-between gap-2 pl-10 sm:justify-end sm:pl-0">
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-              ingresoMes === hoy.getMonth() && ingresoAnio === hoy.getFullYear()
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-slate-100 text-slate-600 border border-slate-200'
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+              periodoEsActual
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : periodoEsHistorico
+                  ? 'border-slate-200 bg-slate-100 text-slate-600'
+                  : 'border-sky-200 bg-sky-50 text-sky-700'
             }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                ingresoMes === hoy.getMonth() && ingresoAnio === hoy.getFullYear()
+              className={`h-1.5 w-1.5 rounded-full ${
+                periodoEsActual
                   ? 'bg-emerald-500'
-                  : 'bg-slate-400'
+                  : periodoEsHistorico
+                    ? 'bg-slate-400'
+                    : 'bg-sky-500'
               }`}
             />
             <span>
-              {ingresoMes === hoy.getMonth() && ingresoAnio === hoy.getFullYear()
-                ? 'Mes en curso'
-                : 'Mes proyectado'}
+              {periodoEsActual ? 'Mes actual' : periodoEsHistorico ? 'Histórico' : 'Proyectado'}
             </span>
           </span>
-          <button
-            type="button"
-            onClick={irMesActualIngreso}
-            className="px-2.5 py-1 rounded-xl text-xs font-semibold text-slate-600 hover:text-teal-700 hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1"
-          >
-            <span>Ir al mes actual</span>
-          </button>
+          {!periodoEsActual && (
+            <button
+              type="button"
+              onClick={irMesActualIngreso}
+              className="rounded-xl px-2.5 py-2 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
+            >
+              Volver a hoy
+            </button>
+          )}
         </div>
       </div>
 
