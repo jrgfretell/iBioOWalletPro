@@ -1,6 +1,6 @@
 import { RegistrarPagoModal } from './RegistrarPagoModal';
 import type { ObjetivoPago } from './RegistrarPagoModal';
-import { generarCuotas } from '../lib/schedule';
+import { generarCuotas, redistribuirImportesPosteriores } from '../lib/schedule';
 import { AnimatedModal } from './AnimatedModal';
 import React, { useState, useMemo, useRef } from 'react';
 import { AnimatedDisclosure } from './AnimatedDisclosure';
@@ -120,6 +120,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
   const [editandoCuotaId, setEditandoCuotaId] = useState<number | null>(null);
   const [nuevaFechaCuota, setNuevaFechaCuota] = useState<string>('');
   const [guardandoCuotaFecha, setGuardandoCuotaFecha] = useState<boolean>(false);
+  const [editandoImporteCuotaId, setEditandoImporteCuotaId] = useState<number | null>(null);
+  const [nuevoImporteCuota, setNuevoImporteCuota] = useState<string>('');
+  const [guardandoImporteCuota, setGuardandoImporteCuota] = useState<boolean>(false);
 
   // Formulario Recurrente Continuo / Ingreso
   const [recDesc, setRecDesc] = useState<string>('');
@@ -193,7 +196,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     }, 120);
   };
 
-  useWalletFormGuard(!!pagoObjetivo || modalNuevoProgramado || modalEdicionAbierto || editandoCuotaId !== null, 'Pagos programados');
+  useWalletFormGuard(!!pagoObjetivo || modalNuevoProgramado || modalEdicionAbierto || editandoCuotaId !== null || editandoImporteCuotaId !== null, 'Pagos programados');
 
   // FILAS DE LA AGENDA MENSUAL
   const filasAgenda = useMemo(() => {
@@ -543,6 +546,78 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     }
 
     } catch (error) { reportarError(error); }
+  };
+
+  const handleGuardarImporteCuota = async (deudaId:number,cuotaId:number,nombreDeuda:string) => {
+    try {
+      if(!user)return;
+      if(!/^\d+(?:\.\d{1,2})?$/.test(nuevoImporteCuota.trim())){
+        await Swal.fire({title:'Revisa el importe',text:'Ingresa un monto positivo con máximo dos decimales.',icon:'info'});
+        return;
+      }
+      const nuevaCantidad=Number(nuevoImporteCuota);
+      const cuotasDelPlan=cuotas.filter(c=>c.deuda_id===deudaId).map(c=>({
+        id:c.id,numero:c.numero,fecha:c.fecha,monto:c.monto,
+        abonado:pagosDeuda.filter(p=>p.cuota_id===c.id).reduce((s,p)=>s+p.monto,0),
+      }));
+      const calculo=redistribuirImportesPosteriores(cuotasDelPlan,cuotaId,nuevaCantidad);
+      if(!calculo.ok){await Swal.fire({title:'No se puede recalcular',text:calculo.motivo,icon:'info'});return;}
+      if(!calculo.cambios.length){setEditandoImporteCuotaId(null);return;}
+
+      const cambioPrincipal=calculo.cambios.find(c=>c.id===cuotaId)!;
+      const siguientes=calculo.cambios.filter(c=>c.id!==cuotaId);
+      const escaparHtml=(valor:string)=>valor.replace(/[&<>"']/g,caracter=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+      }[caracter]??caracter));
+      const detalleCuotas=siguientes.map(c=>`<li><span>Cuota ${c.numero} · ${c.fecha.split('-').reverse().join('/')}</span><strong>${formatearMoneda(c.montoNuevo)}</strong></li>`).join('');
+      const resumen=`
+        <div class="schedule-recalc-summary">
+          <p class="schedule-recalc-name">${escaparHtml(nombreDeuda)}</p>
+          <div class="schedule-recalc-change">
+            <span>Cuota ${cambioPrincipal.numero}</span>
+            <strong>${formatearMoneda(cambioPrincipal.montoAnterior)} <span aria-hidden="true">→</span> ${formatearMoneda(cambioPrincipal.montoNuevo)}</strong>
+          </div>
+          <div class="schedule-recalc-impact"><strong>${siguientes.length}</strong><span>cuotas siguientes se ajustarán</span></div>
+          <div class="schedule-recalc-total"><span>Total del cronograma</span><strong>${formatearMoneda(calculo.totalCronograma)}</strong></div>
+          <p class="schedule-recalc-note">Se conservan las fechas y los abonos registrados.</p>
+          <details class="schedule-recalc-details">
+            <summary>Ver detalle de cuotas</summary>
+            <ul>${detalleCuotas}</ul>
+          </details>
+        </div>`;
+      const confirmar=await Swal.fire({
+        title:'Confirmar ajuste de cuotas',
+        html:resumen,
+        showCancelButton:true,
+        confirmButtonColor:'#0d9488',
+        cancelButtonColor:'#64748b',
+        confirmButtonText:'Guardar y recalcular',
+        cancelButtonText:'Revisar',
+        reverseButtons:true,
+        focusCancel:true,
+        buttonsStyling:false,
+        width:'min(28rem, calc(100vw - 2rem))',
+        padding:'1.25rem',
+        customClass:{
+          popup:'schedule-recalc-popup',
+          title:'schedule-recalc-title',
+          htmlContainer:'schedule-recalc-content',
+          actions:'schedule-recalc-actions',
+          confirmButton:'schedule-recalc-confirm',
+          cancelButton:'schedule-recalc-cancel',
+        },
+      });
+      if(!confirmar.isConfirmed)return;
+
+      if(!soporteEtapa5)throw new Error('Esta operación requiere la versión transaccional de billeteras. Actualiza la aplicación e inténtalo de nuevo.');
+      setGuardandoImporteCuota(true);
+      const datos={cuota_id:cuotaId,monto:nuevaCantidad,redistribucion:calculo.redistribucion};
+      await ejecutarOperacion('actualizar_importe_cuota',datos,crypto.randomUUID());
+      await recargarTodo();
+      setEditandoImporteCuotaId(null);
+      toastExito('Importes del cronograma recalculados');
+    } catch(error){reportarError(error);}
+    finally{setGuardandoImporteCuota(false);}
   };
 
   // Ajustar en lote todas las cuotas de un cronograma al último día de cada mes
@@ -2127,6 +2202,8 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                 const pendiente = Math.max(0, Math.round((c.monto - abonado) * 100) / 100);
                                 const pagada = pendiente <= 0.009;
                                 const [anioC, mesC, diaC] = c.fecha.split('-');
+                                const tienePosterioresAjustables=cuotasD.some(siguiente=>siguiente.numero>c.numero&&
+                                  pagosDeuda.filter(p=>p.cuota_id===siguiente.id).reduce((s,p)=>s+p.monto,0)<siguiente.monto-0.009);
 
                                 return (
                                   <tr key={c.id} className="hover:bg-slate-50/70">
@@ -2145,14 +2222,14 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                           />
                                           <button
                                             type="button"
-                                            disabled={soloLectura || (guardandoCuotaFecha)}
+                                            disabled={soloLectura || guardandoCuotaFecha || editandoImporteCuotaId !== null}
                                             onClick={() => handleGuardarFechaCuota(c.id)}
                                             className="p-1 rounded bg-teal-600 hover:bg-teal-700 text-white cursor-pointer transition-colors"
                                             title="Guardar fecha"
                                           >
                                             <Check className="w-3.5 h-3.5" />
                                           </button>
-                                          <button disabled={soloLectura}
+                                          <button disabled={soloLectura || editandoImporteCuotaId !== null}
                                             type="button"
                                             onClick={() => setEditandoCuotaId(null)}
                                             className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer transition-colors"
@@ -2182,21 +2259,51 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                       )}
                                     </td>
                                     <td className="py-3 px-4 font-semibold text-slate-900">
-                                      {formatearMoneda(c.monto)}
+                                      {editandoImporteCuotaId===c.id ? (
+                                        <div className="space-y-1.5">
+                                          <div className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-white p-1 shadow-xs">
+                                            <input type="number" min={Math.max(0.01,abonado)} step="0.01" inputMode="decimal" autoFocus
+                                              value={nuevoImporteCuota} onChange={e=>setNuevoImporteCuota(e.target.value)}
+                                              disabled={guardandoImporteCuota} aria-label={`Nuevo importe de la cuota ${c.numero}`}
+                                              className="w-24 min-h-9 rounded px-2 text-sm font-semibold focus:outline-none" />
+                                            <button type="button" disabled={soloLectura||guardandoImporteCuota}
+                                              onClick={()=>handleGuardarImporteCuota(d.id,c.id,d.nombre)}
+                                              className="p-1.5 rounded bg-teal-600 text-white disabled:opacity-50" title="Guardar y recalcular cuotas siguientes" aria-label="Guardar importe y recalcular cuotas">
+                                              <Check className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button type="button" disabled={guardandoImporteCuota}
+                                              onClick={()=>setEditandoImporteCuotaId(null)}
+                                              className="p-1.5 rounded bg-slate-100 text-slate-600" title="Cancelar edición" aria-label="Cancelar edición del importe">
+                                              <X className="w-3.5 h-3.5" />
+                                            </button>
+                                          </div>
+                                          <p className="text-[10px] font-normal text-slate-500">Se recalculan las cuotas posteriores.</p>
+                                        </div>
+                                      ) : (
+                                        <div className="inline-flex items-center gap-1.5">
+                                          <span className="whitespace-nowrap tabular-nums">{formatearMoneda(c.monto)}</span>
+                                          {!pagada&&tienePosterioresAjustables&&<button type="button" disabled={soloLectura||!soporteEtapa5||editandoCuotaId!==null}
+                                            onClick={()=>{setEditandoImporteCuotaId(c.id);setNuevoImporteCuota(String(c.monto));}}
+                                            className="p-1 rounded text-slate-400 hover:bg-teal-50 hover:text-teal-700 disabled:opacity-40" title={`Editar importe de la cuota ${c.numero}`}
+                                            aria-label={`Editar importe de la cuota ${c.numero}`}>
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>}
+                                        </div>
+                                      )}
                                     </td>
                                     <td
                                       className={`py-3 px-4 ${
                                         abonado > 0 ? 'text-emerald-600 font-semibold' : 'text-slate-400'
                                       }`}
                                     >
-                                      {formatearMoneda(abonado)}
+                                      <span className="whitespace-nowrap tabular-nums">{formatearMoneda(abonado)}</span>
                                     </td>
                                     <td
                                       className={`py-3 px-4 font-bold ${
                                         pendiente > 0 ? 'text-slate-900' : 'text-slate-400'
                                       }`}
                                     >
-                                      {formatearMoneda(pendiente)}
+                                      <span className="whitespace-nowrap tabular-nums">{formatearMoneda(pendiente)}</span>
                                     </td>
                                     <td className="py-3 px-4">
                                       {pagada ? (

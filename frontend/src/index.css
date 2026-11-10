@@ -164,6 +164,174 @@
   line-height: 1.25;
 }
 
+/* Confirmación compacta para redistribuir importes en cronogramas. */
+.swal2-popup.schedule-recalc-popup {
+  box-sizing: border-box;
+  border: 1px solid #dbe4ee;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 50px rgb(15 23 42 / 0.22);
+}
+
+.swal2-popup.schedule-recalc-popup .schedule-recalc-title {
+  margin: 0;
+  padding: 0;
+  color: #0f172a;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.swal2-popup.schedule-recalc-popup .schedule-recalc-content {
+  margin: 0.875rem 0 0;
+  padding: 0;
+  color: #475569;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.schedule-recalc-summary {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.schedule-recalc-name {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.schedule-recalc-change,
+.schedule-recalc-impact,
+.schedule-recalc-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: #f8fafc;
+}
+
+.schedule-recalc-change > span,
+.schedule-recalc-impact > span,
+.schedule-recalc-total > span {
+  min-width: 0;
+  color: #475569;
+}
+
+.schedule-recalc-change strong,
+.schedule-recalc-impact strong,
+.schedule-recalc-total strong {
+  color: #0f172a;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.schedule-recalc-change strong span {
+  padding: 0 0.125rem;
+  color: #94a3b8;
+}
+
+.schedule-recalc-impact {
+  justify-content: flex-start;
+  background: #f0fdfa;
+}
+
+.schedule-recalc-impact strong {
+  color: #0f766e;
+  font-size: 1rem;
+}
+
+.schedule-recalc-total {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.schedule-recalc-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.schedule-recalc-details {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.5rem;
+}
+
+.schedule-recalc-details summary {
+  color: #0f766e;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.schedule-recalc-details ul {
+  display: grid;
+  gap: 0.25rem;
+  max-height: 9rem;
+  overflow: auto;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-recalc-details li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background: #f8fafc;
+  font-size: 0.75rem;
+}
+
+.schedule-recalc-details li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.schedule-recalc-details li strong {
+  flex: 0 0 auto;
+  color: #0f172a;
+}
+
+.swal2-popup.schedule-recalc-popup .schedule-recalc-actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 1rem auto 0;
+}
+
+.swal2-popup.schedule-recalc-popup .schedule-recalc-actions button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 2.625rem;
+  margin: 0;
+  border: 0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.swal2-popup.schedule-recalc-popup .schedule-recalc-confirm {
+  background: #0d9488;
+}
+
+.swal2-popup.schedule-recalc-popup .schedule-recalc-cancel {
+  background: #64748b;
+}
+
 .swal2-container.app-toast-container {
   pointer-events: none;
 }
