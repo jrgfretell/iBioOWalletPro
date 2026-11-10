@@ -130,7 +130,7 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
               )}
             </div>
             {!compact && billeteraActual && (
-              <p className="text-[11px] text-slate-400 truncate">
+              <p className="mt-1 text-[11px] leading-snug text-slate-400 truncate">
                 Base: <span className="font-semibold text-slate-300">{formatearMoneda(montoBase)}</span>
               </p>
             )}
@@ -170,10 +170,10 @@ export const WalletQuickSwitcher: React.FC<WalletQuickSwitcherProps> = ({
             )}
 
             {/* Etiqueta de Sección */}
-            <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              <span>Billeteras Activas</span>
-              <span className="text-[11px] text-slate-500 font-normal">
-                {filteredWallets.length} disponible(s)
+            <div className="flex items-center justify-between gap-2 px-2 py-1 text-slate-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wide">Billeteras activas</span>
+              <span className="shrink-0 whitespace-nowrap text-[11px] font-normal text-slate-400">
+                {filteredWallets.length} {filteredWallets.length === 1 ? 'disponible' : 'disponibles'}
               </span>
             </div>
 

@@ -33,6 +33,9 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
+const normalizarBusqueda = (texto: string) =>
+    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+
 type SubTabPagos = 'agenda' | 'cronogramas' | 'recurrentes';
 
 interface FilaAgenda {
@@ -83,6 +86,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
   // Filtros de la Agenda Mensual
   const [agendaMes, setAgendaMes] = useState<number>(hoy.getMonth());
   const [agendaAnio, setAgendaAnio] = useState<number>(hoy.getFullYear());
+  const [busquedaAgenda, setBusquedaAgenda] = useState('');
   const [agendaTipo, setAgendaTipo] = useState<'todos' | 'recurrentes' | 'cuotas'>('todos');
   const [agendaEstado, setAgendaEstado] = useState<'todos' | 'pendiente' | 'pagado' | 'vencido'>('todos');
   const [procesandoAccion, setProcesandoAccion] = useState<string | null>(null);
@@ -293,9 +297,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
       if (agendaTipo === 'recurrentes' && r.tipo !== 'Recurrentes') return false;
       if (agendaTipo === 'cuotas' && r.tipo !== 'Cuotas') return false;
       if (agendaEstado !== 'todos' && r.estado !== agendaEstado) return false;
-      return true;
+      const categoriaId = r.recurrenteRef?.categoria_id ?? deudas.find(d => d.id === r.deudaId)?.categoria_id;
+      const categoria = categorias.find(c => c.id === categoriaId)?.nombre ?? '';
+      const texto = normalizarBusqueda(`${r.nombre} ${r.detalle} ${categoria}`);
+      return normalizarBusqueda(busquedaAgenda).split(/\s+/).every(palabra => texto.includes(palabra));
     });
-  }, [filasAgenda, agendaTipo, agendaEstado]);
+  }, [filasAgenda, agendaTipo, agendaEstado, busquedaAgenda, deudas, categorias]);
 
   // Resumen de las 4 tarjetas KPI de la Agenda
   const resumenAgenda = useMemo(() => {
@@ -733,8 +740,6 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
       });
   }, [recurrentes, categorias, movimientos, hoy, fechaHoyStr, scope]);
 
-  const normalizarBusqueda = (texto: string) =>
-    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
   const consultaCronogramas = normalizarBusqueda(busquedaCronogramas);
   const coincideBusqueda = (nombre: string, categoria: string) =>
     consultaCronogramas.split(/\s+/).every((palabra) =>
@@ -914,6 +919,15 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
           {/* Barra de Filtros Rápida y Compacta */}
           <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="relative mb-3">
+              <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input type="search" aria-label="Buscar pago por nombre o categoría" placeholder="Buscar pago…"
+                value={busquedaAgenda} onChange={e => setBusquedaAgenda(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape') setBusquedaAgenda(''); }}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-11 text-base text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25 md:text-sm [&::-webkit-search-cancel-button]:appearance-none" />
+              {busquedaAgenda && <button type="button" aria-label="Limpiar búsqueda de pagos" onClick={() => setBusquedaAgenda('')}
+                className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:text-slate-900 cursor-pointer"><X aria-hidden="true" className="h-4 w-4" /></button>}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
@@ -994,7 +1008,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
                 <CalendarCheck className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                 <strong className="block text-slate-700 text-sm">No hay pagos para esta selección</strong>
-                <span className="text-xs">Prueba otro mes o cambia los filtros.</span>
+                <span className="text-xs">Prueba otra búsqueda, otro mes o cambia los filtros.</span>
               </div>
             ) : (
               filasFiltradas.map((r) => {
@@ -1085,7 +1099,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         onClick={() => handleIrACronograma(cardKey, r.recurrenteId ? 'recurrentes' : 'cronogramas')}
                         className="col-start-1 row-start-1 inline-flex min-h-10 items-center gap-0.5 text-[11px] font-semibold text-teal-700 hover:text-teal-800 cursor-pointer hover:underline"
                       >
-                        <span>{r.recurrenteId ? 'Ver pagos' : 'Ver cronograma'}</span>
+                        <span>Ver detalle</span>
                         <ChevronRight className="w-3 h-3" />
                       </button>
 
@@ -1109,18 +1123,19 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <th className="py-3 px-4">Pagado</th>
                     <th className="py-3 px-4">Pendiente</th>
                     <th className="py-3 px-4">Estado</th>
-                    <th className="py-3 px-3 text-center w-[300px]">Acción</th>
+                    <th scope="col" className="w-[104px] py-3 px-2 text-center">Pago</th>
+                    <th scope="col" className="w-[112px] py-3 px-2 text-center">Detalle</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filasFiltradas.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400">
+                      <td colSpan={9} className="py-12 text-center text-slate-400">
                         <CalendarCheck className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                         <strong className="block text-slate-700 text-sm">
                           No hay pagos para esta selección
                         </strong>
-                        <span className="text-xs">Prueba otro mes o cambia los filtros.</span>
+                        <span className="text-xs">Prueba otra búsqueda, otro mes o cambia los filtros.</span>
                       </td>
                     </tr>
                   ) : (
@@ -1198,19 +1213,20 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                           </td>
 
                           {/* La Agenda es de consulta y registro; el mantenimiento vive en cada panel. */}
-                          <td className="py-2.5 px-3 w-[300px] min-w-[300px]">
-                            <div className="grid grid-cols-[132px_132px] items-center justify-end gap-2">
+                          <td className="w-[104px] min-w-[104px] px-2 py-2.5 text-center">
                               {!isPaid ? (
                                 <button
                                   type="button"
                                   disabled={soloLectura || (procesandoAccion === r.id)}
                                   onClick={() => handleRegistrarPagoAgenda(r)}
-                                  className="inline-flex h-9 min-w-[132px] items-center justify-center whitespace-nowrap rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
+                                  aria-label={`Registrar pago de ${r.nombre}`}
+                                  className="inline-flex h-9 min-w-[88px] items-center justify-center whitespace-nowrap rounded-lg border border-teal-200 bg-teal-50 px-3 text-xs font-semibold text-teal-800 transition-colors hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 disabled:opacity-50 cursor-pointer"
                                 >
-                                  <span>{procesandoAccion === r.id ? 'Procesando…' : 'Registrar pago'}</span>
+                                  <span>{procesandoAccion === r.id ? 'Procesando…' : 'Registrar'}</span>
                                 </button>
-                              ) : <span aria-hidden="true" className="h-9" />}
-
+                              ) : null}
+                          </td>
+                          <td className="w-[112px] min-w-[112px] px-2 py-2.5 text-center">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1221,13 +1237,12 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                   handleIrACronograma(cardKey, esRecurrente ? 'recurrentes' : 'cronogramas');
                                 }}
                                 title={r.recurrenteId ? 'Ver próximos pagos' : 'Ver cronograma completo'}
-                                className="inline-flex h-9 shrink-0 items-center justify-start gap-0.5 whitespace-nowrap rounded-lg px-2 text-[11px] font-semibold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-800 cursor-pointer"
+                                aria-label={`Ver detalle de ${r.nombre}`}
+                                className="inline-flex h-9 shrink-0 items-center justify-center gap-0.5 whitespace-nowrap rounded-lg px-2 text-[11px] font-semibold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-800 cursor-pointer"
                               >
-                                <span className="truncate">{r.recurrenteId ? 'Ver pagos' : 'Ver cronograma'}</span>
+                                <span>Ver detalle</span>
                                 <ChevronRight className="h-3.5 w-3.5 shrink-0" />
                               </button>
-
-                            </div>
                           </td>
                         </tr>
                       );
@@ -2345,9 +2360,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
             <form onSubmit={handleCrearNuevoProgramado} className="p-5 space-y-4">
               <fieldset disabled={creando||soloLectura} className="space-y-4">
               {scope === 'recurrentes' ? (
-                <div className="rounded-xl border border-teal-100 bg-teal-50/70 px-3 py-2 text-xs text-teal-900">
-                  <strong>Gasto mensual continuo</strong>
-                  <p className="mt-0.5 text-teal-800">Se repetirá cada mes hasta que lo retires.</p>
+                <div className="rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
+                  <strong className="font-semibold text-teal-900">Gasto mensual continuo</strong>
+                  <p className="mt-0.5">Se repetirá cada mes hasta que lo retires.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
@@ -2363,10 +2378,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
               )}
 
               {scope === 'programados' && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
                   {modalTipoCrear === 'ingreso'
-                    ? <><strong>Ingreso mensual fijo</strong><p className="mt-0.5">Se añadirá a la agenda cada mes desde el periodo que indiques.</p></>
-                    : <><strong>Cronograma con cuotas definidas</strong><p className="mt-0.5">Define cuántas cuotas tendrá y cuándo vence la primera.</p></>}
+                    ? <><strong className="font-semibold text-teal-900">Ingreso mensual fijo</strong><p className="mt-0.5">Se añadirá a la agenda cada mes desde el periodo que indiques.</p></>
+                    : <><strong className="font-semibold text-teal-900">Cronograma con cuotas definidas</strong><p className="mt-0.5">Define cuántas cuotas tendrá y cuándo vence la primera.</p></>}
                 </div>
               )}
 
