@@ -10,6 +10,8 @@ import {
   MESES_CORTOS,
   fechaHoyISO,
   fechaRealMovimiento,
+  obtenerUltimoDiaMes,
+  recurrenteAplicaEnMes,
 } from '../types/wallet';
 import type { ActiveTab } from '../types/wallet';
 import {
@@ -75,7 +77,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return map;
   }, [categorias]);
 
-  // Calcular Próximos Pagos Pendientes (Cuotas de deudas + Movimientos pendientes)
+  // Calcular los próximos pagos pendientes (cuotas, movimientos y recurrencias virtuales).
   const proximosPagos = useMemo(() => {
     const lista: {
       id: string;
@@ -85,6 +87,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       monto: number;
       vencido: boolean;
       esHoy: boolean;
+      destino: ActiveTab;
     }[] = [];
 
     // 1. Cuotas con saldo pendiente
@@ -105,11 +108,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           monto: pendiente,
           vencido: c.fecha < fechaHoyStr,
           esHoy: c.fecha === fechaHoyStr,
+          destino: 'pagos',
         });
       }
     });
 
-    // 2. Movimientos en agenda marcados como no confirmados (pendientes)
+    // 2. Próximos gastos recurrentes mensuales. Son ocurrencias virtuales: no se
+    // insertan en movimientos_agenda hasta que el usuario registra el pago.
+    const mesesRecurrentes = Array.from({ length: 13 }, (_, offset) =>
+      new Date(anioHoy, mesHoy + offset, 1)
+    );
+    recurrentes
+      .filter((rec) => rec.tipo === 'gasto' && rec.tipo_recurrencia === 'mensual')
+      .forEach((rec) => {
+        mesesRecurrentes.forEach((mes) => {
+          const anio = mes.getFullYear();
+          const mesIndex = mes.getMonth();
+          if (!recurrenteAplicaEnMes(rec, anio, mesIndex)) return;
+
+          const prefijo = `${anio}-${String(mesIndex + 1).padStart(2, '0')}`;
+          const movimientoDelMes = movimientos.find(
+            (mov) => mov.recurrente_id === rec.id && mov.fecha.startsWith(prefijo)
+          );
+
+          // Si hay una ocurrencia real, el bloque de movimientos la añade si sigue
+          // pendiente; si ya se pagó, no debe aparecer otra vez como virtual.
+          if (movimientoDelMes) return;
+
+          const dia = Math.min(rec.dia_pago, obtenerUltimoDiaMes(anio, mesIndex));
+          const fecha = `${prefijo}-${String(dia).padStart(2, '0')}`;
+          lista.push({
+            id: `recurrente-${rec.id}-${prefijo}`,
+            nombre: rec.descripcion,
+            etiqueta: 'Recurrente',
+            fecha,
+            monto: rec.monto,
+            vencido: fecha < fechaHoyStr,
+            esHoy: fecha === fechaHoyStr,
+            destino: 'recurrentes',
+          });
+        });
+      });
+
+    // 3. Movimientos en agenda marcados como no confirmados (pendientes).
+    // Incluye las ocurrencias recurrentes ya materializadas para conservar sus
+    // fechas e importes editados sin duplicarlas con las virtuales.
     movimientos
       .filter((m) => m.tipo === 'gasto' && !m.pago_confirmado)
       .forEach((m) => {
@@ -121,11 +164,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           monto: m.monto,
           vencido: m.fecha < fechaHoyStr,
           esHoy: m.fecha === fechaHoyStr,
+          destino: m.recurrente_id ? 'recurrentes' : 'pagos',
         });
       });
 
-    return lista.sort((a, b) => a.fecha.localeCompare(b.fecha));
-  }, [cuotas, pagosDeuda, deudas, movimientos, fechaHoyStr]);
+    return lista.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.nombre.localeCompare(b.nombre));
+  }, [anioHoy, mesHoy, cuotas, pagosDeuda, deudas, movimientos, recurrentes, fechaHoyStr]);
 
   // Calcular Gastos por Categoría del mes seleccionado
   const reporteGastosCategoria = useMemo(() => {
@@ -226,7 +270,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <h2 className="text-sm font-semibold text-slate-900">Próximos pagos</h2>
                   <p className="text-xs text-slate-500">
                     {proximosPagos.length > 0
-                      ? `${proximosPagos.length} ${proximosPagos.length === 1 ? 'pendiente' : 'pendientes'}`
+                      ? proximosPagos.length > 5
+                        ? '5 más próximos'
+                        : `${proximosPagos.length} ${proximosPagos.length === 1 ? 'pendiente' : 'pendientes'}`
                       : 'Todo al día'}
                   </p>
                 </div>
@@ -252,12 +298,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {proximosPagos.slice(0, 4).map((item) => {
+                {proximosPagos.slice(0, 5).map((item) => {
                   const [y, m, d] = item.fecha.split('-');
                   return (
                     <div
                       key={item.id}
-                      onClick={() => onNavigate('pagos')}
+                      onClick={() => onNavigate(item.destino)}
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                         item.vencido
                           ? 'bg-red-50/60 border-red-200 hover:bg-red-50'
