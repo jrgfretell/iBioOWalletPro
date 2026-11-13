@@ -127,13 +127,15 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
       };
 
       if (editandoId) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('movimientos_agenda')
           .update(payload)
           .eq('id', editandoId)
           .eq('user_id', user.id);
+        if (updateError) throw updateError;
       } else {
-        await supabase.from('movimientos_agenda').insert(payload);
+        const { error: insertError } = await supabase.from('movimientos_agenda').insert(payload);
+        if (insertError) throw insertError;
       }
 
       await recargarTodo();
@@ -150,7 +152,7 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
     if (!user) return;
     if (esPagoVinculado(m)) return;
     const nuevoEstado = !m.pago_confirmado;
-    await supabase
+    const { error: toggleError } = await supabase
       .from('movimientos_agenda')
       .update({
         pago_confirmado: nuevoEstado,
@@ -158,6 +160,7 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
       })
       .eq('id', m.id)
       .eq('user_id', user.id);
+    if (toggleError) throw toggleError;
     await recargarTodo();
 
     } catch (error) { reportarError(error); }
@@ -169,7 +172,8 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
       const movimiento = movimientos.find(m => m.id === id);
       if (!movimiento || esPagoVinculado(movimiento)) return;
       if (!await confirmarAccion({ title: '¿Eliminar movimiento?', text: 'Se retirará permanentemente de tu historial.', confirmButtonText: 'Sí, eliminar' })) return;
-      await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
+      const { error: deleteError } = await supabase.from('movimientos_agenda').delete().eq('id', id).eq('user_id', user.id);
+      if (deleteError) throw deleteError;
       await recargarTodo();
       toastExito('Movimiento eliminado');
     } catch (error) {

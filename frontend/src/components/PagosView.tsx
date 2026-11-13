@@ -351,7 +351,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
       if (editTipo === 'recurrente') {
         const diaNum = Math.min(31, Math.max(1, parseInt(editDia, 10) || 1));
         const periodoInicio = `${editAnioInicio}-${String(editMesInicio + 1).padStart(2, '0')}`;
-        await supabase
+        const { error: recUpdateError } = await supabase
           .from('movimientos_recurrentes')
           .update({
             descripcion: editNombre.trim(),
@@ -363,8 +363,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           })
           .eq('id', editId)
           .eq('user_id', user.id);
+        if (recUpdateError) throw recUpdateError;
       } else {
-        await supabase
+        const { error: deudaUpdateError } = await supabase
           .from('deudas')
           .update({
             nombre: editNombre.trim(),
@@ -372,6 +373,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           })
           .eq('id', editId)
           .eq('user_id', user.id);
+        if (deudaUpdateError) throw deudaUpdateError;
       }
       await recargarTodo();
       setModalEdicionAbierto(false);
@@ -393,7 +395,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     setProcesandoAccion(fila.id);
     try {
       if (fila.tipo === 'Cuotas' && fila.cuotaRef) {
-        const { data: movData } = await supabase
+        const { data: movData, error: movInsertError } = await supabase
           .from('movimientos_agenda')
           .insert({
             user_id: user.id,
@@ -408,8 +410,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           })
           .select('id')
           .single();
+        if (movInsertError) throw movInsertError;
 
-        await supabase.from('deuda_pagos').insert({
+        const { error: deudaPagoError } = await supabase.from('deuda_pagos').insert({
           user_id: user.id,
           cuota_id: fila.cuotaRef.id,
           monto: fila.pendiente,
@@ -417,15 +420,17 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           movimiento_id: movData ? movData.id : null,
           solicitud: `pago-cuota-${fila.cuotaRef.id}-${Date.now()}`,
         });
+        if (deudaPagoError) throw deudaPagoError;
       } else if (fila.tipo === 'Recurrentes' && fila.recurrenteId) {
         if (fila.movimientoId) {
-          await supabase
+          const { error: movUpdateError } = await supabase
             .from('movimientos_agenda')
             .update({ pago_confirmado: true, fecha_pago: fechaHoyStr })
             .eq('id', fila.movimientoId)
             .eq('user_id', user.id);
+          if (movUpdateError) throw movUpdateError;
         } else {
-          await supabase.from('movimientos_agenda').insert({
+          const { error: recMovInsertError } = await supabase.from('movimientos_agenda').insert({
             user_id: user.id,
             tipo: 'gasto',
             descripcion: fila.nombre,
@@ -437,6 +442,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
             pago_confirmado: true,
             fecha_pago: fechaHoyStr,
           });
+          if (recMovInsertError) throw recMovInsertError;
         }
       }
       await recargarTodo();

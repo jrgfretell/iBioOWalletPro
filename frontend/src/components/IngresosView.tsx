@@ -184,9 +184,9 @@ export const IngresosView: React.FC = () => {
       return s15 + s30;
     } else {
       if (ingresoMomentoMensual === 'quincena') {
-        return Math.max(0, parseFloat(ingresoS15 || ingresoS30) || 0);
+        return Math.max(0, parseFloat(ingresoS15) || 0);
       } else {
-        return Math.max(0, parseFloat(ingresoS30 || ingresoS15) || 0);
+        return Math.max(0, parseFloat(ingresoS30) || 0);
       }
     }
   }, [ingresoModo, ingresoMomentoMensual, ingresoS15, ingresoS30]);
@@ -265,11 +265,11 @@ export const IngresosView: React.FC = () => {
         s30 = Math.max(0, parseFloat(ingresoS30) || 0);
       } else {
         if (ingresoMomentoMensual === 'quincena') {
-          s15 = Math.max(0, parseFloat(ingresoS15 || ingresoS30) || 0);
+          s15 = Math.max(0, parseFloat(ingresoS15) || 0);
           s30 = 0;
         } else {
           s15 = 0;
-          s30 = Math.max(0, parseFloat(ingresoS30 || ingresoS15) || 0);
+          s30 = Math.max(0, parseFloat(ingresoS30) || 0);
         }
       }
 

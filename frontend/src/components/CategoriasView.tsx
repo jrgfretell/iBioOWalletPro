@@ -135,19 +135,21 @@ export const CategoriasView: React.FC = () => {
       setGuardando(true);
       try {
         if (editId) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('categorias')
             .update({ nombre: nombre.trim(), color, icono })
             .eq('id', editId)
             .eq('user_id', user.id);
+          if (updateError) throw updateError;
           toastExito('Categoría actualizada');
         } else {
-          await supabase.from('categorias').insert({
+          const { error: insertError } = await supabase.from('categorias').insert({
             user_id: user.id,
             nombre: nombre.trim(),
             color,
             icono,
           });
+          if (insertError) throw insertError;
           toastExito('Categoría creada');
         }
         await recargarTodo();
@@ -188,7 +190,8 @@ export const CategoriasView: React.FC = () => {
     });
     if (!confirmado) return;
 
-    await supabase.from('categorias').delete().eq('id', c.id).eq('user_id', user.id);
+    const { error: deleteError } = await supabase.from('categorias').delete().eq('id', c.id).eq('user_id', user.id);
+    if (deleteError) throw deleteError;
     await recargarTodo();
     toastExito(`Categoría "${c.nombre}" eliminada`);
 
