@@ -71,7 +71,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
       open={isOpen}
       label={step === 'welcome' ? 'Bienvenido a Mi Billete Pro' : 'Configura tu primera billetera'}
     >
-      <div className="flex w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div className="flex w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
         {/* Cabecera con gradiente */}
         <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 px-6 py-6 text-white">
           <div className="flex items-start justify-between gap-4">
@@ -110,44 +110,44 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
         {step === 'welcome' ? (
           <div className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
             <div className="space-y-3.5">
-              <div className="flex items-start gap-3.5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+              <div className="flex items-start gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
                   <Wallet className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">1. Billeteras como Perfiles Independientes</h3>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">1. Billeteras como Perfiles Independientes</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Cada billetera tiene una moneda del catálogo activo, su <strong>Saldo Inicial de Referencia</strong> y sus propios registros. Puedes crear perfiles separados para tus cuentas personales, ahorros o negocio.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+              <div className="flex items-start gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                   <CalendarCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2. Pagos Programados, Cronogramas y Sueldos</h3>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">2. Pagos Programados, Cronogramas y Sueldos</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Registra tus compromisos en cuotas (préstamos, tarjetas), pagos fijos mensuales (<em>hasta cancelar</em>) y configura tu sueldo quincenal o de fin de mes en <strong>Pagos programados</strong>.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+              <div className="flex items-start gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
                   <TrendingUp className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">3. Proyección Mensual Inteligente</h3>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">3. Proyección Mensual Inteligente</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Tomando el <strong>Saldo Inicial</strong> de tu billetera junto con tus ingresos y pagos pendientes, el Dashboard proyecta tu liquidez mes a mes (antes del 15, tras quincena y a fin de mes) para evitar saldos negativos.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-4">
               {requiresFirstWallet ? (
                 <button
                   type="button"
@@ -183,7 +183,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
             )}
 
             <div>
-              <label htmlFor="onb-wallet-name" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="onb-wallet-name" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-1.5">
                 Nombre de tu billetera
               </label>
               <input
@@ -194,12 +194,12 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej. Personal, Ahorros, Mi Negocio..."
-                className="min-h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                className="min-h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-1.5">
                 Moneda de la billetera
               </label>
               <div className="grid grid-cols-3 gap-2.5">
@@ -211,7 +211,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                     className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-all cursor-pointer ${
                       moneda === info.codigo
                         ? 'border-teal-600 bg-teal-50/70 text-teal-900 ring-2 ring-teal-500/20'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70'
                     }`}
                   >
                     <span className="text-lg font-bold">{info.simbolo}</span>
@@ -225,9 +225,9 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
               )}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3.5">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 p-4 space-y-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Saldo Inicial de Referencia
                 </span>
                 <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-800">
@@ -237,7 +237,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
 
               {/* Selector de modalidad */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   ¿Cómo deseas definir tu saldo inicial?
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -249,23 +249,23 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                     }}
                     className={`flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${
                       modoSaldo === 'hoy'
-                        ? 'border-teal-500 bg-white text-teal-950 ring-2 ring-teal-500/20 shadow-sm'
-                        : 'border-slate-200 bg-white/60 text-slate-600 hover:bg-white'
+                        ? 'border-teal-500 bg-white dark:bg-slate-900 text-teal-950 ring-2 ring-teal-500/20 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 bg-white/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:bg-slate-900'
                     }`}
                   >
                     <div
                       className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                        modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'
+                        modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                       }`}
                     >
                       <Wallet className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-900">Dinero disponible HOY</span>
+                        <span className="text-xs font-semibold text-slate-900 dark:text-slate-50">Dinero disponible HOY</span>
                         <span className="rounded bg-teal-100 px-1.5 py-0.2 text-[11px] font-semibold text-teal-800">Recomendado</span>
                       </div>
-                      <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
+                      <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                         Lo que tienes en mano o cuenta ahora mismo.
                       </p>
                     </div>
@@ -276,20 +276,20 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                     onClick={() => setModoSaldo('pasado')}
                     className={`flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${
                       modoSaldo === 'pasado'
-                        ? 'border-teal-500 bg-white text-teal-950 ring-2 ring-teal-500/20 shadow-sm'
-                        : 'border-slate-200 bg-white/60 text-slate-600 hover:bg-white'
+                        ? 'border-teal-500 bg-white dark:bg-slate-900 text-teal-950 ring-2 ring-teal-500/20 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 bg-white/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:bg-slate-900'
                     }`}
                   >
                     <div
                       className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                        modoSaldo === 'pasado' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'
+                        modoSaldo === 'pasado' ? 'bg-teal-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                       }`}
                     >
                       <History className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-semibold text-slate-900">Capital inicial en el PASADO</span>
-                      <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
+                      <span className="text-xs font-semibold text-slate-900 dark:text-slate-50">Capital inicial en el PASADO</span>
+                      <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                         Reconstruye tu saldo descontando pagos históricos.
                       </p>
                     </div>
@@ -299,7 +299,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
 
               {modoSaldo === 'hoy' ? (
                 <div>
-                  <label htmlFor="onb-wallet-balance" className="block text-xs font-semibold text-slate-600 mb-1">
+                  <label htmlFor="onb-wallet-balance" className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
                     Saldo disponible ({monedasDisponibles.find(m => m.codigo === moneda)?.simbolo || moneda})
                   </label>
                   <input
@@ -309,7 +309,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                     required
                     value={montoBase}
                     onChange={(e) => setMontoBase(e.target.value)}
-                    className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                    className="min-h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
                   />
                   <div className="mt-2.5 rounded-xl bg-teal-50 border border-teal-200/80 p-2.5 text-xs text-teal-900 leading-relaxed">
                     ✓ <strong>Punto de partida: Hoy ({fechaHoyISO()})</strong>. Si registras compromisos o cuotas que pagaste meses atrás, <strong>NO</strong> se descontarán de este dinero. Solo se descontarán pagos desde hoy en adelante.
@@ -319,7 +319,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="onb-wallet-balance" className="block text-xs font-semibold text-slate-600 mb-1">
+                      <label htmlFor="onb-wallet-balance" className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
                         Capital inicial ({monedasDisponibles.find(m => m.codigo === moneda)?.simbolo || moneda})
                       </label>
                       <input
@@ -329,12 +329,12 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                         required
                         value={montoBase}
                         onChange={(e) => setMontoBase(e.target.value)}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                        className="min-h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="onb-wallet-date" className="block text-xs font-semibold text-slate-600 mb-1">
+                      <label htmlFor="onb-wallet-date" className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
                         ¿En qué fecha tenías este capital?
                       </label>
                       <input
@@ -344,7 +344,7 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
                         max={fechaHoyISO()}
                         value={fechaRef}
                         onChange={(e) => setFechaRef(e.target.value)}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                        className="min-h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
                       />
                     </div>
                   </div>
@@ -355,12 +355,12 @@ export function OnboardingModal({ autoOpenFirstWallet = true, forceOpenGuide = f
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-4">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => setStep('welcome')}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 cursor-pointer"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Volver a la guía</span>

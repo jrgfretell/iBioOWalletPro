@@ -31,7 +31,7 @@ const WalletShell: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/80 text-slate-800">
+    <div className="min-h-screen bg-slate-100/80 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
       <OnboardingModal
         onCreated={(name) => {
           setCreatedWalletName(name);

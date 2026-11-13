@@ -253,10 +253,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       <header className="space-y-0.5">
-        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
           {nombreSaludo ? `${saludo}, ${nombreSaludo}` : '¡Hola!'}
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500">Aquí tienes el resumen de tus finanzas.</p>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Aquí tienes el resumen de tus finanzas.</p>
       </header>
       {/* FILA SUPERIOR: Columna Izquierda (Saldo + Próximos Pagos + Gastos Categoría) y Columna Derecha (Proyecciones) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -264,15 +264,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         <div className="lg:col-span-4 space-y-6">
 
           {/* TARJETA 2: PRÓXIMOS PAGOS PENDIENTES */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center">
                   <CalendarCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Próximos pagos</h2>
-                  <p className="text-xs text-slate-500">
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Próximos pagos</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {proximosPagos.length > 0
                       ? proximosPagos.length > 5
                         ? '5 más próximos'
@@ -291,8 +291,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             {proximosPagos.length === 0 ? (
-              <div className="text-center py-6 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200">
-                <p className="text-xs text-slate-500 mb-2">No tienes pagos pendientes por confirmar.</p>
+              <div className="text-center py-6 px-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-dashed border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">No tienes pagos pendientes por confirmar.</p>
                 <button
                   onClick={() => onNavigate('pagos')}
                   className="text-xs font-semibold text-teal-600 hover:underline cursor-pointer"
@@ -311,7 +311,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                         item.vencido
                           ? 'bg-red-50/60 border-red-200 hover:bg-red-50'
-                          : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/70'
+                          : 'bg-slate-50/70 border-slate-200/80 dark:border-slate-800 hover:bg-slate-100/70'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -319,17 +319,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center text-xs font-semibold shrink-0 ${
                             item.vencido
                               ? 'bg-red-100 text-red-700'
-                              : 'bg-white border border-slate-200 text-slate-800'
+                              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100'
                           }`}
                         >
                           <span className="text-sm font-bold leading-none">{d}</span>
-                          <span className="text-[11px] uppercase text-slate-500">
+                          <span className="text-[11px] uppercase text-slate-500 dark:text-slate-400">
                             {MESES_CORTOS[Number(m) - 1]}
                           </span>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-900 truncate">{item.nombre}</p>
-                          <p className="text-[11px] text-slate-500">
+                          <p className="text-xs font-semibold text-slate-900 dark:text-slate-50 truncate">{item.nombre}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
                             {item.etiqueta} · {y}
                             {item.vencido && (
                               <span className="ml-1.5 text-red-600 font-semibold">· Vencido</span>
@@ -340,7 +340,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-slate-900 shrink-0 ml-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-50 shrink-0 ml-2">
                         {formatearMoneda(item.monto)}
                       </span>
                     </div>
@@ -351,18 +351,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* TARJETA 3: GASTOS POR CATEGORÍA */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 shadow-sm p-5">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
                 <PieChart className="w-4 h-4 text-teal-600" />
-                <h2 className="text-sm font-semibold text-slate-900">Gastos por Categoría</h2>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Gastos por Categoría</h2>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <select
                   value={catMes}
                   onChange={(e) => setCatMes(Number(e.target.value))}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-medium text-slate-700 focus:outline-none focus:border-teal-500"
+                  className="text-xs bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500"
                 >
                   {MESES_CORTOS.map((m, idx) => (
                     <option key={idx} value={idx}>
@@ -373,7 +373,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <select
                   value={catAnio}
                   onChange={(e) => setCatAnio(Number(e.target.value))}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-medium text-slate-700 focus:outline-none focus:border-teal-500"
+                  className="text-xs bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500"
                 >
                   {[anioHoy - 1, anioHoy, anioHoy + 1, anioHoy + 2].map((a) => (
                     <option key={a} value={a}>
@@ -384,11 +384,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center mb-4">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800/80 text-center mb-4">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Gasto total · {NOMBRES_MESES[catMes]}
               </span>
-              <div className="text-2xl font-bold text-slate-900 mt-0.5">
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-50 mt-0.5">
                 {formatearMoneda(reporteGastosCategoria.total)}
               </div>
             </div>
@@ -412,16 +412,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ backgroundColor: item.color }}
                           />
-                          <span className="font-semibold text-slate-700">{item.nombre}</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">{item.nombre}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-slate-400 text-[11px]">{pct}%</span>
-                          <span className="font-semibold text-slate-900">
+                          <span className="font-semibold text-slate-900 dark:text-slate-50">
                             {formatearMoneda(item.monto)}
                           </span>
                         </div>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-300"
                           style={{
@@ -441,18 +441,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         {/* COLUMNA DERECHA (8 cols en desktop): PROYECCIÓN MENSUAL */}
         <div className="lg:col-span-8 space-y-6">
           {/* TARJETA 5: PROYECCIÓN MENSUAL ESTIMADA */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 shadow-sm p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center">
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900">
+                  <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-50">
                     Proyección mensual
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{billeteraActual?.moneda}</span>
+                    <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">{billeteraActual?.moneda}</span>
                   </h2>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Incluye sueldos, movimientos y pagos pendientes
                   </p>
                 </div>
@@ -462,7 +462,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={expandirContraerTodos}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   {proyeccionesVisibles.some((p) => mesesAbiertos[p.llave])
                     ? 'Contraer todos'
@@ -476,7 +476,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
                       mostrarHistorico
                         ? 'bg-slate-800 text-white border-slate-800'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70'
                     }`}
                   >
                     <History className="w-3.5 h-3.5" />
@@ -494,19 +494,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             {kpisProyeccion && (
               <div className="space-y-4 mb-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70">
                     <span className="text-[11px] font-semibold uppercase text-slate-400 block">
                       Mejor mes proyectado
                     </span>
                     <strong className="text-sm font-bold text-emerald-600 block mt-0.5">
                       {kpisProyeccion.mejorMes.label}
                     </strong>
-                    <span className="text-xs font-semibold text-slate-700">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                       {formatearMoneda(kpisProyeccion.mejorMes.balanceFin)}
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70">
                     <span className="text-[11px] font-semibold uppercase text-slate-400 block">
                       Menor liquidez
                     </span>
@@ -519,16 +519,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     >
                       {kpisProyeccion.menorLiquidez.label}
                     </strong>
-                    <span className="text-xs font-semibold text-slate-700">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                       {formatearMoneda(kpisProyeccion.menorLiquidez.balanceFin)}
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70">
                     <span className="text-[11px] font-semibold uppercase text-slate-400 block">
                       Gastos por aplicar · {kpisProyeccion.actual.label}
                     </span>
-                    <strong className="text-sm font-bold text-slate-800 block mt-0.5">
+                    <strong className="text-sm font-bold text-slate-800 dark:text-slate-100 block mt-0.5">
                       Mes en curso
                     </strong>
                     <span className="text-xs font-semibold text-red-600">
@@ -593,7 +593,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                         ? 'border-red-300 bg-red-50/10'
                         : tieneLiquidezBaja
                         ? 'border-amber-300 bg-amber-50/10'
-                        : 'border-slate-200 bg-white'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
                     }`}
                   >
                     <div>
@@ -608,14 +608,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-bold text-slate-900">{p.label}</h3>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-50">{p.label}</h3>
                             {p.esActual && (
                               <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
                                 Actual
                               </span>
                             )}
                             {p.esPasado && (
-                              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                                 Concluido
                               </span>
                             )}
@@ -639,14 +639,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                       {/* Cuerpo desplegable con los hitos del mes */}
                       <AnimatedDisclosure open={abierto} id={`proyeccion-${p.llave}`}>
-                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
                           {/* Bloque 1: Resumen de Flujo Mensual (Saldo Base superior + 2 Columnas amplias) */}
-                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2">
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 space-y-2">
                             <div className="flex items-center justify-between px-1 text-xs pb-1.5 border-b border-slate-200/60">
-                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-tight truncate min-w-0">
+                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-tight truncate min-w-0">
                                 {fechaReferencia?.startsWith(`${p.anio}-${String(p.mes+1).padStart(2,'0')}`) ? 'Saldo de referencia' : 'Saldo inicial mes'}
                               </span>
-                              <strong className="text-xs font-bold text-slate-800 whitespace-nowrap shrink-0 text-right ml-2">
+                              <strong className="text-xs font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap shrink-0 text-right ml-2">
                                 {formatearMoneda(p.balanceInicio)}
                               </strong>
                             </div>
@@ -680,19 +680,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             {p.modalidadSueldo === 'mensual_fin' ? (
                               <>
                                 {/* Hito 1 Mensual: Mitad de mes */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       1-15
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Mitad de mes</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Mitad de mes</div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Control días 1 al 15</div>
                                     </div>
                                   </div>
                                   <strong
                                     className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
-                                      p.balanceTras15 < 0 ? 'text-red-600' : 'text-slate-800'
+                                      p.balanceTras15 < 0 ? 'text-red-600' : 'text-slate-800 dark:text-slate-100'
                                     }`}
                                   >
                                     {p.tras15Disponible ? formatearMoneda(p.balanceTras15) : '—'}
@@ -700,19 +700,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 </div>
 
                                 {/* Hito 2 Mensual: Pre-cobro */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       16-{p.ultimoDia - 1}
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Pre-cobro</div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
                                     </div>
                                   </div>
                                   <strong
                                     className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
-                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
+                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800 dark:text-slate-100'
                                     }`}
                                   >
                                     {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
@@ -722,19 +722,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             ) : p.modalidadSueldo === 'mensual_15' ? (
                               <>
                                 {/* Hito 1 Mensual en Quincena: Pre-cobro */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       1-14
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cobro</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Pre-cobro</div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo antes del sueldo</div>
                                     </div>
                                   </div>
                                   <strong
                                     className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
-                                      p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
+                                      p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800 dark:text-slate-100'
                                     }`}
                                   >
                                     {p.antes15Disponible ? formatearMoneda(p.bolsilloAntes15) : '—'}
@@ -742,13 +742,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 </div>
 
                                 {/* Hito 2 Mensual en Quincena: Cobro mensual */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       15
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">
                                         Cobro mensual
                                       </div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo tras sueldo</div>
@@ -764,19 +764,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 </div>
 
                                 {/* Hito 3 Mensual en Quincena: Pre-cierre */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       16-{p.ultimoDia - 1}
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Pre-cierre</div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
                                     </div>
                                   </div>
                                   <strong
                                     className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
-                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
+                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800 dark:text-slate-100'
                                     }`}
                                   >
                                     {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
@@ -786,19 +786,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             ) : (
                               <>
                                 {/* Hito 1 Quincenal / Estándar: Pre-quincena */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       1-14
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-quincena</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Pre-quincena</div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Días 1 al 14</div>
                                     </div>
                                   </div>
                                   <strong
                                     className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
-                                      p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800'
+                                      p.bolsilloAntes15 < 0 ? 'text-red-600' : 'text-slate-800 dark:text-slate-100'
                                     }`}
                                   >
                                     {p.antes15Disponible ? formatearMoneda(p.bolsilloAntes15) : '—'}
@@ -806,13 +806,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 </div>
 
                                 {/* Hito 2 Quincenal: Tras quincena */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       15
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">
                                         Tras quincena
                                       </div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Saldo al día 15</div>
@@ -828,19 +828,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                                 </div>
 
                                 {/* Hito 3 Quincenal: Pre-cierre */}
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/70 border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors">
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
+                                    <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-slate-200/80 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[11px] font-bold shrink-0 whitespace-nowrap tracking-tight">
                                       16-{p.ultimoDia - 1}
                                     </span>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-semibold text-slate-800 leading-none whitespace-nowrap">Pre-cierre</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Pre-cierre</div>
                                       <div className="text-[11px] text-slate-400 leading-tight mt-0.5">Días 16 al {p.ultimoDia - 1}</div>
                                     </div>
                                   </div>
                                   <strong
                                     className={`text-xs font-bold whitespace-nowrap shrink-0 text-right ml-2 ${
-                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800'
+                                      p.bolsilloAntesFinMes < 0 ? 'text-red-600' : 'text-slate-800 dark:text-slate-100'
                                     }`}
                                   >
                                     {p.antesFinDisponible ? formatearMoneda(p.bolsilloAntesFinMes) : '—'}
@@ -861,7 +861,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
 
                     {/* Pie siempre visible: Balance final del mes + Botón detalle */}
-                    <div className="mt-3 pt-3 border-t border-slate-100">
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
                       <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-slate-900 text-white shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span className="min-w-[44px] h-6 px-1.5 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center text-[11px] font-bold shrink-0 border border-teal-500/30 whitespace-nowrap tracking-tight">
@@ -888,7 +888,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => setModalDetalleMes(p)}
-                        className="mt-2.5 w-full py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        className="mt-2.5 w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Ver movimientos ({p.items.length})</span>
@@ -905,8 +905,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* MODAL DE DETALLE DE MOVIMIENTOS DEL MES PROYECTADO */}
       <AnimatedModal open={Boolean(modalDetalleMes)} label="Detalle mensual">
       {modalDetalleMes && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-900 text-white">
               <div>
                 <h3 className="text-base font-semibold">{modalDetalleMes.label}</h3>
                 <p className="text-xs text-slate-300">
@@ -923,15 +923,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
             <div className="p-5 overflow-y-auto space-y-3 flex-1">
               <div className="grid grid-cols-2 gap-3 mb-2">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800">
                   <span className="text-[11px] text-slate-400 font-semibold uppercase block">
                     {fechaReferencia?.startsWith(`${modalDetalleMes.anio}-${String(modalDetalleMes.mes+1).padStart(2,'0')}`)?'Saldo de referencia':'Saldo Inicial Mes'}
                   </span>
-                  <strong className="text-sm font-bold text-slate-900">
+                  <strong className="text-sm font-bold text-slate-900 dark:text-slate-50">
                     {formatearMoneda(modalDetalleMes.balanceInicio)}
                   </strong>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800">
                   <span className="text-[11px] text-slate-400 font-semibold uppercase block">
                     Saldo Cierre Mes
                   </span>
@@ -950,19 +950,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   No hay movimientos ni sueldos configurados en este mes.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                   {modalDetalleMes.items.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-2 bg-white hover:bg-slate-50/80 text-xs"
+                      className="p-3 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:bg-slate-800/60 text-xs"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-semibold flex items-center justify-center shrink-0">
+                        <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold flex items-center justify-center shrink-0">
                           {item.dia}
                         </span>
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-900 break-words">{item.descripcion}</p>
-                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                          <p className="font-semibold text-slate-900 dark:text-slate-50 break-words">{item.descripcion}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                             <span
                               className="w-2 h-2 rounded-full inline-block"
                               style={{ backgroundColor: item.categoriaColor }}
@@ -971,7 +971,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             <span>·</span>
                             <span className="capitalize">{item.origen}</span>
                           </div>
-                          {item.vencimientoOriginal&&<p className="mt-1 text-[11px] text-slate-500">Venció: {item.vencimientoOriginal.split('-').reverse().join('/')}</p>}
+                          {item.vencimientoOriginal&&<p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Venció: {item.vencimientoOriginal.split('-').reverse().join('/')}</p>}
                         </div>
                       </div>
                       <span
@@ -988,7 +988,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/70 flex items-center justify-between">
               <button
                 onClick={() => {
                   setModalDetalleMes(null);

@@ -441,7 +441,7 @@ export const IngresosView: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
                   Sueldos e Ingresos
                 </h1>
                 {billeteraActual && (
@@ -453,7 +453,7 @@ export const IngresosView: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Administra tu sueldo e ingresos recurrentes.
               </p>
             </div>
@@ -463,7 +463,7 @@ export const IngresosView: React.FC = () => {
       </div>
 
       {/* 2. Barra de Contexto: Selector Global de Período */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-semibold shrink-0">
             <Calendar className="w-4 h-4" />
@@ -478,11 +478,11 @@ export const IngresosView: React.FC = () => {
                 onClick={() => cambiarMesIngreso(-1)}
                 title="Mes anterior"
                 aria-label="Ver mes anterior"
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="w-[168px] text-center text-sm font-bold tracking-tight text-slate-900 tabular-nums sm:text-base">
+              <span className="w-[168px] text-center text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums sm:text-base">
                 {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
               </span>
               <button
@@ -490,7 +490,7 @@ export const IngresosView: React.FC = () => {
                 onClick={() => cambiarMesIngreso(1)}
                 title="Mes siguiente"
                 aria-label="Ver mes siguiente"
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -505,7 +505,7 @@ export const IngresosView: React.FC = () => {
               periodoEsActual
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 : periodoEsHistorico
-                  ? 'border-slate-200 bg-slate-100 text-slate-600'
+                  ? 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                   : 'border-sky-200 bg-sky-50 text-sky-700'
             }`}
           >
@@ -594,15 +594,15 @@ export const IngresosView: React.FC = () => {
         </div>
 
         {/* Tarjeta 2: Modalidad y Fechas Clave */}
-        <div className="sm:col-span-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="sm:col-span-3 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
               Frecuencia de pago
             </span>
-            <strong className="text-base sm:text-lg font-bold text-slate-900 block mt-1">
+            <strong className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-50 block mt-1">
               {ingresoModo === 'quincenal' ? 'Quincenal' : 'Mensual'}
             </strong>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {ingresoModo === 'quincenal'
                 ? `15: ${formatearMoneda(parseFloat(ingresoS15) || 0)} · Fin de mes: ${formatearMoneda(parseFloat(ingresoS30) || 0)}`
                 : ingresoMomentoMensual === 'fin_mes'
@@ -610,7 +610,7 @@ export const IngresosView: React.FC = () => {
                 : `Quincena (${formatearMoneda(parseFloat(ingresoS15 || ingresoS30) || 0)})`}
             </p>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
             <span>Próximo:</span>
             <span className="font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
               {ingresoModo === 'quincenal'
@@ -625,15 +625,15 @@ export const IngresosView: React.FC = () => {
         </div>
 
         {/* Tarjeta 3: Cobertura Anual */}
-        <div className="sm:col-span-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="sm:col-span-3 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
               Sueldo anual {ingresoAnio}
             </span>
-            <strong className="text-base sm:text-lg font-bold text-slate-900 block mt-1">
+            <strong className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-50 block mt-1">
               {formatearMoneda(totalSueldoAnioIngresos)}
             </strong>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {mesesConfiguradosAnio}/12 meses configurados
             </p>
           </div>
@@ -643,16 +643,16 @@ export const IngresosView: React.FC = () => {
       {/* 4. Sección Principal: 2 Columnas (Configurador de Sueldo vs Otros Ingresos) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Columna Izquierda: Configurador de Sueldo del Mes */}
-        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             {/* Header de la tarjeta */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-semibold shrink-0">
                   <Banknote className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-50">
                     Sueldo de {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
                   </h2>
                 </div>
@@ -683,17 +683,17 @@ export const IngresosView: React.FC = () => {
             <form id="form-sueldo-mes" onSubmit={handleGuardarSueldo} className="mt-4 space-y-4">
               {/* Selector de Modalidad */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                   Modalidad de cobro
                 </label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                   <button
                     type="button"
                     onClick={() => setIngresoModo('quincenal')}
                     className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
                       ingresoModo === 'quincenal'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
                     }`}
                   >
                     Quincenal
@@ -703,8 +703,8 @@ export const IngresosView: React.FC = () => {
                     onClick={() => setIngresoModo('mensual')}
                     className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
                       ingresoModo === 'mensual'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
                     }`}
                   >
                     Mensual
@@ -715,17 +715,17 @@ export const IngresosView: React.FC = () => {
               {/* Sub-opción para Pago Mensual */}
               {ingresoModo === 'mensual' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                     ¿En qué fecha se acredita tu sueldo?
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                     <button
                       type="button"
                       onClick={() => setIngresoMomentoMensual('fin_mes')}
                       className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
                         ingresoMomentoMensual === 'fin_mes'
-                          ? 'bg-white text-slate-900 shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
                       }`}
                     >
                       Fin de mes
@@ -735,8 +735,8 @@ export const IngresosView: React.FC = () => {
                       onClick={() => setIngresoMomentoMensual('quincena')}
                       className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
                         ingresoMomentoMensual === 'quincena'
-                          ? 'bg-white text-slate-900 shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
                       }`}
                     >
                       Quincena (Día 15)
@@ -748,9 +748,9 @@ export const IngresosView: React.FC = () => {
               {/* Inputs numéricos con diseño tipo Tarjeta */}
               {ingresoModo === 'quincenal' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-slate-700">1.er pago · día 15</span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">1.er pago · día 15</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-slate-400">{simboloMoneda}</span>
@@ -760,15 +760,15 @@ export const IngresosView: React.FC = () => {
                         min="0"
                         value={ingresoS15}
                         onChange={(e) => setIngresoS15(e.target.value)}
-                        className="w-full bg-transparent text-base font-bold text-slate-900 outline-none"
+                        className="w-full bg-transparent text-base font-bold text-slate-900 dark:text-slate-50 outline-none"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-slate-700">2.º pago · fin de mes</span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">2.º pago · fin de mes</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-slate-400">{simboloMoneda}</span>
@@ -778,7 +778,7 @@ export const IngresosView: React.FC = () => {
                         min="0"
                         value={ingresoS30}
                         onChange={(e) => setIngresoS30(e.target.value)}
-                        className="w-full bg-transparent text-base font-bold text-slate-900 outline-none"
+                        className="w-full bg-transparent text-base font-bold text-slate-900 dark:text-slate-50 outline-none"
                         placeholder="0.00"
                       />
                     </div>
@@ -786,9 +786,9 @@ export const IngresosView: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-slate-700">
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                         {ingresoMomentoMensual === 'fin_mes'
                           ? 'Sueldo de Fin de mes'
                           : 'Sueldo de Quincena (Día 15)'}
@@ -811,7 +811,7 @@ export const IngresosView: React.FC = () => {
                             setIngresoS15(e.target.value);
                           }
                         }}
-                        className="w-full bg-transparent text-base font-bold text-slate-900 outline-none"
+                        className="w-full bg-transparent text-base font-bold text-slate-900 dark:text-slate-50 outline-none"
                         placeholder="0.00"
                       />
                     </div>
@@ -831,15 +831,15 @@ export const IngresosView: React.FC = () => {
               </div>
 
               {/* Checkbox de propagación anual */}
-              <label className="flex items-start gap-2.5 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 cursor-pointer transition-colors">
+              <label className="flex items-start gap-2.5 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 border border-transparent hover:border-slate-200 dark:border-slate-800 cursor-pointer transition-colors">
                 <input
                   type="checkbox"
                   checked={ingresoAplicarAnio}
                   onChange={(e) => setIngresoAplicarAnio(e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded text-teal-600 border-slate-300 focus:ring-teal-500"
                 />
-                <div className="text-xs leading-relaxed text-slate-600">
-                  <strong className="text-slate-800 block">
+                <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  <strong className="text-slate-800 dark:text-slate-100 block">
                     Aplicar a los meses restantes de {ingresoAnio}
                   </strong>
                   Repite esta distribución de sueldo.
@@ -849,7 +849,7 @@ export const IngresosView: React.FC = () => {
           </div>
 
           {/* Footer de acciones */}
-          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
             <span className="text-xs text-slate-400">
               {mensajeSueldo ? (
                 <strong className="text-emerald-600">{mensajeSueldo}</strong>
@@ -870,12 +870,12 @@ export const IngresosView: React.FC = () => {
         </div>
 
         {/* Columna Derecha: Otros Ingresos Programados */}
-        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             {/* Header con botón de acción destacado */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 gap-2">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800/80 gap-2">
               <div className="min-w-0">
-                <h2 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-50 truncate">
                   Otros ingresos · {NOMBRES_MESES[ingresoMes]} {ingresoAnio}
                 </h2>
               </div>
@@ -896,14 +896,14 @@ export const IngresosView: React.FC = () => {
 
             {/* Contenido: Lista o Empty State */}
             {otrosIngresosMes.length === 0 ? (
-              <div className="mt-4 text-center py-10 px-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200">
+              <div className="mt-4 text-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-dashed border-slate-200 dark:border-slate-800">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
                   <Plus className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-50 mb-1">
                   Sin ingresos adicionales este mes
                 </h3>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto mb-4 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mb-4 leading-relaxed">
                   Registra ingresos recurrentes para incluirlos en tu proyección.
                 </p>
                 <button
@@ -924,13 +924,13 @@ export const IngresosView: React.FC = () => {
                 {otrosIngresosMes.map((item) => (
                   <div
                     key={item.id}
-                    className="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all shadow-2xs"
+                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 transition-all shadow-2xs"
                   >
                     {/* Nivel 1: Datos principales y Monto */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <strong className="text-sm font-bold text-slate-900">
+                          <strong className="text-sm font-bold text-slate-900 dark:text-slate-50">
                             {item.descripcion}
                           </strong>
                           <span
@@ -948,7 +948,7 @@ export const IngresosView: React.FC = () => {
                             <span>{item.recibido ? 'Cobrado' : 'Por cobrar'}</span>
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-slate-400" />
                             Día {item.dia} de cada mes
@@ -963,7 +963,7 @@ export const IngresosView: React.FC = () => {
                     </div>
 
                     {/* Nivel 2: Acciones táctiles */}
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
                       {!item.recibido ? (
                         <button
                           disabled={soloLectura}
@@ -1037,7 +1037,7 @@ export const IngresosView: React.FC = () => {
                           type="button"
                           onClick={() => handleAbrirEdicion(item.rec)}
                           title="Editar ingreso programado"
-                          className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 flex items-center justify-center transition-colors cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -1060,9 +1060,9 @@ export const IngresosView: React.FC = () => {
           </div>
 
           {/* Footer informativo */}
-          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
             <span>Cobro automático recurrente mensual</span>
-            <span className="font-semibold text-slate-600">
+            <span className="font-semibold text-slate-600 dark:text-slate-300">
               {otrosIngresosMes.length} programado(s)
             </span>
           </div>
@@ -1080,13 +1080,13 @@ export const IngresosView: React.FC = () => {
 
       {/* Modal: Crear Nuevo Ingreso Programado */}
       <AnimatedModal open={modalNuevoIngreso} label="Nuevo Ingreso Programado">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full overflow-hidden">
           {errorBilletera && (
             <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">
               {errorBilletera}
             </p>
           )}
-          <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-900 text-white">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4" />
@@ -1104,7 +1104,7 @@ export const IngresosView: React.FC = () => {
 
           <form onSubmit={handleGuardarNuevoIngreso} className="p-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                 Descripción del Ingreso
               </label>
               <input
@@ -1113,13 +1113,13 @@ export const IngresosView: React.FC = () => {
                 value={nuevoDesc}
                 onChange={(e) => setNuevoDesc(e.target.value)}
                 placeholder="Ej. Alquiler Cochera, Clases Particulares, Dividendos"
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                   Monto Mensual ({simboloMoneda})
                 </label>
                 <input
@@ -1130,12 +1130,12 @@ export const IngresosView: React.FC = () => {
                   value={nuevoMonto}
                   onChange={(e) => setNuevoMonto(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                   Día de Cobro (1-31)
                 </label>
                 <input
@@ -1146,19 +1146,19 @@ export const IngresosView: React.FC = () => {
                   value={nuevoDia}
                   onChange={(e) => setNuevoDia(e.target.value)}
                   placeholder="15"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                 Categoría (Opcional)
               </label>
               <select
                 value={nuevoCatId}
                 onChange={(e) => setNuevoCatId(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 bg-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500 bg-white dark:bg-slate-900"
               >
                 <option value="">Sin categoría</option>
                 {categorias.map((c) => (
@@ -1169,18 +1169,18 @@ export const IngresosView: React.FC = () => {
               </select>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
               <span>Se programará a partir de: </span>
-              <strong className="text-slate-800">
+              <strong className="text-slate-800 dark:text-slate-100">
                 {NOMBRES_MESES[nuevoMesInicio]} {nuevoAnioInicio}
               </strong>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setModalNuevoIngreso(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -1198,13 +1198,13 @@ export const IngresosView: React.FC = () => {
 
       {/* Modal: Editar Ingreso Programado */}
       <AnimatedModal open={modalEditarIngreso} label="Editar Ingreso Programado">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full overflow-hidden">
           {errorBilletera && (
             <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">
               {errorBilletera}
             </p>
           )}
-          <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-900 text-white">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
                 <Edit2 className="w-4 h-4" />
@@ -1222,7 +1222,7 @@ export const IngresosView: React.FC = () => {
 
           <form onSubmit={handleGuardarEdicion} className="p-5 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                 Descripción del Ingreso
               </label>
               <input
@@ -1230,13 +1230,13 @@ export const IngresosView: React.FC = () => {
                 required
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                   Monto Mensual ({simboloMoneda})
                 </label>
                 <input
@@ -1246,12 +1246,12 @@ export const IngresosView: React.FC = () => {
                   required
                   value={editMonto}
                   onChange={(e) => setEditMonto(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                   Día de Cobro (1-31)
                 </label>
                 <input
@@ -1261,19 +1261,19 @@ export const IngresosView: React.FC = () => {
                   required
                   value={editDia}
                   onChange={(e) => setEditDia(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                 Categoría (Opcional)
               </label>
               <select
                 value={editCatId}
                 onChange={(e) => setEditCatId(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 bg-white"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500 bg-white dark:bg-slate-900"
               >
                 <option value="">Sin categoría</option>
                 {categorias.map((c) => (
@@ -1284,11 +1284,11 @@ export const IngresosView: React.FC = () => {
               </select>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setModalEditarIngreso(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 cursor-pointer"
               >
                 Cancelar
               </button>
