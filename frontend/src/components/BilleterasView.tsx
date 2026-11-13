@@ -244,10 +244,10 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               <Wallet className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 Mis Billeteras
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                 Gestiona tus fondos, saldos base, monedas y perfiles de ingreso en un solo lugar.
               </p>
             </div>
@@ -270,7 +270,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Si no hay billeteras activas, mostramos tarjeta por defecto en Soles */}
         {Object.keys(patrimonioConsolidado.totales).length === 0 && (
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-2xs flex items-center gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4">
             <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center shrink-0">
               <Banknote className="w-5 h-5" />
             </div>
@@ -278,7 +278,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
                 Saldo base
               </span>
-              <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight block mt-0.5">
+              <span className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight block mt-0.5">
                 —
               </span>
             </div>
@@ -293,7 +293,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
           const isPEN = codigo === 'PEN';
 
           return (
-            <div key={codigo} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-2xs flex items-center gap-4 min-w-0">
+            <div key={codigo} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4 min-w-0">
               <div
                 className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border ${
                   isUSD
@@ -317,7 +317,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block truncate">
                   Saldo base
                 </span>
-                <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight block mt-0.5 truncate">
+                <span className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight block mt-0.5 truncate">
                   {info.simbolo} {total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
@@ -326,8 +326,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
         })}
 
         {/* Total Billeteras */}
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-2xs flex items-center gap-4 min-w-0">
-          <div className="w-11 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs flex items-center gap-4 min-w-0">
+          <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center shrink-0">
             <Layers className="w-5 h-5" />
           </div>
           <div>
@@ -335,7 +335,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               Billeteras Registradas
             </span>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+              <span className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
                 {patrimonioConsolidado.totalActivas} activas
               </span>
               {patrimonioConsolidado.totalArchivadas > 0 && (
@@ -357,8 +357,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
             onClick={() => setTabFiltro('todas')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               tabFiltro === 'todas'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-2xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Todas ({billeteras.filter((w) => !w.archivada).length})
@@ -375,8 +375,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 onClick={() => setTabFiltro(codigo)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-white dark:bg-slate-900 text-teal-800 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {info.nombre} {codigo} ({count})
@@ -389,8 +389,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
             onClick={() => setTabFiltro('archivadas')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               tabFiltro === 'archivadas'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-2xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Archivadas ({billeteras.filter((w) => w.archivada).length})
@@ -405,7 +405,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por nombre o moneda..."
-            className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-teal-500 transition-all"
+            className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 transition-all"
           />
         </div>
       </div>
@@ -425,8 +425,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 isCurrent
                   ? 'bg-gradient-to-b from-white to-teal-50/30 border-teal-400 shadow-xs ring-1 ring-teal-400/30'
                   : wallet.archivada
-                  ? 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-800 opacity-70'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-2xs'
+                  ? 'bg-slate-50 border-slate-200 opacity-70'
+                  : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
               }`}
             >
               <div>
@@ -447,7 +447,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                       {wallet.moneda}
                     </span>
                     {wallet.es_principal && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                         Principal
                       </span>
                     )}
@@ -456,10 +456,10 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                       wallet.archivada
-                        ? 'bg-slate-200/80 text-slate-600 dark:text-slate-300'
+                        ? 'bg-slate-200/80 text-slate-600'
                         : isCurrent
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        : 'bg-slate-100 text-slate-500'
                     }`}
                   >
                     <span
@@ -476,12 +476,12 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 </div>
 
                 {/* Nombre de la Billetera */}
-                <h3 className="font-bold text-slate-900 dark:text-slate-50 text-base mb-3 truncate">
+                <h3 className="font-bold text-slate-900 text-base mb-3 truncate">
                   {wallet.nombre}
                 </h3>
 
                 {/* Saldo Base */}
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800/80 p-3 mb-4">
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 mb-4">
                   <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold mb-1">
                     <span>SALDO BASE</span>
                     {displayFechaRef && (
@@ -490,14 +490,14 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                       </span>
                     )}
                   </div>
-                  <div className="text-lg font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+                  <div className="text-lg font-bold text-slate-900 tracking-tight">
                     {infoMoneda.simbolo} {displayBase.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
 
               {/* Botones de acción */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                 <div>
                   {isCurrent ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700">
@@ -511,7 +511,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                       type="button"
                       disabled={loading || escribiendo}
                       onClick={() => seleccionarBilletera(wallet.id)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 text-slate-700 dark:text-slate-200 hover:text-teal-700 text-xs font-semibold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-700 text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Usar esta billetera
                     </button>
@@ -559,8 +559,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
       </div>
 
       {billeterasFiltradas.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white dark:bg-slate-900 p-8 text-center">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <p className="text-sm font-medium text-slate-500">
             No hay billeteras para este filtro.
           </p>
         </div>
@@ -571,19 +571,19 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
         open={modalOpen}
         label={modalMode === 'create' ? 'Nueva Billetera' : 'Editar Billetera'}
       >
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden">
           <div className="grid md:grid-cols-[minmax(0,1.35fr)_minmax(230px,.8fr)]">
           <div className="p-5 sm:p-6">
-          <div className="flex items-center pb-3.5 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex items-center pb-3.5 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center">
                 <Wallet className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-base text-slate-900 dark:text-slate-50">
+                <h3 className="font-semibold text-base text-slate-900">
                   {modalMode === 'create' ? 'Crea un perfil para tu dinero' : 'Edita tu perfil de dinero'}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500">
                   {modalMode === 'create'
                     ? 'Elige la moneda y define desde qué saldo quieres comenzar.'
                     : 'Actualiza el nombre y el saldo inicial de referencia.'}
@@ -594,7 +594,7 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
 
           <form onSubmit={handleGuardarBilletera} className="mt-4 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Nombre de la billetera
               </label>
               <input
@@ -603,14 +603,14 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 value={inputNombre}
                 onChange={(e) => setInputNombre(e.target.value)}
                 placeholder="Ej. Personal, Ahorros o Viajes"
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-900 dark:text-slate-50 focus:outline-none focus:border-teal-500 focus:bg-white dark:bg-slate-900 transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
               />
             </div>
 
             {(
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Moneda</label>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Moneda</label>
                   <span className="text-[11px] font-semibold text-slate-400">{modalMode === 'create' ? 'Según el catálogo activo' : 'No se puede cambiar después de crearla'}</span>
                 </div>
                 <div className={`grid gap-2 pr-0.5 ${modalMode === 'create' ? 'max-h-40 grid-cols-2 overflow-y-auto sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3'}`}>
@@ -630,10 +630,10 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                         className={`min-h-[58px] rounded-xl border px-3 py-2 text-left flex items-center gap-2.5 transition-all ${modalMode === 'create' ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'} ${
                           isSelected
                             ? 'bg-teal-50 border-teal-500 text-teal-800 ring-2 ring-teal-500/10'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
-                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-bold">{m.simbolo}</span>
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-sm font-bold">{m.simbolo}</span>
                         <span className="min-w-0"><span className="block truncate text-[11px] font-semibold">{m.nombre}</span><span className="mt-0.5 block text-[11px] text-slate-400">{m.codigo}</span></span>
                       </button>
                     );
@@ -645,20 +645,20 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               </div>
             )}
 
-            <section className="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 p-3.5 sm:p-4">
+            <section className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">Saldo inicial de referencia</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">Saldo inicial de referencia</span>
                   <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-800">Base de proyección</span>
                 </div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">¿Cómo deseas definir tu saldo inicial?</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">¿Cómo deseas definir tu saldo inicial?</label>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button type="button" aria-pressed={modoSaldo === 'hoy'} onClick={() => { setModoSaldo('hoy'); if (modalMode === 'create') setInputFechaRef(fechaHoyISO()); }} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'hoy' ? 'border-teal-500 bg-white dark:bg-slate-900 ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 dark:border-slate-800 bg-white/70 hover:bg-white dark:bg-slate-900'}`}>
-                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}><Wallet className="h-4 w-4" /></span>
-                    <span className="min-w-0"><span className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-slate-50">Dinero disponible HOY <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[11px] font-semibold text-teal-800">Recomendado</span></span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500 dark:text-slate-400">Lo que tienes en mano o cuenta ahora mismo.</span></span>
+                  <button type="button" aria-pressed={modoSaldo === 'hoy'} onClick={() => { setModoSaldo('hoy'); if (modalMode === 'create') setInputFechaRef(fechaHoyISO()); }} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'hoy' ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 bg-white/70 hover:bg-white'}`}>
+                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'hoy' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}><Wallet className="h-4 w-4" /></span>
+                    <span className="min-w-0"><span className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-900">Dinero disponible HOY <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[11px] font-semibold text-teal-800">Recomendado</span></span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500">Lo que tienes en mano o cuenta ahora mismo.</span></span>
                   </button>
-                  <button type="button" aria-pressed={modoSaldo === 'pasado'} onClick={() => setModoSaldo('pasado')} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'pasado' ? 'border-teal-500 bg-white dark:bg-slate-900 ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 dark:border-slate-800 bg-white/70 hover:bg-white dark:bg-slate-900'}`}>
-                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'pasado' ? 'bg-teal-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}><History className="h-4 w-4" /></span>
-                    <span className="min-w-0"><span className="block text-xs font-semibold text-slate-900 dark:text-slate-50">Capital inicial en el PASADO</span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500 dark:text-slate-400">Reconstruye tu saldo descontando pagos históricos.</span></span>
+                  <button type="button" aria-pressed={modoSaldo === 'pasado'} onClick={() => setModoSaldo('pasado')} className={`flex min-h-[76px] items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer ${modoSaldo === 'pasado' ? 'border-teal-500 bg-white ring-2 ring-teal-500/20 shadow-sm' : 'border-slate-200 bg-white/70 hover:bg-white'}`}>
+                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${modoSaldo === 'pasado' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}><History className="h-4 w-4" /></span>
+                    <span className="min-w-0"><span className="block text-xs font-semibold text-slate-900">Capital inicial en el PASADO</span><span className="mt-0.5 block text-[11px] leading-snug text-slate-500">Reconstruye tu saldo descontando pagos históricos.</span></span>
                   </button>
                 </div>
                 {modalMode === 'edit' && (
@@ -668,8 +668,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 )}
                 {modoSaldo === 'hoy' ? (
                   <>
-                    <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">Saldo disponible ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label>
-                    <input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" />
+                    <label htmlFor="wallet-base-amount" className="mb-1 block text-xs font-semibold text-slate-600">Saldo disponible ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label>
+                    <input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" />
                     {modalMode === 'create' && (
                       <div className="rounded-xl border border-teal-200/80 bg-teal-50 p-2.5 text-xs leading-relaxed text-teal-900"><strong>✓ Punto de partida: Hoy ({new Intl.DateTimeFormat('es-PE').format(new Date(`${fechaHoyISO()}T12:00:00`))}).</strong> Si registras compromisos o cuotas que pagaste meses atrás, <strong>no se descontarán</strong> de este dinero. Solo se descontarán pagos desde hoy en adelante.</div>
                     )}
@@ -677,8 +677,8 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div><label htmlFor="wallet-base-amount" className="mb-1 block min-h-8 text-xs font-semibold leading-4 text-slate-600 dark:text-slate-300">Capital inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label><input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
-                      <div><label htmlFor="wallet-base-date" className="mb-1 block min-h-8 text-xs font-semibold leading-4 text-slate-600 dark:text-slate-300">¿En qué fecha tenías este capital?</label><input id="wallet-base-date" type="date" required max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => { setInputFechaRef(e.target.value); if (modalMode === 'edit') setFechaRefEditada(true); }} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-slate-50 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
+                      <div><label htmlFor="wallet-base-amount" className="mb-1 block min-h-8 text-xs font-semibold leading-4 text-slate-600">Capital inicial ({monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || inputMoneda})</label><input id="wallet-base-amount" type="number" min="0" step="0.01" required value={inputMontoBase} onChange={(e) => setInputMontoBase(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
+                      <div><label htmlFor="wallet-base-date" className="mb-1 block min-h-8 text-xs font-semibold leading-4 text-slate-600">¿En qué fecha tenías este capital?</label><input id="wallet-base-date" type="date" required max={fechaHoyISO()} value={inputFechaRef} onChange={(e) => { setInputFechaRef(e.target.value); if (modalMode === 'edit') setFechaRefEditada(true); }} className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100" /></div>
                     </div>
                     <div className="rounded-xl border border-amber-200/80 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900"><strong>Reconstrucción histórica:</strong> Los abonos de cuotas y gastos posteriores a <strong>{inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : 'la fecha elegida'}</strong> se irán restando mes a mes hasta calcular cuánto dinero te queda actualmente.</div>
                   </>
@@ -691,11 +691,11 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
               </div>
             )}
 
-            <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800/80 bg-white/95 pt-3 pb-1 backdrop-blur">
+            <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t border-slate-100 bg-white/95 pt-3 pb-1 backdrop-blur">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
@@ -709,18 +709,18 @@ export const BilleterasView: React.FC<BilleterasViewProps> = ({ onNavigate }) =>
             </div>
           </form>
           </div>
-          <aside className="hidden flex-col border-l border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-800/70 p-5 md:flex">
+          <aside className="hidden flex-col border-l border-slate-100 bg-slate-50 p-5 md:flex">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{modalMode === 'create' ? 'Así se verá tu billetera' : 'Vista previa de los cambios'}</span>
-            <div className="mt-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-              <div className="flex items-center justify-between"><span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700"><Wallet className="h-4 w-4" /></span><span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300">{inputMoneda || '—'}</span></div>
-              <p className="mt-4 break-words text-sm font-bold text-slate-900 dark:text-slate-50">{inputNombre.trim() || 'Nombre de billetera'}</p>
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between"><span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-50 text-teal-700"><Wallet className="h-4 w-4" /></span><span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">{inputMoneda || '—'}</span></div>
+              <p className="mt-4 break-words text-sm font-bold text-slate-900">{inputNombre.trim() || 'Nombre de billetera'}</p>
               <p className="mt-1 text-[11px] text-slate-400">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.nombre || 'Moneda'}</p>
-              <div className="my-4 h-px bg-slate-100 dark:bg-slate-800" />
+              <div className="my-4 h-px bg-slate-100" />
               <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Saldo inicial · {modalMode === 'edit' ? 'Referencia guardada' : modoSaldo === 'pasado' ? 'Fecha pasada' : 'Hoy'}</span>
-              <p className="mt-1 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || ''} {new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(inputMontoBase) || 0)}</p>
-              {(modalMode === 'edit' || modoSaldo === 'pasado') && <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Fecha de referencia: {inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : '—'}</p>}
+              <p className="mt-1 text-xl font-bold tracking-tight text-slate-900">{monedasDisponibles.find(m => m.codigo === inputMoneda)?.simbolo || ''} {new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(inputMontoBase) || 0)}</p>
+              {(modalMode === 'edit' || modoSaldo === 'pasado') && <p className="mt-1 text-[11px] text-slate-500">Fecha de referencia: {inputFechaRef ? new Intl.DateTimeFormat('es-PE').format(new Date(`${inputFechaRef}T12:00:00`)) : '—'}</p>}
             </div>
-            <div className="mt-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400"><strong className="text-slate-700 dark:text-slate-200">Tu saldo es el punto de partida.</strong> Puedes completar tus ingresos después para obtener proyecciones más precisas.</div>
+            <div className="mt-auto rounded-xl border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-500"><strong className="text-slate-700">Tu saldo es el punto de partida.</strong> Puedes completar tus ingresos después para obtener proyecciones más precisas.</div>
           </aside>
           </div>
         </div>

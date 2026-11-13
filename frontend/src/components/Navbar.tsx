@@ -2,7 +2,6 @@ import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 're
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
-import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../lib/supabase';
 import { AnimatedModal } from './AnimatedModal';
 import { toastExito } from '../lib/alerts';
@@ -26,8 +25,6 @@ import {
   CheckCircle2,
   WalletCards,
   TrendingUp,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { WalletQuickSwitcher } from './WalletQuickSwitcher';
 import { lockDocumentScroll } from '../lib/scrollLock';
@@ -45,7 +42,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { user, esAdmin, isPasswordRecovery, setIsPasswordRecovery, signOut } = useAuth();
   const { cuotas, pagosDeuda, movimientos, recurrentes, formatearMoneda } = useWallet();
-  const { isDark, toggleTheme } = useTheme();
 
   // Estado del modal de perfil y seguridad
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -394,17 +390,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Right User Controls */}
             <div className="flex items-center gap-2 sm:gap-3">
-            {/* Botón Modo Claro / Oscuro (Desktop) */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              className="hidden sm:inline-flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/70 transition-all cursor-pointer"
-            >
-              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
-            </button>
-
             {/* Campanita de Avisos Informativos */}
             <div className="relative" ref={notifRef}>
               <button
@@ -716,23 +701,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
 
                 {/* Sección: Accesos de Configuración y Seguridad */}
-                <div className="border-t border-slate-700/70 pt-4 space-y-1">
+                <div className="border-t border-slate-700/70 pt-4">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 block mb-2">
                     Ajustes
                   </span>
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all cursor-pointer text-left"
-                  >
-                    <span className="flex items-center gap-3">
-                      {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-sky-400" />}
-                      <span>{isDark ? 'Modo claro' : 'Modo oscuro'}</span>
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                      {isDark ? 'Oscuro' : 'Claro'}
-                    </span>
-                  </button>
                   <button
                     onClick={() => {
                       setMobileDrawerOpen(false);

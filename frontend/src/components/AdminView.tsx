@@ -442,51 +442,51 @@ export const AdminView: React.FC = () => {
 
       {/* Tarjetas KPI Resumen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Usuarios</span>
             <Users className="h-4 w-4 shrink-0 text-teal-600" />
           </div>
-          <strong className="mt-2 block text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 truncate">
+          <strong className="mt-2 block text-xl sm:text-2xl font-bold text-slate-900 truncate">
             {stats ? stats.total_usuarios : '—'}
           </strong>
-          <span className="mt-1 block text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="mt-1 block text-[11px] text-slate-500">
             {stats ? `${stats.usuarios_activos_mes} activos (últimos 30 días)` : 'Cargando…'}
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Billeteras Activas</span>
             <Wallet className="h-4 w-4 shrink-0 text-emerald-600" />
           </div>
-          <strong className="mt-2 block text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 truncate">
+          <strong className="mt-2 block text-xl sm:text-2xl font-bold text-slate-900 truncate">
             {stats ? stats.total_billeteras : '—'}
           </strong>
-          <span className="mt-1 block text-[11px] text-slate-500 dark:text-slate-400 truncate">
+          <span className="mt-1 block text-[11px] text-slate-500 truncate">
             {stats ? `${stats.billeteras_pen} PEN · ${stats.billeteras_usd} USD · ${stats.billeteras_eur} EUR` : 'Cargando…'}
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Operaciones Globales</span>
             <Activity className="h-4 w-4 shrink-0 text-blue-600" />
           </div>
-          <strong className="mt-2 block text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 truncate">
+          <strong className="mt-2 block text-xl sm:text-2xl font-bold text-slate-900 truncate">
             {stats ? stats.total_movimientos : '—'}
           </strong>
-          <span className="mt-1 block text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="mt-1 block text-[11px] text-slate-500">
             {stats ? `${stats.total_deudas} deudas · ${stats.total_recurrentes} fijos` : 'Cargando…'}
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs min-w-0 overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Salud de Base de Datos</span>
             <Database className="h-4 w-4 shrink-0 text-amber-600" />
           </div>
-          <strong className="mt-2 block text-base sm:text-2xl font-bold text-slate-900 dark:text-slate-50 leading-tight">
+          <strong className="mt-2 block text-base sm:text-2xl font-bold text-slate-900 leading-tight">
             {stats ? `${stats.migraciones.length} migraciones` : '—'}
           </strong>
           <span className="mt-1 flex items-center gap-1 text-[11px] sm:text-[11px] font-semibold text-emerald-700 leading-tight">
@@ -511,8 +511,8 @@ export const AdminView: React.FC = () => {
             onClick={() => setSubTab('usuarios')}
             className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold transition-all cursor-pointer min-w-0 ${
               subTab === 'usuarios'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 hover:bg-white/50'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -524,8 +524,8 @@ export const AdminView: React.FC = () => {
             onClick={() => setSubTab('monedas')}
             className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold transition-all cursor-pointer min-w-0 ${
               subTab === 'monedas'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 hover:bg-white/50'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
             <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-amber-500" />
@@ -537,8 +537,8 @@ export const AdminView: React.FC = () => {
             onClick={() => setSubTab('migraciones')}
             className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold transition-all cursor-pointer min-w-0 ${
               subTab === 'migraciones'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 dark:text-slate-50 hover:bg-white/50'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
             <Database className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -552,9 +552,9 @@ export const AdminView: React.FC = () => {
 
       {/* VISTA 1: Directorio de Usuarios */}
       {subTab === 'usuarios' && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {/* Barra de Búsqueda */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative w-full flex-1 sm:max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
@@ -562,10 +562,10 @@ export const AdminView: React.FC = () => {
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value)}
                 placeholder="Buscar por nombre o correo electrónico…"
-                className="min-h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 pl-10 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                className="min-h-10 w-full rounded-xl border border-slate-200 pl-10 pr-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 self-center">
+            <div className="text-xs text-slate-500 self-center">
               Mostrando <strong>{usuariosFiltrados.length}</strong> de <strong>{usuarios.length}</strong> usuarios
             </div>
           </div>
@@ -577,22 +577,22 @@ export const AdminView: React.FC = () => {
               const fechaAcceso = u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE') : 'Nunca';
 
               return (
-                <article key={u.id} className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition-shadow hover:shadow-md">
+                <article key={u.id} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       {u.avatar_url ? (
-                        <img src={u.avatar_url} alt={u.nombre} className="h-10 w-10 shrink-0 rounded-full border border-slate-200 dark:border-slate-800 object-cover" referrerPolicy="no-referrer" />
+                        <img src={u.avatar_url} alt={u.nombre} className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
                           {(u.nombre || u.email).slice(0, 2).toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{u.nombre}</h3>
+                          <h3 className="truncate text-sm font-semibold text-slate-900">{u.nombre}</h3>
                           {u.es_admin && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase text-amber-800">Admin</span>}
                         </div>
-                        <p className="break-all text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
+                        <p className="break-all text-xs text-slate-500">{u.email}</p>
                       </div>
                     </div>
                     {u.bloqueado ? (
@@ -602,32 +602,32 @@ export const AdminView: React.FC = () => {
                     )}
                   </div>
 
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 p-3 text-xs">
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-slate-50 p-3 text-xs">
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Proveedor</dt>
-                      <dd className="mt-0.5 font-semibold text-slate-700 dark:text-slate-200">{u.proveedor}</dd>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{u.proveedor}</dd>
                     </div>
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Billeteras</dt>
-                      <dd className="mt-0.5 font-semibold text-slate-700 dark:text-slate-200">{u.billeteras_count}</dd>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{u.billeteras_count}</dd>
                     </div>
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Registro</dt>
-                      <dd className="mt-0.5 font-semibold text-slate-700 dark:text-slate-200">{fechaRegistro}</dd>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{fechaRegistro}</dd>
                     </div>
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Último acceso</dt>
-                      <dd className="mt-0.5 font-semibold text-slate-700 dark:text-slate-200">{fechaAcceso}</dd>
+                      <dd className="mt-0.5 font-semibold text-slate-700">{fechaAcceso}</dd>
                     </div>
                   </dl>
 
                   <div className="space-y-2">
-                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Acciones de soporte</h4>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Acciones de soporte</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => abrirModalPassword(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 dark:border-slate-800 px-2 text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 hover:text-teal-700">
+                      <button type="button" onClick={() => abrirModalPassword(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 hover:text-teal-700">
                         <KeyRound className="h-4 w-4" /> Cambiar clave
                       </button>
-                      <button type="button" onClick={() => handleEnviarResetEmail(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 dark:border-slate-800 px-2 text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 hover:text-blue-700">
+                      <button type="button" onClick={() => handleEnviarResetEmail(u)} className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700">
                         <Mail className="h-4 w-4" /> Enviar email
                       </button>
                       {!u.es_admin && (
@@ -651,7 +651,7 @@ export const AdminView: React.FC = () => {
           {/* Tabla de Usuarios para escritorio */}
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800/80">
+              <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                 <tr>
                   <th className="py-3 px-4">Usuario</th>
                   <th className="py-3 px-4">Proveedor</th>
@@ -661,7 +661,7 @@ export const AdminView: React.FC = () => {
                   <th className="py-3 px-4 text-right">Acciones de Soporte</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {usuariosFiltrados.map((u) => {
                   const fechaRegistro = u.creado_el ? new Date(u.creado_el).toLocaleDateString('es-PE') : '—';
                   const fechaAcceso = u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE') : 'Nunca';
@@ -674,24 +674,24 @@ export const AdminView: React.FC = () => {
                             <img
                               src={u.avatar_url}
                               alt={u.nombre}
-                              className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-800 object-cover shrink-0"
+                              className="h-8 w-8 rounded-full border border-slate-200 object-cover shrink-0"
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
                               {(u.nombre || u.email).slice(0, 2).toUpperCase()}
                             </div>
                           )}
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-slate-900 dark:text-slate-50 truncate">{u.nombre}</span>
+                              <span className="font-semibold text-slate-900 truncate">{u.nombre}</span>
                               {u.es_admin && (
                                 <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase text-amber-800">
                                   Admin
                                 </span>
                               )}
                             </div>
-                            <span className="text-slate-500 dark:text-slate-400 block truncate">{u.email}</span>
+                            <span className="text-slate-500 block truncate">{u.email}</span>
                           </div>
                         </div>
                       </td>
@@ -701,7 +701,7 @@ export const AdminView: React.FC = () => {
                           className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase ${
                             u.proveedor === 'google'
                               ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                              : 'bg-slate-100 text-slate-700'
                           }`}
                         >
                           {u.proveedor}
@@ -714,10 +714,10 @@ export const AdminView: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                      <td className="py-3.5 px-4 text-slate-600">
                         <div>
                           <span className="text-slate-400 text-[11px] block">Alta: {fechaRegistro}</span>
-                          <span className="font-medium text-[11px] block text-slate-700 dark:text-slate-200">Acceso: {fechaAcceso}</span>
+                          <span className="font-medium text-[11px] block text-slate-700">Acceso: {fechaAcceso}</span>
                         </div>
                       </td>
 
@@ -739,7 +739,7 @@ export const AdminView: React.FC = () => {
                             type="button"
                             title="Cambiar contraseña directa"
                             onClick={() => abrirModalPassword(u)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 px-2 py-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 hover:text-teal-700 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100 hover:text-teal-700 cursor-pointer"
                           >
                             <KeyRound className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Clave</span>
@@ -749,7 +749,7 @@ export const AdminView: React.FC = () => {
                             type="button"
                             title="Enviar correo de restablecimiento"
                             onClick={() => handleEnviarResetEmail(u)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 px-2 py-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 hover:text-blue-700 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100 hover:text-blue-700 cursor-pointer"
                           >
                             <Mail className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Email</span>
@@ -795,9 +795,9 @@ export const AdminView: React.FC = () => {
 
       {/* VISTA 2: Mantenimiento de Monedas y Divisas */}
       {subTab === 'monedas' && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {/* Header con Búsqueda y Botón Nueva Moneda */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
@@ -805,11 +805,11 @@ export const AdminView: React.FC = () => {
                 value={filtroMonedas}
                 onChange={(e) => setFiltroMonedas(e.target.value)}
                 placeholder="Buscar por código, nombre o símbolo…"
-                className="min-h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 pl-10 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                className="min-h-10 w-full rounded-xl border border-slate-200 pl-10 pr-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
             <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-              <span className="whitespace-nowrap text-[11px] text-slate-500 dark:text-slate-400 sm:text-xs">
+              <span className="whitespace-nowrap text-[11px] text-slate-500 sm:text-xs">
                 Mostrando <strong>{monedasFiltradas.length}</strong> de <strong>{monedasAdmin.length}</strong> monedas
               </span>
               <button
@@ -830,7 +830,7 @@ export const AdminView: React.FC = () => {
               const totalUso = m.total_billeteras ?? (stats ? (m.codigo === 'PEN' ? stats.billeteras_pen : m.codigo === 'USD' ? stats.billeteras_usd : m.codigo === 'EUR' ? stats.billeteras_eur : 0) : 0);
 
               return (
-                <article key={m.codigo} className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+                <article key={m.codigo} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-teal-100 bg-teal-50 text-lg font-bold text-teal-800">
@@ -838,12 +838,12 @@ export const AdminView: React.FC = () => {
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">{m.nombre}</h3>
+                          <h3 className="text-sm font-semibold text-slate-900">{m.nombre}</h3>
                           <span className="inline-flex rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-bold tracking-wide text-amber-300">
                             {m.codigo}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">Símbolo: <strong className="text-slate-700 dark:text-slate-200">{m.simbolo}</strong></p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Símbolo: <strong className="text-slate-700">{m.simbolo}</strong></p>
                       </div>
                     </div>
                     <button
@@ -853,7 +853,7 @@ export const AdminView: React.FC = () => {
                       className={`inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer ${
                         estaActiva
                           ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                          : 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200'
+                          : 'border-slate-200 bg-slate-100 text-slate-500 hover:bg-slate-200'
                       }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${estaActiva ? 'bg-emerald-500' : 'bg-slate-400'}`} />
@@ -861,22 +861,22 @@ export const AdminView: React.FC = () => {
                     </button>
                   </div>
 
-                  <dl className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 p-3">
+                  <dl className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Billeteras</dt>
-                      <dd className="mt-0.5 text-xs font-semibold text-slate-800 dark:text-slate-100">{totalUso} {totalUso === 1 ? 'billetera' : 'billeteras'}</dd>
+                      <dd className="mt-0.5 text-xs font-semibold text-slate-800">{totalUso} {totalUso === 1 ? 'billetera' : 'billeteras'}</dd>
                     </div>
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Orden del catálogo</dt>
-                      <dd className="mt-0.5 text-xs font-semibold text-slate-800 dark:text-slate-100">{m.orden ?? 0}</dd>
+                      <dd className="mt-0.5 text-xs font-semibold text-slate-800">{m.orden ?? 0}</dd>
                     </div>
                   </dl>
 
-                  <div className="flex items-center gap-2 border-t border-slate-100 dark:border-slate-800/80 pt-3">
+                  <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
                     <button
                       type="button"
                       onClick={() => abrirEditarMoneda(m)}
-                      className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 px-3 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 hover:text-teal-700"
+                      className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-teal-700"
                     >
                       <Pencil className="h-4 w-4" /> Editar moneda
                     </button>
@@ -900,7 +900,7 @@ export const AdminView: React.FC = () => {
           {/* Tabla de Monedas para escritorio */}
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800/80">
+              <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                 <tr>
                   <th className="py-3 px-4">Código ISO</th>
                   <th className="py-3 px-4">Símbolo</th>
@@ -911,7 +911,7 @@ export const AdminView: React.FC = () => {
                   <th className="py-3 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {monedasFiltradas.map((m) => {
                   const estaActiva = m.activo !== false;
                   const totalUso = m.total_billeteras ?? (stats ? (m.codigo === 'PEN' ? stats.billeteras_pen : m.codigo === 'USD' ? stats.billeteras_usd : m.codigo === 'EUR' ? stats.billeteras_eur : 0) : 0);
@@ -926,13 +926,13 @@ export const AdminView: React.FC = () => {
                       </td>
 
                       {/* Símbolo */}
-                      <td className="py-3.5 px-4 font-bold text-sm text-slate-900 dark:text-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-sm text-slate-900">
                         {m.simbolo}
                       </td>
 
                       {/* Nombre */}
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-800 dark:text-slate-100 text-xs sm:text-sm">
+                        <div className="font-semibold text-slate-800 text-xs sm:text-sm">
                           {m.nombre}
                         </div>
                       </td>
@@ -945,7 +945,7 @@ export const AdminView: React.FC = () => {
                       </td>
 
                       {/* Orden */}
-                      <td className="py-3.5 px-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                      <td className="py-3.5 px-4 text-center font-semibold text-slate-500">
                         {m.orden ?? 0}
                       </td>
 
@@ -958,7 +958,7 @@ export const AdminView: React.FC = () => {
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${
                             estaActiva
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-200'
+                              : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${estaActiva ? 'bg-emerald-500' : 'bg-slate-400'}`} />
@@ -973,7 +973,7 @@ export const AdminView: React.FC = () => {
                             type="button"
                             title="Editar divisa"
                             onClick={() => abrirEditarMoneda(m)}
-                            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 hover:text-teal-700 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-teal-700 transition-colors cursor-pointer"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
@@ -999,7 +999,7 @@ export const AdminView: React.FC = () => {
           </div>
 
           {monedasFiltradas.length === 0 && (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">
+            <div className="p-8 text-center text-slate-500 text-xs">
               {cargandoMonedas ? 'Cargando catálogo de divisas…' : 'No se encontraron monedas para el filtro ingresado.'}
             </div>
           )}
@@ -1008,15 +1008,15 @@ export const AdminView: React.FC = () => {
 
       {/* VISTA 3: Versiones y Migraciones de Base de Datos */}
       {subTab === 'migraciones' && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-xs space-y-4 overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs space-y-4 overflow-hidden">
           <div className="flex items-start sm:items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
               <Database className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-50">Historial de Migraciones Supabase</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 break-words">
-                Registro inmutable de versiones de base de datos aplicadas en <code className="font-mono text-slate-700 dark:text-slate-200">wallet_internal.migraciones</code>.
+              <h2 className="text-sm sm:text-base font-semibold text-slate-900">Historial de Migraciones Supabase</h2>
+              <p className="text-xs text-slate-500 break-words">
+                Registro inmutable de versiones de base de datos aplicadas en <code className="font-mono text-slate-700">wallet_internal.migraciones</code>.
               </p>
             </div>
           </div>
@@ -1025,12 +1025,12 @@ export const AdminView: React.FC = () => {
             {stats?.migraciones.map((mig) => (
               <div
                 key={mig.version}
-                className="flex items-start sm:items-center justify-between gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 transition-colors overflow-hidden"
+                className="flex items-start sm:items-center justify-between gap-2.5 rounded-xl border border-slate-200 p-3 sm:p-3.5 hover:bg-slate-50 transition-colors overflow-hidden"
               >
                 <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                   <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
                   <div className="min-w-0 flex-1">
-                    <strong className="block text-xs sm:text-sm font-mono text-slate-900 dark:text-slate-50 break-all leading-snug">
+                    <strong className="block text-xs sm:text-sm font-mono text-slate-900 break-all leading-snug">
                       {mig.version}
                     </strong>
                     <span className="mt-0.5 block text-[11px] sm:text-xs text-slate-400">
@@ -1049,29 +1049,29 @@ export const AdminView: React.FC = () => {
 
       {/* Modal: Cambiar Contraseña Directa */}
       <AnimatedModal open={modalPasswordOpen} label="Cambiar Contraseña Directa">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-3">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
                 <KeyRound className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">Cambiar Contraseña</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Asignar nueva clave para {usuarioSeleccionado?.nombre}</p>
+                <h3 className="text-base font-semibold text-slate-900">Cambiar Contraseña</h3>
+                <p className="text-xs text-slate-500">Asignar nueva clave para {usuarioSeleccionado?.nombre}</p>
               </div>
             </div>
           </div>
 
           <form onSubmit={handleGuardarPassword} className="space-y-4">
             <div>
-              <span className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Usuario</span>
-              <p className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/70 p-2.5 text-xs font-mono text-slate-800 dark:text-slate-100">
+              <span className="block text-xs font-semibold text-slate-700 mb-1">Usuario</span>
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-mono text-slate-800">
                 {usuarioSeleccionado?.email}
               </p>
             </div>
 
             <div>
-              <label htmlFor="admin-new-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
+              <label htmlFor="admin-new-password" className="block text-xs font-semibold text-slate-700 mb-1">
                 Nueva Contraseña (mínimo 6 caracteres)
               </label>
               <div className="relative">
@@ -1083,28 +1083,28 @@ export const AdminView: React.FC = () => {
                   value={nuevoPassword}
                   onChange={(e) => setNuevoPassword(e.target.value)}
                   placeholder="Ej. ClaveSegura2026!"
-                  className="min-h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 pr-10 text-sm font-semibold focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                  className="min-h-11 w-full rounded-xl border border-slate-200 px-3.5 pr-10 text-sm font-semibold focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
                 />
                 <button
                   type="button"
                   onClick={() => setMostrarPassword(!mostrarPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-300 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   {mostrarPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="text-[11px] text-slate-500 leading-relaxed">
               El usuario podrá iniciar sesión inmediatamente con esta clave. Puedes compartirle esta contraseña temporal por tu canal de soporte de confianza.
             </p>
 
-            <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800/80 pt-3">
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
               <button
                 type="button"
                 disabled={guardandoPassword}
                 onClick={() => setModalPasswordOpen(false)}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 cursor-pointer"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -1125,17 +1125,17 @@ export const AdminView: React.FC = () => {
         open={modalMonedaOpen}
         label={modalMonedaModo === 'create' ? 'Nueva Moneda' : 'Editar Moneda'}
       >
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-2xl relative">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-3.5">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl relative">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
                 <Coins className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                <h3 className="text-base font-semibold text-slate-900">
                   {modalMonedaModo === 'create' ? 'Agregar Nueva Moneda' : 'Editar Moneda'}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500">
                   {modalMonedaModo === 'create'
                     ? 'Habilita una nueva divisa para todos los usuarios de la plataforma.'
                     : 'Modifica el nombre o símbolo de la divisa.'}
@@ -1145,7 +1145,7 @@ export const AdminView: React.FC = () => {
             <button
               type="button"
               onClick={() => setModalMonedaOpen(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1154,7 +1154,7 @@ export const AdminView: React.FC = () => {
           <form onSubmit={handleGuardarMoneda} className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Código ISO (2-5 letras)
                 </label>
                 <input
@@ -1165,12 +1165,12 @@ export const AdminView: React.FC = () => {
                   value={inputCodMoneda}
                   onChange={(e) => setInputCodMoneda(e.target.value.toUpperCase())}
                   placeholder="Ej: GBP, MXN, COP"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-50 uppercase font-mono focus:bg-white dark:bg-slate-900 focus:outline-none focus:border-teal-500 disabled:opacity-60"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 uppercase font-mono focus:bg-white focus:outline-none focus:border-teal-500 disabled:opacity-60"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Símbolo Monetario
                 </label>
                 <input
@@ -1180,13 +1180,13 @@ export const AdminView: React.FC = () => {
                   value={inputSimMoneda}
                   onChange={(e) => setInputSimMoneda(e.target.value)}
                   placeholder="Ej: £, MX$, COL$"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-50 focus:bg-white dark:bg-slate-900 focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                 Nombre de la Moneda
               </label>
               <input
@@ -1195,13 +1195,13 @@ export const AdminView: React.FC = () => {
                 value={inputNomMoneda}
                 onChange={(e) => setInputNomMoneda(e.target.value)}
                 placeholder="Ej: Libras Esterlinas, Pesos Mexicanos..."
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-50 focus:bg-white dark:bg-slate-900 focus:outline-none focus:border-teal-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3 items-center pt-1">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Orden de Aparición
                 </label>
                 <input
@@ -1210,7 +1210,7 @@ export const AdminView: React.FC = () => {
                   max={999}
                   value={inputOrdenMoneda}
                   onChange={(e) => setInputOrdenMoneda(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-50 focus:bg-white dark:bg-slate-900 focus:outline-none focus:border-teal-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-teal-500"
                 />
               </div>
 
@@ -1222,7 +1222,7 @@ export const AdminView: React.FC = () => {
                   onChange={(e) => setInputActivoMoneda(e.target.checked)}
                   className="h-4 w-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
                 />
-                <label htmlFor="chk-moneda-activa" className="text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+                <label htmlFor="chk-moneda-activa" className="text-xs font-semibold text-slate-700 cursor-pointer">
                   Moneda Activa
                 </label>
               </div>
@@ -1234,11 +1234,11 @@ export const AdminView: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800/80 pt-3">
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
               <button
                 type="button"
                 onClick={() => setModalMonedaOpen(false)}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 dark:bg-slate-800/70 cursor-pointer"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Cancelar
               </button>

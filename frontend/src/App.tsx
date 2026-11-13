@@ -1,6 +1,5 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { Auth } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
 
@@ -21,11 +20,9 @@ const AppContent: React.FC = () => {
 
 export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
