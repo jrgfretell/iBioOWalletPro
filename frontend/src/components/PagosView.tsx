@@ -118,6 +118,10 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
   // Edición inline de fecha de cuota
   const [editandoCuotaId, setEditandoCuotaId] = useState<number | null>(null);
+  const [agregandoCuotaDeudaId, setAgregandoCuotaDeudaId] = useState<number | null>(null);
+  const [nuevaCuotaMonto, setNuevaCuotaMonto] = useState('');
+  const [nuevaCuotaFecha, setNuevaCuotaFecha] = useState(fechaHoyISO());
+  const [guardandoNuevaCuota, setGuardandoNuevaCuota] = useState(false);
   const [nuevaFechaCuota, setNuevaFechaCuota] = useState<string>('');
   const [guardandoCuotaFecha, setGuardandoCuotaFecha] = useState<boolean>(false);
   const [editandoImporteCuotaId, setEditandoImporteCuotaId] = useState<number | null>(null);
@@ -475,6 +479,109 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
     }
 
     } catch (error) { reportarError(error); }
+  };
+
+  // Retirar una cuota pendiente sin abonos y reajustar numeración y total pactado
+  const handleRetirarCuota = async (deudaId: number, cuotaId: number, numero: number, monto: number, fecha: string) => {
+    if (!user) return;
+    const cuotasD = cuotas
+      .filter(c => c.deuda_id === deudaId)
+      .sort((a, b) => a.numero - b.numero);
+    if (cuotasD.length <= 1) return;
+
+    const tieneAbonos = pagosDeuda.some(p => p.cuota_id === cuotaId);
+    if (tieneAbonos) return;
+
+    const confirmado = await confirmarAccion({
+      title: `¿Retirar cuota ${numero}/${cuotasD.length}?`,
+      text: `Se eliminará la cuota de ${formatearMoneda(monto)} con vencimiento ${fecha}. Las cuotas restantes se renumerarán y el total pactado se reajustará.`,
+      confirmButtonText: 'Sí, retirar cuota',
+    });
+    if (!confirmado) return;
+
+    try {
+      const { data: deletedRows, error: delError } = await supabase
+        .from('deuda_cuotas')
+        .delete()
+        .eq('id', cuotaId)
+        .eq('user_id', user.id)
+        .select('id');
+      if (delError) throw delError;
+      if (!deletedRows || deletedRows.length === 0) {
+        throw new Error('No se pudo eliminar la cuota (verifica permisos o si la billetera está archivada).');
+      }
+
+      const restantes = cuotasD.filter(c => c.id !== cuotaId);
+      for (let i = 0; i < restantes.length; i++) {
+        const nuevoNumero = i + 1;
+        if (restantes[i].numero !== nuevoNumero) {
+          const { error: updCuotaErr } = await supabase
+            .from('deuda_cuotas')
+            .update({ numero: nuevoNumero })
+            .eq('id', restantes[i].id)
+            .eq('user_id', user.id);
+          if (updCuotaErr) throw updCuotaErr;
+        }
+      }
+
+      const nuevoTotal = Math.round(restantes.reduce((acc, c) => acc + Number(c.monto), 0) * 100) / 100;
+      const { error: updDeudaErr } = await supabase
+        .from('deudas')
+        .update({ monto_recibido: nuevoTotal })
+        .eq('id', deudaId)
+        .eq('user_id', user.id);
+      if (updDeudaErr) throw updDeudaErr;
+
+      await recargarTodo();
+      toastExito('Cuota retirada y cronograma reajustado');
+    } catch (error) {
+      reportarError(error);
+    }
+  };
+
+  // Agregar una nueva cuota a una deuda existente y actualizar total pactado
+  const handleAgregarCuota = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || agregandoCuotaDeudaId === null || guardandoNuevaCuota) return;
+    const montoNum = Number(nuevaCuotaMonto);
+    if (!Number.isFinite(montoNum) || montoNum <= 0 || !nuevaCuotaFecha) return;
+
+    const deuda = deudas.find(d => d.id === agregandoCuotaDeudaId);
+    if (!deuda) return;
+
+    setGuardandoNuevaCuota(true);
+    try {
+      const cuotasD = cuotas
+        .filter(c => c.deuda_id === agregandoCuotaDeudaId)
+        .sort((a, b) => a.numero - b.numero);
+
+      const { error: insErr } = await supabase.from('deuda_cuotas').insert({
+        user_id: user.id,
+        billetera_id: deuda.billetera_id,
+        deuda_id: deuda.id,
+        numero: cuotasD.length + 1,
+        monto: montoNum,
+        fecha: nuevaCuotaFecha,
+      });
+      if (insErr) throw insErr;
+
+      const nuevoTotal = Math.round((cuotasD.reduce((acc, c) => acc + Number(c.monto), 0) + montoNum) * 100) / 100;
+      const { error: updErr } = await supabase
+        .from('deudas')
+        .update({ monto_recibido: nuevoTotal })
+        .eq('id', deuda.id)
+        .eq('user_id', user.id);
+      if (updErr) throw updErr;
+
+      await recargarTodo();
+      setAgregandoCuotaDeudaId(null);
+      setNuevaCuotaMonto('');
+      toastExito('Cuota agregada al cronograma');
+    } catch (error) {
+      reportarError(error);
+    } finally {
+      setGuardandoNuevaCuota(false);
+    }
   };
 
   const handleGuardarImporteCuota = async (deudaId:number,cuotaId:number,nombreDeuda:string) => {
@@ -1874,6 +1981,20 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                           <button
                             disabled={soloLectura}
                             type="button"
+                            onClick={() => {
+                              setAgregandoCuotaDeudaId(d.id);
+                              setNuevaCuotaMonto('');
+                              setNuevaCuotaFecha(fechaHoyISO());
+                            }}
+                            title="Agregar nueva cuota a esta deuda"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-teal-700 hover:bg-teal-50 border border-teal-200/80 transition-colors cursor-pointer mr-1"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Agregar cuota</span>
+                          </button>
+                          <button
+                            disabled={soloLectura}
+                            type="button"
                             onClick={() => handleAjustarCuotasFinDeMes(d.id, d.nombre)}
                             title="Ajustar todas las cuotas al último día de su mes (Fin de mes)"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-teal-50 transition-colors cursor-pointer"
@@ -2145,6 +2266,17 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                                           + Registrar pago
                                         </button>
                                       )}
+                                      {!soloLectura && abonado === 0 && cuotasD.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRetirarCuota(d.id, c.id, c.numero, Number(c.monto), c.fecha)}
+                                          title="Retirar cuota"
+                                          aria-label={`Retirar cuota ${c.numero} de ${cuotasD.length}`}
+                                          className="ml-1.5 inline-flex items-center justify-center p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer align-middle"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                       {pagosDeuda.some(p => p.cuota_id === c.id) && <button type="button" onClick={() => setAbonosCuotaId(c.id)} className="mt-2 flex min-h-9 items-center justify-end gap-1 rounded-lg px-2 text-xs font-semibold text-teal-700 hover:bg-teal-50 ml-auto"><RotateCcw className="h-3.5 w-3.5" />Ver abonos ({pagosDeuda.filter(p => p.cuota_id === c.id).length})</button>}
                                     </td>
                                   </tr>
@@ -2161,6 +2293,67 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
           )}
         </div>
       )}
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* MODAL: AGREGAR CUOTA A DEUDA EXISTENTE                                     */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      <AnimatedModal open={agregandoCuotaDeudaId !== null} label="Agregar cuota">
+        {agregandoCuotaDeudaId !== null && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-sm w-full overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">Agregar nueva cuota</h3>
+              <button
+                type="button"
+                onClick={() => setAgregandoCuotaDeudaId(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAgregarCuota} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Monto de la cuota</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  value={nuevaCuotaMonto}
+                  onChange={e => setNuevaCuotaMonto(e.target.value)}
+                  placeholder="Ej. 505.00"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Fecha de vencimiento</label>
+                <input
+                  type="date"
+                  required
+                  value={nuevaCuotaFecha}
+                  onChange={e => setNuevaCuotaFecha(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAgregandoCuotaDeudaId(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={guardandoNuevaCuota}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50 cursor-pointer"
+                >
+                  {guardandoNuevaCuota ? 'Guardando...' : 'Agregar cuota'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </AnimatedModal>
 
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* MODAL: EDITAR COMPROMISO (NOMBRE, MONTO, DÍA, CATEGORÍA)                   */}
