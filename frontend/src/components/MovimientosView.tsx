@@ -1,4 +1,5 @@
 import { AnimatedModal } from './AnimatedModal';
+import { CategoriaSelect } from './CategoriaSelect';
 import { AnimatedDisclosure } from './AnimatedDisclosure';
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -760,20 +761,12 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Categoría
                 </label>
-                <select
+                <CategoriaSelect
+                  categorias={categorias}
                   value={categoriaId}
-                  onChange={(e) =>
-                    setCategoriaId(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-teal-500"
-                >
-                  <option value="">Sin categoría</option>
-                  {ordenarCategoriasJerarquicas(categorias).map(({ categoria: c, etiquetaSelect }) => (
-                    <option key={c.id} value={c.id}>
-                      {etiquetaSelect}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setCategoriaId(val === '' ? '' : Number(val))}
+                  emptyLabel="Sin categoría"
+                />
               </div>
 
               {/* Estado confirmado */}
