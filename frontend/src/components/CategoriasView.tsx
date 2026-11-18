@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet, useWalletFormGuard } from '../context/WalletContext';
 import type { Categoria } from '../types/wallet';
+import { ordenarCategoriasJerarquicas } from '../types/wallet';
 import { confirmarAccion, alertaInfo, alertaError, toastExito } from '../lib/alerts';
 import { Plus, Edit2, Trash2, X, Check, Search, AlertCircle } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export const CategoriasView: React.FC = () => {
 
   const [modalAbierto, setModalAbierto] = useState<boolean>(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [parentId, setParentId] = useState<number | null>(null);
   const [nombre, setNombre] = useState<string>('');
   const [color, setColor] = useState<string>('#3498db');
   const [icono, setIcono] = useState<string>('fa-folder');
@@ -81,11 +83,26 @@ export const CategoriasView: React.FC = () => {
     return stats;
   }, [categorias, movimientos]);
 
-  const categoriasFiltradas = useMemo(() => {
-    if (!busquedaCategoria.trim()) return categorias;
+  const categoriasOrdenadas = useMemo(() => {
     const q = busquedaCategoria.toLowerCase().trim();
-    return categorias.filter((c) => c.nombre.toLowerCase().includes(q));
+    const todas = ordenarCategoriasJerarquicas(categorias);
+    if (!q) return todas;
+    return todas.filter(
+      (item) =>
+        item.categoria.nombre.toLowerCase().includes(q) ||
+        (item.padre && item.padre.nombre.toLowerCase().includes(q))
+    );
   }, [categorias, busquedaCategoria]);
+
+  const categoriasPrincipales = useMemo(
+    () => categorias.filter((c) => !c.parent_id && c.id !== editId).sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [categorias, editId]
+  );
+
+  const editandoTieneHijas = useMemo(
+    () => Boolean(editId && categorias.some((c) => c.parent_id === editId)),
+    [categorias, editId]
+  );
 
   const iconosFiltrados = useMemo(() => {
     if (!busquedaIcono.trim()) return PRESET_ICONS;
@@ -101,17 +118,20 @@ export const CategoriasView: React.FC = () => {
     return categorias.some((c) => c.nombre.trim().toLowerCase() === normalizado && c.id !== editId);
   }, [nombre, categorias, editId]);
 
-  const abrirNueva = () => {
+  const abrirNueva = (defaultParentId: number | null = null) => {
+    const padre = defaultParentId ? categorias.find((c) => c.id === defaultParentId) : null;
     setEditId(null);
+    setParentId(defaultParentId);
     setNombre('');
-    setColor(PRESET_COLORS[categorias.length % PRESET_COLORS.length]);
-    setIcono('fa-folder');
+    setColor(padre?.color || PRESET_COLORS[categorias.length % PRESET_COLORS.length]);
+    setIcono(padre?.icono || 'fa-folder');
     setBusquedaIcono('');
     setModalAbierto(true);
   };
 
   const abrirEdicion = (c: Categoria) => {
     setEditId(c.id);
+    setParentId(c.parent_id ?? null);
     setNombre(c.nombre);
     setColor(c.color || '#3498db');
     setIcono(c.icono || 'fa-folder');
@@ -133,11 +153,12 @@ export const CategoriasView: React.FC = () => {
       }
 
       setGuardando(true);
+      const parentIdFinal = editandoTieneHijas ? null : (parentId || null);
       try {
         if (editId) {
           const { error: updateError } = await supabase
             .from('categorias')
-            .update({ nombre: nombre.trim(), color, icono })
+            .update({ nombre: nombre.trim(), color, icono, parent_id: parentIdFinal })
             .eq('id', editId)
             .eq('user_id', user.id);
           if (updateError) throw updateError;
@@ -148,9 +169,10 @@ export const CategoriasView: React.FC = () => {
             nombre: nombre.trim(),
             color,
             icono,
+            parent_id: parentIdFinal,
           });
           if (insertError) throw insertError;
-          toastExito('Categoría creada');
+          toastExito(parentIdFinal ? 'Subcategoría creada' : 'Categoría creada');
         }
         await recargarTodo();
         setModalAbierto(false);
@@ -209,7 +231,7 @@ export const CategoriasView: React.FC = () => {
         </div>
 
         <button disabled={soloLectura}
-          onClick={abrirNueva}
+          onClick={() => abrirNueva(null)}
           className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs cursor-pointer self-start sm:self-auto transition-colors disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
@@ -239,25 +261,27 @@ export const CategoriasView: React.FC = () => {
           )}
         </div>
         <span className="text-[11px] font-semibold text-slate-400 shrink-0 hidden sm:inline">
-          {categoriasFiltradas.length} de {categorias.length}
+          {categoriasOrdenadas.length} de {categorias.length}
         </span>
       </div>
 
       {/* Lista directorio de categorías */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5">
-        {categoriasFiltradas.length === 0 ? (
+        {categoriasOrdenadas.length === 0 ? (
           <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400">
             <Search className="w-6 h-6 mx-auto mb-2 text-slate-300" />
             <strong className="block text-slate-700 text-sm">No se encontraron categorías</strong>
             <span className="text-xs">Prueba con otro término de búsqueda.</span>
           </div>
         ) : (
-          categoriasFiltradas.map((c) => {
+          categoriasOrdenadas.map(({ categoria: c, esSubcategoria, padre }) => {
             const stat = estadisticasPorCategoria.get(c.id) || { cantidad: 0, totalGasto: 0 };
             return (
               <div
                 key={c.id}
-                className="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 transition-all"
+                className={`bg-white rounded-2xl border p-3 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 transition-all ${
+                  esSubcategoria ? 'border-slate-200/90 border-l-4 border-l-teal-500/70' : 'border-slate-200/90'
+                }`}
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
@@ -267,7 +291,14 @@ export const CategoriasView: React.FC = () => {
                     <i className={`fas ${c.icono || 'fa-folder'}`}></i>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">{c.nombre}</h3>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">{c.nombre}</h3>
+                      {esSubcategoria && padre && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200/70 text-[10px] font-semibold shrink-0 truncate max-w-[110px]">
+                          {padre.nombre}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-slate-400 mt-0.5 truncate">
                       {stat.cantidad} mov. · {formatearMoneda(stat.totalGasto)}
                     </p>
@@ -275,6 +306,16 @@ export const CategoriasView: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  {!esSubcategoria && c.nombre.toLowerCase() !== 'otros' && (
+                    <button
+                      disabled={soloLectura}
+                      onClick={() => abrirNueva(c.id)}
+                      className="px-2 py-1 rounded-lg text-[11px] font-semibold text-teal-700 hover:bg-teal-50 cursor-pointer transition-colors"
+                      title={`Agregar subcategoría dentro de ${c.nombre}`}
+                    >
+                      + Sub
+                    </button>
+                  )}
                   <button disabled={soloLectura}
                     onClick={() => abrirEdicion(c)}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 cursor-pointer transition-colors"
@@ -352,6 +393,31 @@ export const CategoriasView: React.FC = () => {
                   <p className="mt-1.5 text-xs text-rose-600 font-medium flex items-center gap-1.5 animate-fadeIn">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>Ya existe una categoría llamada &quot;{nombre.trim()}&quot; en esta billetera.</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Categoría padre (opcional para subcategorías) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Categoría principal (opcional)
+                </label>
+                <select
+                  value={parentId ?? ''}
+                  disabled={editandoTieneHijas}
+                  onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-none focus:border-teal-500 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">Ninguna (Categoría principal)</option>
+                  {categoriasPrincipales.map((cp) => (
+                    <option key={cp.id} value={cp.id}>
+                      {cp.nombre}
+                    </option>
+                  ))}
+                </select>
+                {editandoTieneHijas && (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Esta categoría ya tiene subcategorías, por lo que debe mantenerse como principal.
                   </p>
                 )}
               </div>

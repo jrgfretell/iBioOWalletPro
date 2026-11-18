@@ -157,7 +157,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const mapped=Object.fromEntries(WALLET_TABLES.map((table,i)=>[table,results[i].map(row=>{
         const result={...row};
         for (const key of ['fecha','fecha_pago','fecha_referencia']) if (typeof result[key] === 'string') result[key] = result[key].slice(0,10);
-        for(const key of ['id','billetera_id','categoria_id','recurrente_id','deuda_id','cuota_id','movimiento_id','monto','monto_base','monto_recibido','sueldo_15','sueldo_30','anio','mes','numero','dia_pago']) {
+        for(const key of ['id','billetera_id','categoria_id','parent_id','recurrente_id','deuda_id','cuota_id','movimiento_id','monto','monto_base','monto_recibido','sueldo_15','sueldo_30','anio','mes','numero','dia_pago']) {
           if(result[key]!==null && result[key]!==undefined) result[key]=Number(result[key]);
         }
         return result;

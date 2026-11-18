@@ -13,6 +13,7 @@ import {
   obtenerUltimoDiaMes,
   fechaHoyISO,
   obtenerMesInicioRecurrente,
+  ordenarCategoriasJerarquicas,
   recurrenteAplicaEnMes,
 } from '../types/wallet';
 import type { DeudaCuota, MovimientoRecurrente, DestinoPago } from '../types/wallet';
@@ -59,9 +60,28 @@ interface FilaAgenda {
 interface PagosViewProps {
   initialSubTab?: SubTabPagos;
   destinoPago?: DestinoPago | null;
+  focusId?: string | null;
+  onFocusConsumed?: () => void;
 }
 
-export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', destinoPago }) => {
+export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', destinoPago, focusId, onFocusConsumed }) => {
+  React.useEffect(() => {
+    if (!focusId) return;
+    setCronogramasExpandidos((prev) => ({ ...prev, [focusId]: true }));
+    setHighlightedFocusId(focusId);
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(focusId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      onFocusConsumed?.();
+    }, 120);
+    const clearTimer = window.setTimeout(() => {
+      setHighlightedFocusId(prev => (prev === focusId ? null : prev));
+    }, 2400);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [focusId, onFocusConsumed]);
+
   const { soporteEtapa5, ejecutarOperacion, error: errorBilletera, reportarError, soloLectura, formatearMoneda, simboloMoneda, clienteBilletera: supabase } = useWallet();
   const { user } = useAuth();
   const {
@@ -118,6 +138,7 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
 
   // Edición inline de fecha de cuota
   const [editandoCuotaId, setEditandoCuotaId] = useState<number | null>(null);
+  const [highlightedFocusId, setHighlightedFocusId] = useState<string | null>(null);
   const [agregandoCuotaDeudaId, setAgregandoCuotaDeudaId] = useState<number | null>(null);
   const [nuevaCuotaMonto, setNuevaCuotaMonto] = useState('');
   const [nuevaCuotaFecha, setNuevaCuotaFecha] = useState(fechaHoyISO());
@@ -1479,7 +1500,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <article
                       key={card.idKey}
                       id={card.idKey}
-                      className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
+                      className={`bg-white rounded-2xl border shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300 ${
+                        highlightedFocusId === card.idKey
+                          ? 'border-teal-500 ring-2 ring-teal-500/40'
+                          : 'border-slate-200/90'
+                      }`}
                     >
                       {/* Cabecera estilo Fintech - Opción A: Multilínea Fluida */}
                       <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
@@ -1847,7 +1872,11 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                     <article
                       key={d.id}
                       id={`deuda-${d.id}`}
-                      className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300"
+                      className={`bg-white rounded-2xl border shadow-2xs overflow-hidden scroll-mt-20 sm:scroll-mt-24 transition-all duration-300 ${
+                        highlightedFocusId === `deuda-${d.id}`
+                          ? 'border-teal-500 ring-2 ring-teal-500/40'
+                          : 'border-slate-200/90'
+                      }`}
                     >
                       {/* Cabecera estilo Fintech - Opción A: Multilínea Fluida */}
                       <div className="p-4 sm:p-5 pb-3 flex items-start justify-between gap-3">
@@ -2504,9 +2533,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 >
                   <option value="">General / Otros</option>
-                  {categorias.map((c) => (
+                  {ordenarCategoriasJerarquicas(categorias).map(({ categoria: c, etiquetaSelect }) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre}
+                      {etiquetaSelect}
                     </option>
                   ))}
                 </select>
@@ -2661,9 +2690,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                       >
                         <option value="">General</option>
-                        {categorias.map((c) => (
+                        {ordenarCategoriasJerarquicas(categorias).map(({ categoria: c, etiquetaSelect }) => (
                           <option key={c.id} value={c.id}>
-                            {c.nombre}
+                            {etiquetaSelect}
                           </option>
                         ))}
                       </select>
@@ -2834,9 +2863,9 @@ export const PagosView: React.FC<PagosViewProps> = ({ initialSubTab = 'agenda', 
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                     >
                       <option value="">General</option>
-                      {categorias.map((c) => (
+                      {ordenarCategoriasJerarquicas(categorias).map(({ categoria: c, etiquetaSelect }) => (
                         <option key={c.id} value={c.id}>
-                          {c.nombre}
+                          {etiquetaSelect}
                         </option>
                       ))}
                     </select>

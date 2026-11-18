@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 interface DashboardViewProps {
-  onNavigate: (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'recurrentes') => void;
+  onNavigate: (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'recurrentes', focusId?: string) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
@@ -72,8 +72,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // Mapa rápido de categorías
   const mapaCategorias = useMemo(() => {
-    const map = new Map<number, { nombre: string; color: string }>();
-    categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color }));
+    const map = new Map<number, { nombre: string; color: string; parent_id?: number | null }>();
+    categorias.forEach((c) => map.set(c.id, { nombre: c.nombre, color: c.color, parent_id: c.parent_id }));
     return map;
   }, [categorias]);
 
@@ -89,6 +89,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       esHoy: boolean;
       destino: ActiveTab;
       subTab?: 'cronogramas' | 'recurrentes';
+      focusId?: string;
     }[] = [];
 
     // 1. Cuotas con saldo pendiente
@@ -111,6 +112,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           esHoy: c.fecha === fechaHoyStr,
           destino: 'pagos',
           subTab: 'cronogramas',
+          focusId: `deuda-${c.deuda_id}`,
         });
       }
     });
@@ -149,6 +151,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             esHoy: fecha === fechaHoyStr,
             destino: 'pagos',
             subTab: 'recurrentes',
+            focusId: `rec-card-${rec.id}`,
           });
         });
       });
@@ -187,7 +190,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     let total = 0;
 
     gastosDelMes.forEach((g) => {
-      const cat = g.categoria_id ? mapaCategorias.get(g.categoria_id) : undefined;
+      const catOriginal = g.categoria_id ? mapaCategorias.get(g.categoria_id) : undefined;
+      const cat = catOriginal?.parent_id && mapaCategorias.has(catOriginal.parent_id)
+        ? mapaCategorias.get(catOriginal.parent_id)
+        : catOriginal;
       const nombre = cat ? cat.nombre : 'Otros';
       const color = cat ? cat.color : '#7f8c8d';
       if (!agrupado[nombre]) {
@@ -307,7 +313,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => onNavigate(item.destino, item.subTab)}
+                      onClick={() => onNavigate(item.destino, item.subTab, item.focusId)}
                       className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                         item.vencido
                           ? 'bg-red-50/60 border-red-200 hover:bg-red-50'

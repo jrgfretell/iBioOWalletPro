@@ -31,6 +31,43 @@ export interface Categoria {
   nombre: string;
   color: string;
   icono: string;
+  parent_id?: number | null;
+}
+
+export interface CategoriaOrdenada {
+  categoria: Categoria;
+  esSubcategoria: boolean;
+  etiquetaSelect: string;
+  padre?: Categoria;
+}
+
+export function ordenarCategoriasJerarquicas(categorias: Categoria[]): CategoriaOrdenada[] {
+  const porId = new Map(categorias.map((c) => [c.id, c]));
+  const principales = categorias
+    .filter((c) => !c.parent_id || !porId.has(c.parent_id))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  const hijosPorPadre = new Map<number, Categoria[]>();
+  for (const c of categorias) {
+    if (c.parent_id && porId.has(c.parent_id)) {
+      const arr = hijosPorPadre.get(c.parent_id) ?? [];
+      arr.push(c);
+      hijosPorPadre.set(c.parent_id, arr);
+    }
+  }
+  const resultado: CategoriaOrdenada[] = [];
+  for (const padre of principales) {
+    resultado.push({ categoria: padre, esSubcategoria: false, etiquetaSelect: padre.nombre });
+    const hijos = (hijosPorPadre.get(padre.id) ?? []).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    for (const hijo of hijos) {
+      resultado.push({
+        categoria: hijo,
+        esSubcategoria: true,
+        etiquetaSelect: `↳ ${hijo.nombre} (${padre.nombre})`,
+        padre,
+      });
+    }
+  }
+  return resultado;
 }
 
 export interface SueldoMes {

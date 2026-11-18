@@ -7,6 +7,7 @@ import {
   NOMBRES_MESES,
   fechaHoyISO,
   fechaRealMovimiento,
+  ordenarCategoriasJerarquicas,
 } from '../types/wallet';
 import type { MovimientoAgenda, DestinoPago } from '../types/wallet';
 import { confirmarAccion, toastExito, alertaInfo } from '../lib/alerts';
@@ -429,9 +430,9 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
                   className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-500"
                 >
                   <option value={-1}>Todas las categorías</option>
-                  {categorias.map((c) => (
+                  {ordenarCategoriasJerarquicas(categorias).map(({ categoria: c, etiquetaSelect }) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre}
+                      {etiquetaSelect}
                     </option>
                   ))}
                 </select>
@@ -767,9 +768,9 @@ export const MovimientosView: React.FC<{ onVerPago: (destino: DestinoPago) => vo
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-teal-500"
                 >
                   <option value="">Sin categoría</option>
-                  {categorias.map((c) => (
+                  {ordenarCategoriasJerarquicas(categorias).map(({ categoria: c, etiquetaSelect }) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre}
+                      {etiquetaSelect}
                     </option>
                   ))}
                 </select>

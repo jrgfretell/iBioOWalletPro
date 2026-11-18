@@ -16,13 +16,15 @@ const WalletShell: React.FC = () => {
   const { billeteraActual, ready, loading, error, limpiarError, recargarTodo } = useWallet();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [pagosSubTab, setPagosSubTab] = useState<'agenda' | 'cronogramas' | 'recurrentes'>('agenda');
+  const [pagosFocusId, setPagosFocusId] = useState<string | null>(null);
   const [destinoPago, setDestinoPago] = useState<DestinoPago | null>(null);
   const [createdWalletName, setCreatedWalletName] = useState<string | null>(null);
   const [showPostCreatePrompt, setShowPostCreatePrompt] = useState(false);
 
-  const handleNavigate = (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'recurrentes') => {
+  const handleNavigate = (tab: ActiveTab, subTab?: 'agenda' | 'cronogramas' | 'recurrentes', focusId?: string) => {
     setDestinoPago(null);
     setActiveTab(tab);
+    setPagosFocusId(focusId ?? null);
     if (subTab) {
       setPagosSubTab(subTab);
     } else if (tab === 'pagos') {
@@ -92,7 +94,7 @@ const WalletShell: React.FC = () => {
                 setPagosSubTab(destino.tipo === 'cuota' ? 'cronogramas' : 'recurrentes');
                 setActiveTab('pagos');
               }} />}
-              {activeTab === 'pagos' && <PagosView initialSubTab={pagosSubTab} destinoPago={destinoPago} />}
+              {activeTab === 'pagos' && <PagosView initialSubTab={pagosSubTab} focusId={pagosFocusId} onFocusConsumed={() => setPagosFocusId(null)} destinoPago={destinoPago} />}
               {activeTab === 'categorias' && <CategoriasView />}
             </div>
           ) : null}
